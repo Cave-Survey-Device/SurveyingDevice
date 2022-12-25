@@ -22,21 +22,29 @@ const static int lidar_READ_SOFTWARE_VERSION = 0x01;
 // using namespace uart_types;
 
 struct lidar_msg {
-    byte initiate;
-    byte address;
-    byte command;
-    byte data[100];
-    byte checksum;
-    byte end;
+    char initiate;
+    char address;
+    char command;
+    char data[100];
+    char checksum;
+    char end;
+
+    char* serialise();
 };
 
 class lidar{
     public:
         lidar();
-        void send_command(int type, byte data[100]);
+        char* generate_command(int type, char data[100] = {});
+        char* receive_response(char data[]);
+        double get_measurement();
 
     private:
-        HardwareSerial SerialPort;
+        char single_char_buffer;
+        char buffer[100];
+        HardwareSerial SerialPort = HardwareSerial(1);
+        void enable();
+        void disable();
 };
 
 #endif

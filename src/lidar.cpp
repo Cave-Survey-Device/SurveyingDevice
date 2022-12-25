@@ -1,6 +1,13 @@
 #include "lidar.h"
 
-void lidar::send_command(int type, byte data[100])
+char* lidar_msg::serialise()
+{
+    char char_array[sizeof(lidar_msg)] = {initiate, address, command, *data, end};
+    return char_array;
+}
+
+
+char* lidar::generate_command(int type, char data[100])
 {
     struct lidar_msg packet;
     packet.initiate = 0xAA;
@@ -53,17 +60,18 @@ void lidar::send_command(int type, byte data[100])
             packet.checksum = 0x49;
             break;
     }
+    return packet.serialise();
 };
 
 
-byte* receive_command(byte data[])
+char* lidar::receive_response(char data[])
 {
     struct lidar_msg packet;
     packet.address = data[0];
     packet.command = data[1];
 
     int i;
-    int data_size = sizeof(data)/sizeof(byte)-1;;
+    int data_size = sizeof(*data)/sizeof(byte)-1;;
     int start = 2;
     int end = data_size-1;
     for (i=start;i<end;++i)
@@ -73,28 +81,64 @@ byte* receive_command(byte data[])
 
     packet.checksum = data[-1];
 
-    byte calculated_checksum = 0x00;
-    calculated_checksum += packet.address;
-    calculated_checksum += packet.command;
-    int i;
+    int calculated_checksum = 0x00;
+    calculated_checksum += (int)packet.address;
+    calculated_checksum += (int)packet.command;
+    
     for (i=0;i<data_size;++i)
     {
-        calculated_checksum += data[i];
+        calculated_checksum += (int)packet.data[i];
     }
-    calculated_checksum = calculated_checksum & 0x7F;
+    calculated_checksum = (char)calculated_checksum & 0x7F;
 
-    if (calculated_checksum != packet.checksum)
+    if ((char)calculated_checksum != packet.checksum)
     {
-        throw std::invalid_argument("Checksum Invaid!");
+        throw ("Checksum Invaid!");
     }
 
-    return data;
+    return packet.data;
 }
 
 
 lidar::lidar()
 {   
     // Using UART1
-    SerialPort = HardwareSerial(1);
+    single_char_buffer = { NULL };
+    *buffer = { NULL };
     SerialPort.begin(15200, SERIAL_8N1, 4, 2); 
 };
+
+void lidar::disable()
+{
+    digitalWrite(GPIO_NUM_14,LOW);
+}
+
+void lidar::enable()
+{
+    digitalWrite(GPIO_NUM_14,HIGH);
+}
+
+double lidar::get_measurement()
+{
+    enable();
+    SerialPort.write(generate_command(LIDAR_SINGLE_MEAS));
+    while (single_char_buffer != 0xAA)
+    {
+        SerialPort.read(&single_char_buffer,1);
+    }
+    
+    SerialPort.readBytesUntil(0xA8,buffer,99);
+
+    try {
+        char *data = receive_response(buffer);
+        Serial.print("LIDAR SINGLE MEASURE: ");
+        Serial1.println(data);
+        return 0;
+    }
+    catch(char* e ) {
+        Serial.print("ERROR: ");
+        Serial.println(e);
+    }
+    disable();
+    return 0;
+}

@@ -16,6 +16,7 @@
 #include "magnetometer.h"
 #include "OLED.h"
 #include "config.h"
+#include "lidar.h"
 
 // Defining global variables
 static Adafruit_SSD1306 display;
@@ -27,6 +28,7 @@ static struct bno055_gravity myGravityData;
 static struct bno055_mag myMagData;
 
 static Magnetometer magnetometer(&myMagData);
+static lidar l1();
 
 void test_lasercalibration(){
   char buffer[150];
@@ -77,6 +79,9 @@ void setup(){
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   magnetometer.init();
+  pinMode(GPIO_NUM_14, OUTPUT);
+  digitalWrite(GPIO_NUM_14,LOW);
+
 }
 
 void loop(){

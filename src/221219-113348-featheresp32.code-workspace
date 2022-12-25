@@ -1,0 +1,45 @@
+{
+	"folders": [
+		{
+			"name": "221219-113348-featheresp32",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"array": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"string_view": "cpp",
+			"initializer_list": "cpp",
+			"valarray": "cpp",
+			"associative_base": "cpp",
+			"iterator": "cpp",
+			"serstream": "cpp",
+			"cmath": "cpp",
+			"chrono": "cpp",
+			"iostream": "cpp",
+			"*.tcc": "cpp",
+			"fstream": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"sstream": "cpp",
+			"complex": "cpp"
+		},
+		"python.languageServer": "Pylance",
+		"python.linting.pylintEnabled": false,
+		"python.analysis.diagnosticSeverityOverrides": {
+			"reportMissingModuleSource": "none"
+		},
+		"python.analysis.extraPaths": [
+			"",
+			"c:\\Users\\chris\\.vscode\\extensions\\joedevivo.vscode-circuitpython-0.1.19-win32-x64\\stubs",
+			"c:\\Users\\chris\\AppData\\Roaming\\Code\\User\\globalStorage\\joedevivo.vscode-circuitpython\\bundle\\20221220\\adafruit-circuitpython-bundle-py-20221220\\lib"
+		],
+		"circuitpython.board.version": null
+	}
+}

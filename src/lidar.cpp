@@ -1,18 +1,29 @@
 #include "lidar.h"
 
-char* lidar_msg::serialise()
+void lidar_msg::serialise()
 {
-    char char_array[sizeof(lidar_msg)] = {initiate, address, command, *data, end};
-    return char_array;
+    char a[] =  {initiate, address, command, *data, end};
+    serialised = a;
+    Serial.printf("Char arrar: %hhX, %hhX, %hhX, %hhX, %hhX", initiate, address, command, *data, end);
+    
 }
 
-
-char* lidar::generate_command(int type, char data[100])
+void lidar_msg::reset()
 {
-    struct lidar_msg packet;
+    initiate = NULL;
+    address = NULL;
+    command = NULL;
+    *data = {NULL};
+    end = NULL;
+}
+
+void Lidar::generate_command(int type, char data[100])
+{
+    packet.reset();
     packet.initiate = 0xAA;
     packet.address = 0x01;
     packet.command = 0x7A;
+    *packet.data = { NULL };
     packet.end = 0xA8;
 
     switch (type){
@@ -60,13 +71,12 @@ char* lidar::generate_command(int type, char data[100])
             packet.checksum = 0x49;
             break;
     }
-    return packet.serialise();
+    packet.serialise();
 };
 
-
-char* lidar::receive_response(char data[])
+void Lidar::receive_response(char data[])
 {
-    struct lidar_msg packet;
+    packet.reset();
     packet.address = data[0];
     packet.command = data[1];
 
@@ -96,32 +106,34 @@ char* lidar::receive_response(char data[])
         throw ("Checksum Invaid!");
     }
 
-    return packet.data;
 }
 
-
-lidar::lidar()
+Lidar::Lidar()
 {   
     // Using UART1
     single_char_buffer = { NULL };
     *buffer = { NULL };
-    SerialPort.begin(15200, SERIAL_8N1, 4, 2); 
+    SerialPort.begin(9600); 
 };
 
-void lidar::disable()
+void Lidar::disable()
 {
     digitalWrite(GPIO_NUM_14,LOW);
 }
 
-void lidar::enable()
+void Lidar::enable()
 {
     digitalWrite(GPIO_NUM_14,HIGH);
 }
 
-double lidar::get_measurement()
+double Lidar::get_measurement()
 {
     enable();
+    SerialPort.write(generate_command(LIDAR_LASER_ON));
+    delay(500);
     SerialPort.write(generate_command(LIDAR_SINGLE_MEAS));
+    SerialPort.write(generate_command(LIDAR_LASER_OFF));
+
     while (single_char_buffer != 0xAA)
     {
         SerialPort.read(&single_char_buffer,1);

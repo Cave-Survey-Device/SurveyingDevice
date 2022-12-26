@@ -15,10 +15,6 @@ const static int LIDAR_SINGLE_MEAS = 0x44;
 const static int LIDAR_CONT_MEAS = 0x45;
 const static int LIDAR_STOP_CONT_MEAS = 0x46;
 
-
-
-const static int lidar_READ_SOFTWARE_VERSION = 0x01;
-
 // using namespace uart_types;
 
 struct lidar_msg {
@@ -28,15 +24,17 @@ struct lidar_msg {
     char data[100];
     char checksum;
     char end;
+    char *serialised;
 
-    char* serialise();
+    void serialise();
+    void reset();
 };
 
-class lidar{
+class Lidar {
     public:
-        lidar();
-        char* generate_command(int type, char data[100] = {});
-        char* receive_response(char data[]);
+        Lidar();
+        void generate_command(int type, char data[100] = {});
+        void receive_response(char data[]);
         double get_measurement();
 
     private:
@@ -45,6 +43,7 @@ class lidar{
         HardwareSerial SerialPort = HardwareSerial(1);
         void enable();
         void disable();
+        lidar_msg packet;
 };
 
 #endif

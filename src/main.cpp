@@ -28,7 +28,7 @@ static struct bno055_gravity myGravityData;
 static struct bno055_mag myMagData;
 
 static Magnetometer magnetometer(&myMagData);
-static lidar l1();
+static Lidar lidar;
 
 void test_lasercalibration(){
   char buffer[150];
@@ -96,6 +96,8 @@ void loop(){
 
   // Accelerometer update code
 
+  //Lidar do stuff
+  lidar.get_measurement();
 
   Serial.print("Progress: ");
   Serial.println(magnetometer.check_calibration_progress());

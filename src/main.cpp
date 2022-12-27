@@ -74,22 +74,32 @@ void init_bno(){
 void setup(){
   test_lasercalibration();
   Serial.println("Done!");
+  Serial1.println("Hello world!");
   display = init_OLED(0x3C);
   init_bno();
+  Serial.println("FINISHED BNO INIT");
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
+  Serial.println("FINISHED DISPLAY INIT");
   magnetometer.init();
+  Serial.println("FINISHED MAGNETOMETER INIT");
   pinMode(GPIO_NUM_14, OUTPUT);
   digitalWrite(GPIO_NUM_14,LOW);
-
+  Serial.println("FINISHED PINS INIT");
+  lidar.init();
 }
 
 void loop(){
+  Serial.println("");
+  Serial.println("------------------------------");
+  Serial.println("");
   char buffer[100];
+
   // get_bno();
   display.clearDisplay();
 
   // Magnetometer update code
+  Serial.println("Updating magnetometer");
   magnetometer.update();
   magnetometer.add_calibration_data();
   Vector3d mag_data = magnetometer.get_heading();
@@ -97,8 +107,11 @@ void loop(){
   // Accelerometer update code
 
   //Lidar do stuff
+  Serial.println("Updating LIDAR");
   lidar.get_measurement();
 
+  // Outputting BNO information
+  Serial.println("Printing BNO data...");
   Serial.print("Progress: ");
   Serial.println(magnetometer.check_calibration_progress());
 

@@ -14,36 +14,34 @@ const static int LIDAR_LASER_OFF = 0x43;
 const static int LIDAR_SINGLE_MEAS = 0x44;
 const static int LIDAR_CONT_MEAS = 0x45;
 const static int LIDAR_STOP_CONT_MEAS = 0x46;
-
+const static int LIDAR_SEND_COMMAND_SIZE = 6;
+const static int LIDAR_RECEIVE_DATA_MAX_SIZE = 12;
+const static int LIDAR_START_BYTE = 0xAA;
+const static int LIDAR_END_BYTE = 0xA8;
+const static int LIDAR_BUFFER_SIZE = 100;
 // using namespace uart_types;
 
-struct lidar_msg {
-    char initiate;
+struct lidar_received_msg {
     char address;
     char command;
-    char data[100];
-    char checksum;
-    char end;
-    char *serialised;
-
-    void serialise();
-    void reset();
+    char data[LIDAR_RECEIVE_DATA_MAX_SIZE];
 };
 
 class Lidar {
     public:
         Lidar();
-        void generate_command(int type, char data[100] = {});
-        void receive_response(char data[]);
+        void generate_command(int type, char command_arr[]);
+        void receive_response(char raw_data[], lidar_received_msg* receivec_msg);
         double get_measurement();
 
     private:
-        char single_char_buffer;
-        char buffer[100];
         HardwareSerial SerialPort = HardwareSerial(1);
         void enable();
         void disable();
-        lidar_msg packet;
+        char single_char_buffer;
+        char buffer[LIDAR_BUFFER_SIZE];
+        void erase_buffer();
+        void read_msg_from_uart(char* buffer);
 };
 
 #endif

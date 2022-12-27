@@ -1,111 +1,128 @@
 #include "lidar.h"
 
-void lidar_msg::serialise()
+void Lidar::generate_command(int type, char command_packet[6])
 {
-    char a[] =  {initiate, address, command, *data, end};
-    serialised = a;
-    Serial.printf("Char arrar: %hhX, %hhX, %hhX, %hhX, %hhX", initiate, address, command, *data, end);
+    char initiate = LIDAR_START_BYTE;
+    char address = 0x01;
+    char command = 0;
+    char data = 0;
+    char checksum;
+    char end = LIDAR_END_BYTE;
     
-}
-
-void lidar_msg::reset()
-{
-    initiate = NULL;
-    address = NULL;
-    command = NULL;
-    *data = {NULL};
-    end = NULL;
-}
-
-void Lidar::generate_command(int type, char data[100])
-{
-    packet.reset();
-    packet.initiate = 0xAA;
-    packet.address = 0x01;
-    packet.command = 0x7A;
-    *packet.data = { NULL };
-    packet.end = 0xA8;
-
     switch (type){
         case LIDAR_READ_SOFTWARE_VERSION:
-            packet.command = LIDAR_READ_SOFTWARE_VERSION;
-            packet.checksum = 0x01;
+            command = LIDAR_READ_SOFTWARE_VERSION;
+            checksum = 0x01;
             break;
         case LIDAR_READ_DEVICE_TYPE:
-            packet.command = LIDAR_READ_DEVICE_TYPE;
-            packet.checksum = 0x03;
+            command = LIDAR_READ_DEVICE_TYPE;
+            checksum = 0x03;
             break;
         case LIDAR_READ_SLAVE_ADDR:
-            packet.command = LIDAR_READ_SLAVE_ADDR;
-            packet.address = 0x00;
-            packet.checksum = 0x04;
+            command = LIDAR_READ_SLAVE_ADDR;
+            address = 0x00;
+            checksum = 0x04;
             break;
         case LIDAR_SET_SLAVE_ADDR:
-            packet.command = LIDAR_SET_SLAVE_ADDR;
-            packet.address = 0x00;
-            packet.data[100] = {0x01};
-            packet.checksum = 0x43;
+            command = LIDAR_SET_SLAVE_ADDR;
+            address = 0x00;
+            data = 0x01;
+            checksum = 0x43;
             break;
         case LIDAR_READ_DEVICE_ERROR_CODE:
-            packet.command = LIDAR_READ_DEVICE_ERROR_CODE;
-            packet.checksum = 0x09;
+            command = LIDAR_READ_DEVICE_ERROR_CODE;
+            checksum = 0x09;
             break;
         case LIDAR_LASER_ON:
-            packet.command = LIDAR_LASER_ON;
-            packet.checksum = 0x43;
+            command = LIDAR_LASER_ON;
+            checksum = 0x43;
             break;
         case LIDAR_LASER_OFF:
-            packet.command = LIDAR_LASER_OFF;
-            packet.checksum = 0x44;
+            command = LIDAR_LASER_OFF;
+            checksum = 0x44;
             break;
         case LIDAR_SINGLE_MEAS:
-            packet.command = LIDAR_SINGLE_MEAS;
-            packet.checksum = 0x45;
+            command = LIDAR_SINGLE_MEAS;
+            checksum = 0x45;
             break;
         case LIDAR_CONT_MEAS:
-            packet.command = LIDAR_CONT_MEAS;
-            packet.checksum = 0x46;
+            command = LIDAR_CONT_MEAS;
+            checksum = 0x46;
             break;
         case LIDAR_STOP_CONT_MEAS:
-            packet.command = LIDAR_STOP_CONT_MEAS;
-            packet.checksum = 0x49;
+            command = LIDAR_STOP_CONT_MEAS;
+            checksum = 0x49;
             break;
     }
-    packet.serialise();
-};
+    
+    command_packet[0] = initiate;
+    command_packet[1] = address;
+    command_packet[2] = command;
 
-void Lidar::receive_response(char data[])
-{
-    packet.reset();
-    packet.address = data[0];
-    packet.command = data[1];
-
-    int i;
-    int data_size = sizeof(*data)/sizeof(byte)-1;;
-    int start = 2;
-    int end = data_size-1;
-    for (i=start;i<end;++i)
+    if (data == 0)
     {
-        packet.data[i-start] = data[i];
+    command_packet[3] = data;
+    command_packet[4] = checksum;
+    command_packet[5] = end;
+    }
+    else
+    {
+    command_packet[3] = checksum;
+    command_packet[4] = end;
     }
 
-    packet.checksum = data[-1];
+};
 
-    int calculated_checksum = 0x00;
-    calculated_checksum += (int)packet.address;
-    calculated_checksum += (int)packet.command;
+void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
+{
+
+    msg->address = raw_message[0];
+    msg->command = raw_message[1];
+
+    int i;
+    int message_size;
+    int data_size;
+    int start;
+
+    char checksum;
+    int calculated_checksum;
+
+
+    // Size of received message => address, command, data[MAX 12], checksum
+    message_size = sizeof(*raw_message)/sizeof(char)-1;
+
+    // Message size => address, command, checksum
+    data_size = message_size - 3;
+
+    // Start is 2 instead of 0 due to address, command
+    start = 2;
+
+    for (i=start;i<start+LIDAR_RECEIVE_DATA_MAX_SIZE;++i)
+    {
+        if (i<start+data_size)
+        {
+            msg->data[i-start] = raw_message[i];
+        } else {
+            msg->data[i-start] = 0;
+        }
+    }
+
+    checksum = raw_message[-1];
+
+    calculated_checksum = 0x00;
+    calculated_checksum += (int)msg->address;
+    calculated_checksum += (int)msg->command;
     
     for (i=0;i<data_size;++i)
     {
-        calculated_checksum += (int)packet.data[i];
+        calculated_checksum += (int)raw_message[i];
     }
     calculated_checksum = (char)calculated_checksum & 0x7F;
 
-    if ((char)calculated_checksum != packet.checksum)
+    if ((char)calculated_checksum != checksum)
     {
         throw ("Checksum Invaid!");
     }
-
 }
 
 Lidar::Lidar()
@@ -126,31 +143,57 @@ void Lidar::enable()
     digitalWrite(GPIO_NUM_14,HIGH);
 }
 
-double Lidar::get_measurement()
+void Lidar::erase_buffer()
 {
-    enable();
-    SerialPort.write(generate_command(LIDAR_LASER_ON));
-    delay(500);
-    SerialPort.write(generate_command(LIDAR_SINGLE_MEAS));
-    SerialPort.write(generate_command(LIDAR_LASER_OFF));
+    int i;
+    for (i=0; i<LIDAR_BUFFER_SIZE;++i)
+    {
+        buffer[i] = 0;
+    }
+}
 
-    while (single_char_buffer != 0xAA)
+void Lidar::read_msg_from_uart(char* buffer)
+{
+    while (single_char_buffer != LIDAR_START_BYTE)
     {
         SerialPort.read(&single_char_buffer,1);
     }
     
-    SerialPort.readBytesUntil(0xA8,buffer,99);
+    // Reads bytes until terminator into buffer (not including terminator)
+    SerialPort.readBytesUntil(LIDAR_END_BYTE,buffer,99);
+}
+
+double Lidar::get_measurement()
+{
+    char generated_command[LIDAR_SEND_COMMAND_SIZE];
+    lidar_received_msg received_msg;
+    enable();
+
+    generate_command(LIDAR_LASER_ON,generated_command);
+    SerialPort.write(generated_command);
+    read_msg_from_uart(buffer);
+
+    delay(500);
+    
+
+    generate_command(LIDAR_SINGLE_MEAS,generated_command);
+    SerialPort.write(generated_command);
+    read_msg_from_uart(buffer);
 
     try {
-        char *data = receive_response(buffer);
+        receive_response(buffer,&received_msg);
         Serial.print("LIDAR SINGLE MEASURE: ");
-        Serial1.println(data);
+        Serial1.println(received_msg.data);
         return 0;
     }
     catch(char* e ) {
         Serial.print("ERROR: ");
         Serial.println(e);
     }
+
+    generate_command(LIDAR_LASER_OFF,generated_command);
+    SerialPort.write(generated_command);
+    read_msg_from_uart(buffer);
     disable();
     return 0;
 }

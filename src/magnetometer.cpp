@@ -109,7 +109,30 @@ void Magnetometer::update()
   corrected_mag_data = raw_mag_data; //correction_transformation * raw_mag_data;
 }
 
-Vector3d Magnetometer::get_heading()
+double Magnetometer::get_heading()
 {
-  return corrected_mag_data;
+  // Find rotation about z-axis
+  Matrix3d I;
+  Vector3d x_axis;
+  Matrix3d vx;
+  Matrix3d rotation_mat;
+  Vector3d cross_prod;
+  double c;
+  
+  x_axis << 1,0,0;
+  cross_prod = corrected_mag_data.cross(x_axis);
+  c = raw_mag_data.dot(x_axis);
+
+  vx <<              0, -cross_prod[2],  cross_prod[1],
+         cross_prod[2],              0, -cross_prod[0],
+        -cross_prod[1],  cross_prod[0],              0;
+
+  I << 1,0,0,
+       0,1,0,
+       0,0,1;
+
+  
+  rotation_mat = I + vx + vx*vx * (1/(1+c));
+	return atan2(rotation_mat(2,1), rotation_mat(1,1));
+
 }

@@ -99,6 +99,9 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
     // Start is 2 instead of 0 due to address, command
     start = 2;
 
+    
+    Serial.printf("Address: %X/%c\n",raw_message[0],raw_message[0]);
+    Serial.printf("Command: %X/%c\n",raw_message[1],raw_message[1]);
     Serial.print("Received data: ");
     for (i=start;i<start+LIDAR_RECEIVE_DATA_MAX_SIZE;++i)
     {
@@ -124,7 +127,7 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
     Serial.println("CONSTRUCTING RESPONSE - Comparing checksum...");
     for (i=0;i<data_size;++i)
     {
-        calculated_checksum += (unsigned int)raw_message[i];
+        calculated_checksum += (unsigned int)msg->data[i];
     }
     Serial.println("CONSTRUCTING RESPONSE - AND checksum with 0x7F");
     calculated_checksum = calculated_checksum & (unsigned int)0x7F;
@@ -217,18 +220,33 @@ void Lidar::erase_buffer()
 void Lidar::read_msg_from_uart(char* buffer)
 {
     char b[10];
+    
     while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
     {
         Serial1.read(&single_char_buffer,1);
         Serial.printf("Received byte: %c, %X\n", single_char_buffer, single_char_buffer);
     }
+    //Serial1.readBytes(&single_char_buffer,1);
     erase_buffer();
+    single_char_buffer = 0;
     // Reads bytes until terminator into buffer (not including terminator)
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
 }
 
+double Lidar::to_distance(char* data)
+{
+    int i;
+    double distance = 0;
+    for (i=0; i<LIDAR_MEAS_LEN;i++)
+    {
+        distance += pow(10.0,-3-i) * (double)(int)data[i];
+    }
+    return distance;
+}
+
 double Lidar::get_measurement()
 {
+    double distance = 0.0;
     Serial.println("LIDAR - Initialising variables");
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
     lidar_received_msg received_msg;
@@ -252,6 +270,7 @@ double Lidar::get_measurement()
         Serial.print("LIDAR SINGLE MEASURE: ");
         Serial.println(received_msg.data);
         erase_buffer();
+        distance = to_distance(received_msg.data);
     }
     catch(char* e ) {
         Serial.print("ERROR: ");
@@ -266,5 +285,5 @@ double Lidar::get_measurement()
     erase_buffer();
 
     disable();
-    return 0;
+    return distance;
 }

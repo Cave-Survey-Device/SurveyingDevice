@@ -14,6 +14,7 @@
 #include "filefuncs.h"
 #include "lasercalibration.h"
 #include "magnetometer.h"
+#include "accelerometer.h"
 #include "OLED.h"
 #include "config.h"
 #include "lidar.h"
@@ -28,7 +29,11 @@ static struct bno055_gravity myGravityData;
 static struct bno055_mag myMagData;
 
 static Magnetometer magnetometer(&myMagData);
+static Accelerometer accelerometer(&myGravityData);
 static Lidar lidar;
+
+static unsigned int current_base_id = 0;
+static unsigned int new_node_id = 1;
 
 void test_lasercalibration(){
   char buffer[150];
@@ -72,20 +77,13 @@ void init_bno(){
 }
 
 void setup(){
-  test_lasercalibration();
-  Serial.println("Done!");
-  Serial1.println("Hello world!");
   display = init_OLED(0x3C);
   init_bno();
-  Serial.println("FINISHED BNO INIT");
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  Serial.println("FINISHED DISPLAY INIT");
   magnetometer.init();
-  Serial.println("FINISHED MAGNETOMETER INIT");
   pinMode(GPIO_NUM_14, OUTPUT);
   digitalWrite(GPIO_NUM_14,LOW);
-  Serial.println("FINISHED PINS INIT");
   lidar.init();
 }
 
@@ -149,3 +147,52 @@ void loop(){
 
   delay(1000);
 }
+
+
+void get_splay()
+{
+  double distance = 0;
+  double distance1 = 0;
+  double distance2 = 0;
+  node n;
+
+  magnetometer.update();
+  magnetometer.get_heading();
+  
+  accelerometer.update();
+  accelerometer.get_gravity_unit_vec();
+
+  distance1 = lidar.get_measurement();
+  distance2 = lidar.get_measurement();
+
+  if (fabs(distance1 - distance2) / (distance1 + distance2) > 1e-3)
+  {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.write("Error in distance greater than 1%, please retry!");
+  }
+  else {
+    distance = 0.5*(distance1 + distance2);
+    n.id = new_node_id;
+    n.previous = current_base_id;
+    n.vector_to_prev = generate_vector(distance, magnetometer.get_heading(), accelerometer.get_gravity_unit_vec());
+    write_to_file()
+  }
+
+}
+
+void get_base()
+{
+
+}
+
+
+
+void ISR_GET_SHOT()
+{
+  update_magnetometer();
+  update_gravity();
+  get_lidar();
+
+}
+

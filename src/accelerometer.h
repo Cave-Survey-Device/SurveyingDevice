@@ -29,6 +29,9 @@ class Accelerometer  {
         // Returns the current heading (corrected)
         Vector3d get_gravity_unit_vec();
 
+        // Returns rotation about y axis undergone by device
+        double get_inclination();
+
 
     private:
         // Pointer to the struct containing sensor data

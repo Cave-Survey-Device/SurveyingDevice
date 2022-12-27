@@ -20,6 +20,7 @@ const static int LIDAR_RECEIVE_DATA_MAX_SIZE = 12;
 const static char LIDAR_START_BYTE = 0xAA;
 const static char LIDAR_END_BYTE = 0xA8;
 const static int LIDAR_BUFFER_SIZE = 100;
+const static int LIDAR_MEAS_LEN = 6;
 // using namespace uart_types;
 
 struct lidar_received_msg {
@@ -44,6 +45,7 @@ class Lidar {
         int msg_len;
         void erase_buffer();
         void read_msg_from_uart(char* buffer);
+        double to_distance(char* data);
 };
 
 #endif

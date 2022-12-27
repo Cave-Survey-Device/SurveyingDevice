@@ -40,7 +40,7 @@ class Magnetometer  {
         void update();
 
         // Returns the current heading (corrected)
-        Vector3d get_heading();
+        double get_heading();
 
     private:
         // Given an x,y, and z value, return the index where the data should be stored in the calibration array
@@ -60,6 +60,7 @@ class Magnetometer  {
 
         // Tranformation used to correct the magnetometer data
         Matrix3d correction_transformation;
+
         
 };
 

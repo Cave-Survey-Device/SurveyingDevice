@@ -56,6 +56,10 @@ void Lidar::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SI
             command = LIDAR_DISABLE_BEEPER;
             data = 0x00;
             checksum = 0x48;
+        case LIDAR_ENABLE_BEEPER:
+            command = LIDAR_DISABLE_BEEPER;
+            data = 0x01;
+            checksum = 0x48;
     }
     
     command_packet[0] = LIDAR_START_BYTE;
@@ -80,29 +84,31 @@ void Lidar::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SI
 void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
 {
     int i;
+
+    // Size of data in message (i.e. not address, command, or checksum)
     int data_size;
+
+    // Loop start position
     int start;
 
+    // Received checksum
     char checksum;
+
+    // Calculated checksum
     unsigned int calculated_checksum;
 
-    Serial.println("CONSTRUCTING RESPONSE - Assigning address and command...");
+    // Assign address and command form raw message
     msg->address = raw_message[0];
     msg->command = raw_message[1];
-
-    Serial.println("CONSTRUCTING RESPONSE - Assigning data...");
+    
     // Size of received message => address, command, data[MAX 12], checksum
-
-    // Message size => address, command, checksum
     data_size = msg_len - 3;
 
     // Start is 2 instead of 0 due to address, command
     start = 2;
 
-    
-    Serial.printf("Address: %X/%c\n",raw_message[0],raw_message[0]);
-    Serial.printf("Command: %X/%c\n",raw_message[1],raw_message[1]);
-    Serial.print("Received data: ");
+
+    // Loop to populate the data array
     for (i=start;i<start+LIDAR_RECEIVE_DATA_MAX_SIZE;++i)
     {
         Serial.printf("%X/%c ",raw_message[i],raw_message[i]);
@@ -114,28 +120,26 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
             msg->data[i-start] = 0;
         }
     }
-    Serial.println("");
     
-
-    Serial.println("CONSTRUCTING RESPONSE - Assigning checksum...");
+    // Populate checksum from raw_message
     checksum = raw_message[start+data_size];
 
+    // Calculate checksum
     calculated_checksum = 0x00;
     calculated_checksum += (unsigned int)msg->address;
     calculated_checksum += (unsigned int)msg->command;
     
-    Serial.println("CONSTRUCTING RESPONSE - Comparing checksum...");
     for (i=0;i<data_size;++i)
     {
         calculated_checksum += (unsigned int)msg->data[i];
     }
-    Serial.println("CONSTRUCTING RESPONSE - AND checksum with 0x7F");
     calculated_checksum = calculated_checksum & (unsigned int)0x7F;
 
-    Serial.println("CONSTRUCTING RESPONSE - Comparing checksums");
+    // validate checksum
     if ((unsigned int)calculated_checksum != (unsigned int)checksum)
     {
         Serial.printf("Checksum Invaid! %X != %X\n",calculated_checksum,(unsigned int)checksum);
+        throw ("Checksum invalid!");
     }
 }
 
@@ -152,23 +156,6 @@ void Lidar::init()
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
     lidar_received_msg received_msg;
 
-
-    // Serial.println("LIDAR - Laser Off");
-    // generate_command(LIDAR_LASER_OFF,generated_command);
-    // Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
-    // read_msg_from_uart(buffer);
-    // Serial.println(buffer);
-    // erase_buffer();
-
-    // delay(1000);
-
-    // Serial.println("LIDAR - Laser On");
-    // generate_command(LIDAR_LASER_ON,generated_command);
-    // Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
-    // read_msg_from_uart(buffer);
-    // Serial.println(buffer);
-    // erase_buffer();
-
     Serial.println("LIDAR - get software version");
     generate_command(LIDAR_READ_SOFTWARE_VERSION,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
@@ -176,27 +163,12 @@ void Lidar::init()
     Serial.println(buffer);
     erase_buffer();
 
-    Serial.println("LIDAR - disable beeper");
-    generate_command(LIDAR_DISABLE_BEEPER,generated_command);
+    Serial.println("LIDAR - enable beeper");
+    generate_command(LIDAR_ENABLE_BEEPER,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
     read_msg_from_uart(buffer);
     erase_buffer();
     Serial.println("FINISHED LIDAR INIT");
-
-    // Serial.println("LIDAR - set slave address");
-    // generate_command(LIDAR_SET_SLAVE_ADDR,generated_command);
-    // Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
-    // read_msg_from_uart(buffer);
-    // Serial.println(buffer);
-    // erase_buffer();
-
-    // Serial.println("LIDAR - get slave address");
-    // generate_command(LIDAR_READ_SLAVE_ADDR,generated_command);
-    // Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
-    // read_msg_from_uart(buffer);
-    // Serial.println(buffer);
-    // erase_buffer();
-
 
 };
 
@@ -224,64 +196,64 @@ void Lidar::read_msg_from_uart(char* buffer)
     char b[10];
     int count = 0;
 
+    // Read buffer until either 20 characters have been read with no avail or start byte found
     while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
     {
         Serial1.read(&single_char_buffer,1);
-        if (count > 100)
+        if (count > 20)
         {
             throw ("No message received!");
         }
-        //Serial.printf("Received byte: %c, %X\n", single_char_buffer, single_char_buffer);
+        count++;
     }
-    //Serial1.readBytes(&single_char_buffer,1);
+    // Erase buffer
     erase_buffer();
+    // Reset single_char_buffer to prevent erroneous message success
     single_char_buffer = 0;
+
     // Reads bytes until terminator into buffer (not including terminator)
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
 }
 
 double Lidar::to_distance(char* data)
 {
-    Serial.print("Remaining heap: ");
-    Serial.println(xPortGetFreeHeapSize());
-    Serial.print("Heap integrity: ");
-    Serial.println(heap_caps_check_integrity_all(true));
-
     double d;
-    Serial.print("Allocated double");
     sscanf(data, "%lf", &d);
-    Serial.printf("\nThe double value of data is %f \n", data);
-    Serial.printf("\nThe integer value of x is %f \n", d);
     d = d/1000.0;
-    Serial.printf("\nThe double value of distance is %f \n", d);
     return d;
 }
+
 double Lidar::get_measurement()
 {
+    // Flush UART buffer
     Serial1.flush();
 
+    // Distance returned by lidar
     double distance = 0.0;
-    Serial.println("LIDAR - Initialising variables");
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
+
     lidar_received_msg received_msg;
     enable();
 
-    Serial.println("LIDAR - Turning laser on");
+    // Generate lidar LASER ON command and send
     generate_command(LIDAR_LASER_ON,generated_command);
-    Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
+    Serial1.write(generated_command);
+    // Try to read message from uart into buffer
     read_msg_from_uart(buffer);
+
+    // Erase buffer
     erase_buffer();
 
-    
-    Serial.println("LIDAR - Requesting single measurement");
+    // Generate lidar single measurement command and send
     generate_command(LIDAR_SINGLE_MEAS,generated_command);
     Serial1.write(generated_command);
+
+    // Try to read message from uart into buffer
     read_msg_from_uart(buffer);
 
+    // Read lidar distance measuremtn
     try {
-        Serial.println("LIDAR - Constructing response...");
         receive_response(buffer,&received_msg);
-        Serial.print("LIDAR SINGLE MEASURE: ");
         Serial.println(received_msg.data);
         distance = to_distance(received_msg.data);
     }
@@ -291,18 +263,18 @@ double Lidar::get_measurement()
         return 0;
     }
 
+    // Erase received message buffer
     erase_buffer();
 
-    Serial.println("LIDAR - Turning laser off");
+    // Generate lidar off command and send
     generate_command(LIDAR_LASER_OFF,generated_command);
     Serial1.write(generated_command);
-    read_msg_from_uart(buffer);
-    
-    Serial.println("LIDAR - Flushing");
 
+    // Flush uart     
     Serial1.flush();
+
+    // Disable laser
     disable();
 
-    Serial.printf("LIDAR - Returning %f\n", distance);
     return distance;
 }

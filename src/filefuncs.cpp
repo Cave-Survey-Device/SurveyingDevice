@@ -11,11 +11,13 @@ void write_to_file(const char* fname, const char* name, const double data){
   preferences.putDouble(name,data);
   preferences.end();
 }
+
 void write_to_file(const char* fname, const char* name, const int data){
   preferences.begin(fname, false);
   preferences.putInt(name,data);
   preferences.end();
 }
+
 void write_to_file(const char* fname, const char* name, const String data){
   preferences.begin(fname, false);
   preferences.putString(name,data);
@@ -29,6 +31,19 @@ void write_to_file(const char* fname,  const char* name, const node* n){
   preferences.end();
 }
 
+void read_from_file(const char* fname, const char* name, node* n)
+{
+  // Open file
+  preferences.begin(fname, true);
+
+  // Read data into node pointer location
+  preferences.getBytes(name,n,sizeof(struct node));
+
+  Serial.printf("Read line: %s\n ID: %d\n Previous ID: %d\n Prev vec: %f %f %f\n",name,n->id,n->previous,n->vector_to_prev(0),n->vector_to_prev(1),n->vector_to_prev(2));
+  
+  // Close file
+  preferences.end();
+}
 
 void erase_storage(){
   nvs_flash_erase();

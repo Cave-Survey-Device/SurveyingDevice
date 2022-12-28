@@ -14,6 +14,7 @@ struct node
     Vector3d vector_to_prev;
 };
 
+// Generate vector from current node back to base
 Vector3d generate_vector(double distance, double heading, double inclination);
 
 #endif

@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
+// Const vars for lidar
+
 const static int LIDAR_READ_SOFTWARE_VERSION = 0x01;
 const static int LIDAR_READ_DEVICE_TYPE = 0x02;
 const static int LIDAR_READ_SLAVE_ADDR = 0x04;
@@ -15,6 +17,7 @@ const static int LIDAR_SINGLE_MEAS = 0x44;
 const static int LIDAR_CONT_MEAS = 0x45;
 const static int LIDAR_STOP_CONT_MEAS = 0x46;
 const static int LIDAR_DISABLE_BEEPER = 0x47;
+const static int LIDAR_ENABLE_BEEPER = 0xF0;
 const static int LIDAR_SEND_COMMAND_SIZE = 6;
 const static int LIDAR_RECEIVE_DATA_MAX_SIZE = 12;
 const static char LIDAR_START_BYTE = 0xAA;
@@ -23,28 +26,54 @@ const static int LIDAR_BUFFER_SIZE = 100;
 const static int LIDAR_MEAS_LEN = 6;
 // using namespace uart_types;
 
+// LIDAR message struct
 struct lidar_received_msg {
     char address;
     char command;
     char data[LIDAR_RECEIVE_DATA_MAX_SIZE];
 };
 
+// Class to deal with all things lidar
 class Lidar {
     public:
+        // Default constructor
         Lidar();
+
+        // Initialise lidar
         void init();
+
+        // Generate lidar command 
         void generate_command(int type, char command_arr[LIDAR_SEND_COMMAND_SIZE]);
+
+        // Pack received lidar message into lidar msg struct
         void receive_response(char raw_data[], lidar_received_msg* receivec_msg);
+
+        // Get lidar mesaurement
         double get_measurement();
 
     private:
+        // Enable lidar via GPIO pin
         void enable();
+
+        // Disable lidar via gpio pin
         void disable();
+
+        // Holds a single character - used for reading single char from UART buffer until start bit received
         char single_char_buffer;
+
+        // Larger char buffer to hold message received on UART buffer
         char buffer[LIDAR_BUFFER_SIZE];
+
+        // Length of message received from uart buffer
         int msg_len;
+
+        // Erase message buffer (variable not actual UART buffer)
         void erase_buffer();
+
+        // Reads a message from the UART into buffer
         void read_msg_from_uart(char* buffer);
+
+        // Converts a string containing the distance to a double
         double to_distance(char* data);
 };
 

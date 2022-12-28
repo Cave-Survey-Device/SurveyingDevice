@@ -20,5 +20,13 @@ Vector3d generate_vector(double distance, double heading, double inclination)
 
     vector = inclination_transformation*heading_transformation*vector;
 
-    return vector;
+    return -vector;
+}
+
+void check_heap()
+{
+    Serial.print("Remaining heap: ");
+    Serial.println(xPortGetFreeHeapSize());
+    Serial.print("Heap integrity: ");
+    Serial.println(heap_caps_check_integrity_all(true));
 }

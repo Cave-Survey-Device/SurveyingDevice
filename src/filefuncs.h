@@ -13,11 +13,12 @@
 
 
 static Preferences preferences;
-
 void write_to_file(const char* fname, const char* name, const float data);
 void write_to_file(const char* fname, const char* name, const int data);
 void write_to_file(const char* fname, const char* name, const String data);
 void write_to_file(const char* fname, const char* name, const node* n);
 void erase_storage();
+
+void read_from_file(const char* fname, const char* name, node* n);
 
 #endif

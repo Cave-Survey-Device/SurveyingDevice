@@ -239,7 +239,11 @@ double Lidar::to_distance(char* data)
 {
     Serial.print("Remaining heap: ");
     Serial.println(xPortGetFreeHeapSize());
+    Serial.print("Heap integrity: ");
+    Serial.println(heap_caps_check_integrity_all(true));
+
     double d;
+    Serial.print("Allocated double");
     sscanf(data, "%lf", &d);
     Serial.printf("\nThe double value of data is %f \n", data);
     Serial.printf("\nThe integer value of x is %f \n", d);

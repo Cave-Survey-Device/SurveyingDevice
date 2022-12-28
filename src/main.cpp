@@ -95,18 +95,35 @@ void save_splay(double distance,bool base=false)
 {
   node n;
   char str_id[4];
+  double heading;
+  double inclination;
 
   magnetometer.update();
-  magnetometer.get_heading();
+  heading = magnetometer.get_heading();
   
   accelerometer.update();
-  accelerometer.get_gravity_unit_vec();
+  inclination = accelerometer.get_inclination();
 
   n.id = new_node_id;
   n.previous = current_base_id;
-  n.vector_to_prev = generate_vector(distance, magnetometer.get_heading(), accelerometer.get_inclination());
+  n.vector_to_prev = generate_vector(distance, heading, inclination);
   sprintf(str_id,"%d",n.id);
-  write_to_file((const char*)&current_file_name,(const char*)&str_id,(const node*)&n);
+  write_to_file(current_file_name,str_id,(const node*)&n);
+  new_node_id += 1;
+
+  int i;
+  node *n1 = (struct node*)malloc(sizeof(node));
+  Serial.println("Getting file data");
+  preferences.begin(current_file_name, true);
+  for (i=1;i<=n.id;i++)
+  {
+    Serial.printf("Getting file data for name %d\n",i);
+    sprintf(str_id,"%d",i);
+    preferences.getBytes(str_id,n1,sizeof(n1));
+    Serial.println("Succesfully read line!");
+    Serial.printf("Read line: %s\n ID: %d\n Previous ID: %d\n Prev vec: %f %f %f\n",n1->id,n1->previous,n1->vector_to_prev(0),n1->vector_to_prev(1),n1->vector_to_prev(2));
+  }
+  preferences.end();
 
 }
 
@@ -116,14 +133,24 @@ void interrupt_loop()
   switch (current_state){
     case IDLE:
       next_state = SPLAY;
-      distance1 = lidar.get_measurement();
+      try
+      {
+        distance1 = lidar.get_measurement();
+      }
+      catch(const std::exception& e)
+      {
+        Serial.println(e.what());
+        next_state = IDLE;
+      }
+      
+      
       // Serial.println("BEGINNING TIMER");
       // timerRestart(My_timer);
       // timerAlarmWrite(My_timer, 3000000, true);
       // timerAlarmEnable(My_timer);
     
     case WAITING:
-    timerAlarmDisable(My_timer);
+    //timerAlarmDisable(My_timer);
       if (timedout = false)
       {
         next_state = BASE;
@@ -133,12 +160,21 @@ void interrupt_loop()
 
     case SPLAY:
       next_state = IDLE;
+      Serial.println("Saving splay");
       save_splay(distance1);
       
 
     case BASE:
       next_state = IDLE;
-      distance2 = lidar.get_measurement();
+      try
+      {
+        distance2 = lidar.get_measurement();
+      }
+      catch(const std::exception& e)
+      {
+        Serial.println(e.what());
+        break;
+      }
 
       if (fabs(distance1 - distance2) / (distance1 + distance2) > 1e-3)
       {

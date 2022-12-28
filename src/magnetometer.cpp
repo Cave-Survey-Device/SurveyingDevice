@@ -111,6 +111,7 @@ void Magnetometer::update()
 
 double Magnetometer::get_heading()
 {
+  Serial.println("MAGNETOMETER - getting heading...");
   // Find rotation about z-axis
   Matrix3d I;
   Vector3d x_axis;
@@ -133,6 +134,6 @@ double Magnetometer::get_heading()
 
   
   rotation_mat = I + vx + vx*vx * (1/(1+c));
-	return atan2(rotation_mat(2,1), rotation_mat(1,1));
+	return atan2(rotation_mat(1,0), rotation_mat(0,0));
 
 }

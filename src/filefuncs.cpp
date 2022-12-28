@@ -24,6 +24,7 @@ void write_to_file(const char* fname, const char* name, const String data){
 
 void write_to_file(const char* fname,  const char* name, const node* n){
   preferences.begin(fname, false);
+  Serial.printf("Saving at name: %s\n", name);
   preferences.putBytes(name,n,sizeof(node));
   preferences.end();
 }

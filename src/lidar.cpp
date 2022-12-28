@@ -222,11 +222,16 @@ void Lidar::erase_buffer()
 void Lidar::read_msg_from_uart(char* buffer)
 {
     char b[10];
-    
+    int count = 0;
+
     while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
     {
         Serial1.read(&single_char_buffer,1);
-        Serial.printf("Received byte: %c, %X\n", single_char_buffer, single_char_buffer);
+        if (count > 100)
+        {
+            throw ("No message received!");
+        }
+        //Serial.printf("Received byte: %c, %X\n", single_char_buffer, single_char_buffer);
     }
     //Serial1.readBytes(&single_char_buffer,1);
     erase_buffer();
@@ -298,6 +303,6 @@ double Lidar::get_measurement()
     Serial1.flush();
     disable();
 
-    Serial.printf("LIDAR - Returning %f", distance);
+    Serial.printf("LIDAR - Returning %f\n", distance);
     return distance;
 }

@@ -22,6 +22,7 @@ Vector3d Accelerometer::get_gravity_unit_vec()
 
 double Accelerometer::get_inclination()
 {
+    Serial.println("ACCELEROMETER - getting inclination...");
     // Find rotation about y-axis
     Matrix3d I;
     Vector3d y_axis;
@@ -35,8 +36,8 @@ double Accelerometer::get_inclination()
     c = corrected_gravity_data.dot(y_axis);
 
     vx <<              0, -cross_prod[2],  cross_prod[1],
-            cross_prod[2],              0, -cross_prod[0],
-        -cross_prod[1],  cross_prod[0],              0;
+           cross_prod[2],              0, -cross_prod[0],
+          -cross_prod[1],  cross_prod[0],              0;
 
     I << 1,0,0,
         0,1,0,
@@ -44,6 +45,6 @@ double Accelerometer::get_inclination()
 
 
     rotation_mat = I + vx + vx*vx * (1/(1+c));
-	return atan2(-rotation_mat(3,1), sqrt(rotation_mat(3,2)*rotation_mat(3,2) + rotation_mat(3,3)*rotation_mat(3,3)));
+	return atan2(-rotation_mat(2,0), sqrt(rotation_mat(2,1)*rotation_mat(2,1) + rotation_mat(2,2)*rotation_mat(2,2)));
 
 }

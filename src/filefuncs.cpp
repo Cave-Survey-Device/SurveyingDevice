@@ -22,7 +22,7 @@ void write_to_file(const char* fname, const char* name, const String data){
   preferences.end();
 }
 
-void write_to_file(const char* fname, const char* name, const node *n){
+void write_to_file(const char* fname,  const char* name, const node* n){
   preferences.begin(fname, false);
   preferences.putBytes(name,n,sizeof(node));
   preferences.end();

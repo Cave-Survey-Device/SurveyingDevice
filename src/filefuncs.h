@@ -9,16 +9,10 @@
 #include <ArduinoEigenSparse.h>
 
 #include "config.h"
+#include "unified.h"
+
 
 static Preferences preferences;
-
-struct node
-{
-    unsigned int id;
-    unsigned int previous;
-    Vector3d vector_to_prev;
-
-};
 
 void write_to_file(const char* fname, const char* name, const float data);
 void write_to_file(const char* fname, const char* name, const int data);

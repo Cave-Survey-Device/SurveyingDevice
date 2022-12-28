@@ -179,7 +179,9 @@ void Lidar::init()
     Serial.println("LIDAR - disable beeper");
     generate_command(LIDAR_DISABLE_BEEPER,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
+    read_msg_from_uart(buffer);
     erase_buffer();
+    Serial.println("FINISHED LIDAR INIT");
 
     // Serial.println("LIDAR - set slave address");
     // generate_command(LIDAR_SET_SLAVE_ADDR,generated_command);
@@ -235,17 +237,20 @@ void Lidar::read_msg_from_uart(char* buffer)
 
 double Lidar::to_distance(char* data)
 {
-    int i;
-    double distance = 0;
-    for (i=0; i<LIDAR_MEAS_LEN;i++)
-    {
-        distance += pow(10.0,-3-i) * (double)(int)data[i];
-    }
-    return distance;
+    Serial.print("Remaining heap: ");
+    Serial.println(xPortGetFreeHeapSize());
+    double d;
+    sscanf(data, "%lf", &d);
+    Serial.printf("\nThe double value of data is %f \n", data);
+    Serial.printf("\nThe integer value of x is %f \n", d);
+    d = d/1000.0;
+    Serial.printf("\nThe double value of distance is %f \n", d);
+    return d;
 }
-
 double Lidar::get_measurement()
 {
+    Serial1.flush();
+
     double distance = 0.0;
     Serial.println("LIDAR - Initialising variables");
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
@@ -269,7 +274,6 @@ double Lidar::get_measurement()
         receive_response(buffer,&received_msg);
         Serial.print("LIDAR SINGLE MEASURE: ");
         Serial.println(received_msg.data);
-        erase_buffer();
         distance = to_distance(received_msg.data);
     }
     catch(char* e ) {
@@ -278,12 +282,18 @@ double Lidar::get_measurement()
         return 0;
     }
 
+    erase_buffer();
+
     Serial.println("LIDAR - Turning laser off");
     generate_command(LIDAR_LASER_OFF,generated_command);
     Serial1.write(generated_command);
     read_msg_from_uart(buffer);
-    erase_buffer();
+    
+    Serial.println("LIDAR - Flushing");
 
+    Serial1.flush();
     disable();
+
+    Serial.printf("LIDAR - Returning %f", distance);
     return distance;
 }

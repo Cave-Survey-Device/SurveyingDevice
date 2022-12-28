@@ -18,6 +18,7 @@
 #include "OLED.h"
 #include "config.h"
 #include "lidar.h"
+#include "unified.h"
 
 // Defining global variables
 static Adafruit_SSD1306 display;
@@ -34,6 +35,9 @@ static Lidar lidar;
 
 static unsigned int current_base_id = 0;
 static unsigned int new_node_id = 1;
+
+static char current_file_name[] = "test.survey";
+
 
 void test_lasercalibration(){
   char buffer[150];
@@ -76,7 +80,90 @@ void init_bno(){
   delay(1);
 }
 
+enum shot_status {IDLE, WAITING, SPLAY, BASE};
+static shot_status current_state = IDLE;
+static shot_status next_state = IDLE;
+static double distance = 0;
+static double distance1 = 0;
+static double distance2 = 0;
+static bool interrupted = false;
+static hw_timer_t *My_timer = NULL;
+bool timedout = false;
+
+
+void save_splay(double distance,bool base=false)
+{
+  node n;
+  char str_id[4];
+
+  magnetometer.update();
+  magnetometer.get_heading();
+  
+  accelerometer.update();
+  accelerometer.get_gravity_unit_vec();
+
+  n.id = new_node_id;
+  n.previous = current_base_id;
+  n.vector_to_prev = generate_vector(distance, magnetometer.get_heading(), accelerometer.get_inclination());
+  sprintf(str_id,"%d",n.id);
+  write_to_file((const char*)&current_file_name,(const char*)&str_id,(const node*)&n);
+
+}
+
+void interrupt_loop()
+{
+  current_state = next_state;
+  switch (current_state){
+    case IDLE:
+      next_state = SPLAY;
+      distance1 = lidar.get_measurement();
+      Serial.println("BEGINNING TIMER");
+      timerRestart(My_timer);
+      timerAlarmWrite(My_timer, 3000000, true);
+      timerAlarmEnable(My_timer);
+    
+    case WAITING:
+    timerAlarmDisable(My_timer);
+      if (timedout = false)
+      {
+        next_state = BASE;
+      } else {
+        next_state = SPLAY;
+      }
+
+    case SPLAY:
+      next_state = IDLE;
+      save_splay(distance1);
+      
+
+    case BASE:
+      next_state = IDLE;
+      distance2 = lidar.get_measurement();
+
+      if (fabs(distance1 - distance2) / (distance1 + distance2) > 1e-3)
+      {
+        display.clearDisplay();
+        display.setCursor(0,0);
+        display.write("Error in distance greater than 1%, please retry!");
+      }
+      else {
+        distance = 0.5*(distance1 + distance2);
+        save_splay(distance,true);
+      }
+
+  }
+}
+
+void IRAM_ATTR ISR_GET_SHOT()
+{
+  interrupted = true;
+}
+
 void setup(){
+  Serial.begin(9600);
+  Serial1.begin(9600);
+  pinMode(A0, INPUT);
+  attachInterrupt(A0, ISR_GET_SHOT, RISING);
   display = init_OLED(0x3C);
   init_bno();
   display.setTextSize(1);
@@ -85,114 +172,27 @@ void setup(){
   pinMode(GPIO_NUM_14, OUTPUT);
   digitalWrite(GPIO_NUM_14,LOW);
   lidar.init();
+
+  My_timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(My_timer, ISR_GET_SHOT, true);
+  timerAlarmWrite(My_timer, 3000000, true);
+  
+
+
+  Serial.println("BEGINNING LOOP");
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.write("MAINLOOP");
+  display.display();
 }
 
 void loop(){
-  Serial.println("");
-  Serial.println("------------------------------");
-  Serial.println("");
-  char buffer[100];
-
-  // get_bno();
-  display.clearDisplay();
-
-  // Magnetometer update code
-  Serial.println("Updating magnetometer");
-  magnetometer.update();
-  magnetometer.add_calibration_data();
-  Vector3d mag_data = magnetometer.get_heading();
-
-  // Accelerometer update code
-
-  //Lidar do stuff
-  Serial.println("Updating LIDAR");
-  lidar.get_measurement();
-
-  // Outputting BNO information
-  Serial.println("Printing BNO data...");
-  Serial.print("Progress: ");
-  Serial.println(magnetometer.check_calibration_progress());
-
-
-  Serial.print("X: ");
-  Serial.println(float(mag_data(0)));
-
-  Serial.print("Y: ");
-  Serial.println(float(mag_data(1)));
-
-  Serial.print("Z: ");
-  Serial.println(float(mag_data(2)));
-  Serial.println("");
-
-
-
-  display.print("Progress: ");
-  display.println(magnetometer.check_calibration_progress());
-
-
-  display.print("X: ");
-  display.println(float(mag_data(0)));
-
-  display.print("Y: ");
-  display.println(float(mag_data(1)));
-
-  display.print("Z: ");
-  display.println(float(mag_data(2)));
-  display.println("");
-
-  
-  display.setCursor(0,0);
-  display.print(buffer);
-  display.display();
-
-  delay(1000);
-}
-
-
-void get_splay()
-{
-  double distance = 0;
-  double distance1 = 0;
-  double distance2 = 0;
-  node n;
-
-  magnetometer.update();
-  magnetometer.get_heading();
-  
-  accelerometer.update();
-  accelerometer.get_gravity_unit_vec();
-
-  distance1 = lidar.get_measurement();
-  distance2 = lidar.get_measurement();
-
-  if (fabs(distance1 - distance2) / (distance1 + distance2) > 1e-3)
+  if (interrupted)
   {
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.write("Error in distance greater than 1%, please retry!");
+    Serial.println("mainloop interrupt!");
+    display.display();
+    interrupt_loop();
+    Serial.println("returning to mainloop!");
+    interrupted = false;
   }
-  else {
-    distance = 0.5*(distance1 + distance2);
-    n.id = new_node_id;
-    n.previous = current_base_id;
-    n.vector_to_prev = generate_vector(distance, magnetometer.get_heading(), accelerometer.get_gravity_unit_vec());
-    write_to_file()
-  }
-
 }
-
-void get_base()
-{
-
-}
-
-
-
-void ISR_GET_SHOT()
-{
-  update_magnetometer();
-  update_gravity();
-  get_lidar();
-
-}
-

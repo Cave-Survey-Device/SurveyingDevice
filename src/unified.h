@@ -7,6 +7,13 @@
 
 using namespace Eigen;
 
+struct node
+{
+    unsigned int id;
+    unsigned int previous;
+    Vector3d vector_to_prev;
+};
+
 Vector3d generate_vector(double distance, double heading, double inclination);
 
 #endif

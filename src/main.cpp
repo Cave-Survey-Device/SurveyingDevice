@@ -87,7 +87,7 @@ static double distance = 0;
 static double distance1 = 0;
 static double distance2 = 0;
 static bool interrupted = false;
-static hw_timer_t *My_timer = NULL;
+// static hw_timer_t *My_timer = NULL;
 bool timedout = false;
 
 
@@ -117,10 +117,10 @@ void interrupt_loop()
     case IDLE:
       next_state = SPLAY;
       distance1 = lidar.get_measurement();
-      Serial.println("BEGINNING TIMER");
-      timerRestart(My_timer);
-      timerAlarmWrite(My_timer, 3000000, true);
-      timerAlarmEnable(My_timer);
+      // Serial.println("BEGINNING TIMER");
+      // timerRestart(My_timer);
+      // timerAlarmWrite(My_timer, 3000000, true);
+      // timerAlarmEnable(My_timer);
     
     case WAITING:
     timerAlarmDisable(My_timer);
@@ -173,9 +173,9 @@ void setup(){
   digitalWrite(GPIO_NUM_14,LOW);
   lidar.init();
 
-  My_timer = timerBegin(0, 80, true);
-  timerAttachInterrupt(My_timer, ISR_GET_SHOT, true);
-  timerAlarmWrite(My_timer, 3000000, true);
+  // My_timer = timerBegin(0, 80, true);
+  // timerAttachInterrupt(My_timer, ISR_GET_SHOT, true);
+  // timerAlarmWrite(My_timer, 3000000, true);
   
 
 

@@ -117,15 +117,20 @@ void save_splay(double distance,bool base=false)
 void interrupt_loop()
 {
   current_state = next_state;
+  debug(DEBUG_MAIN, "Entering interrupt loop");
+
   switch (current_state){
     case IDLE:
+      debug(DEBUG_MAIN, "Currently in IDLE state");
       next_state = SPLAY;
       try
       {
         distance1 = lidar.get_measurement();
+        debug(DEBUG_MAIN, "Succesfully got measurement");
       }
       catch(const std::exception& e)
       {
+        debug(DEBUG_MAIN, "Failed to got measurement");
         Serial.println(e.what());
         next_state = IDLE;
       }
@@ -138,7 +143,8 @@ void interrupt_loop()
       // timerAlarmEnable(My_timer);
     
     case WAITING:
-    //timerAlarmDisable(My_timer);
+      debug(DEBUG_MAIN, "Currently in WAITING state");
+      //timerAlarmDisable(My_timer);
       if (timedout = false)
       {
         next_state = BASE;
@@ -148,19 +154,23 @@ void interrupt_loop()
       break;
 
     case SPLAY:
+      debug(DEBUG_MAIN, "Currently in SPLAY state");
       next_state = IDLE;
       save_splay(distance1);
       new_node_id += 1;
       break;
       
     case BASE:
+      debug(DEBUG_MAIN, "Currently in BASE state");
       next_state = IDLE;
       try
       {
+        debug(DEBUG_MAIN, "Succesfully got measurement");
         distance2 = lidar.get_measurement();
       }
       catch(const std::exception& e)
       {
+        debug(DEBUG_MAIN, "Failed to got measurement");
         Serial.println(e.what());
         break;
       }
@@ -169,9 +179,11 @@ void interrupt_loop()
       {
         display.clearDisplay();
         display.setCursor(0,0);
-        display.write("Error in distance greater than 1%, please retry!");
+        debug(DEBUG_MAIN, "Error in distance greater than 1%, please retry!");
+        //display.write("Error in distance greater than 1%, please retry!");
       }
       else {
+        debug(DEBUG_MAIN, "Saving splay");
         save_splay(0.5*(distance1 + distance2),true);
         new_node_id += 1;
       }
@@ -218,6 +230,7 @@ void setup(){
 void loop(){
   if (interrupted)
   {
+    debug(DEBUG_MAIN, "\nInterrupt!");
     interrupt_loop();
     interrupted = false;
   }

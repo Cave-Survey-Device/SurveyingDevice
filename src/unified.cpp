@@ -30,3 +30,11 @@ void check_heap()
     Serial.print("Heap integrity: ");
     Serial.println(heap_caps_check_integrity_all(true));
 }
+
+void debug(unsigned int mode, const char* str)
+{
+    if (DEBUG_BOOL_ARR[(int)mode])
+    {
+        Serial.printf("%s: %s\n",DEBUG_STR_ARR[(int)mode],str);
+    }
+}

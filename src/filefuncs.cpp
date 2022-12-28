@@ -39,7 +39,7 @@ void read_from_file(const char* fname, const char* name, node* n)
   // Read data into node pointer location
   preferences.getBytes(name,n,sizeof(struct node));
 
-  Serial.printf("Read line: %s\n ID: %d\n Previous ID: %d\n Prev vec: %f %f %f\n",name,n->id,n->previous,n->vector_to_prev(0),n->vector_to_prev(1),n->vector_to_prev(2));
+  debug(DEBUG_FILE,"Read line: %s ID: %d Previous ID: %d Prev vec: %f %f %f",name,n->id,n->previous,n->vector_to_prev(0),n->vector_to_prev(1),n->vector_to_prev(2));
   
   // Close file
   preferences.end();

@@ -112,16 +112,16 @@ void save_splay(double distance,bool base=false)
   new_node_id += 1;
 
   int i;
-  node *n1 = (struct node*)malloc(sizeof(node));
+  struct node* n1 = (struct node*)malloc(sizeof(struct node));
   Serial.println("Getting file data");
   preferences.begin(current_file_name, true);
   for (i=1;i<=n.id;i++)
   {
     Serial.printf("Getting file data for name %d\n",i);
     sprintf(str_id,"%d",i);
-    preferences.getBytes(str_id,n1,sizeof(n1));
+    preferences.getBytes(str_id,n1,sizeof(struct node));
     Serial.println("Succesfully read line!");
-    Serial.printf("Read line: %s\n ID: %d\n Previous ID: %d\n Prev vec: %f %f %f\n",n1->id,n1->previous,n1->vector_to_prev(0),n1->vector_to_prev(1),n1->vector_to_prev(2));
+    Serial.printf("Read line: %s\n ID: %d\n Previous ID: %d\n Prev vec: %f %f %f\n",str_id,n1->id,n1->previous,n1->vector_to_prev(0),n1->vector_to_prev(1),n1->vector_to_prev(2));
   }
   preferences.end();
 
@@ -142,6 +142,7 @@ void interrupt_loop()
         Serial.println(e.what());
         next_state = IDLE;
       }
+      break;
       
       
       // Serial.println("BEGINNING TIMER");
@@ -157,11 +158,13 @@ void interrupt_loop()
       } else {
         next_state = SPLAY;
       }
+      break;
 
     case SPLAY:
       next_state = IDLE;
       Serial.println("Saving splay");
       save_splay(distance1);
+      break;
       
 
     case BASE:
@@ -186,6 +189,7 @@ void interrupt_loop()
         distance = 0.5*(distance1 + distance2);
         save_splay(distance,true);
       }
+      break;
 
   }
 }

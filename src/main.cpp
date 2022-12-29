@@ -81,6 +81,9 @@ static bool interrupted = false;
 // Has the timeout for the second shot for base station been exceeded?
 bool timedout = false;
 
+// Define interrupt timer for second splay to make a base
+hw_timer_t *My_timer = NULL;
+
 void save_splay(double distance,bool base=false)
 {
   // Initialise local variables
@@ -126,6 +129,11 @@ void interrupt_loop()
       try
       {
         distance1 = lidar.get_measurement();
+
+        // Begin base station timer
+        timerWrite(My_timer, 0);
+        timerAlarmEnable(My_timer);
+
         debug(DEBUG_MAIN, "Succesfully got measurement");
       }
       catch(const std::exception& e)
@@ -144,7 +152,8 @@ void interrupt_loop()
     
     case WAITING:
       debug(DEBUG_MAIN, "Currently in WAITING state");
-      //timerAlarmDisable(My_timer);
+      //Turn base station timer off
+      timerAlarmDisable(My_timer);
       if (timedout = false)
       {
         next_state = BASE;
@@ -196,6 +205,7 @@ void IRAM_ATTR ISR_GET_SHOT()
   interrupted = true;
 }
 
+// Runs on power on
 void setup(){
   // Initialise serial and UARTs
   Serial.begin(9600);
@@ -222,11 +232,12 @@ void setup(){
   lidar.init();
 
   // TODO: Initialise timer - currently causing heap corruption!
-  // My_timer = timerBegin(0, 80, true);
-  // timerAttachInterrupt(My_timer, ISR_GET_SHOT, true);
-  // timerAlarmWrite(My_timer, 3000000, true);
+  My_timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(My_timer, &ISR_GET_SHOT, true);
+  timerAlarmWrite(My_timer, 3000000, true);
 }
 
+// Runs aafter setup
 void loop(){
   if (interrupted)
   {

@@ -2,31 +2,45 @@
 
 void write_to_file(const char* fname, const char* name, const float data){
   preferences.begin(fname, false);
+  char str_buf[60];
+  sprintf(str_buf,"Saving at name: %s\n", name);
+  debug(DEBUG_FILE,str_buf);
   preferences.putFloat(name,data);
   preferences.end();
 }
 
 void write_to_file(const char* fname, const char* name, const double data){
   preferences.begin(fname, false);
+  char str_buf[60];
+  sprintf(str_buf,"Saving at name: %s\n", name);
+  debug(DEBUG_FILE,str_buf);
   preferences.putDouble(name,data);
   preferences.end();
 }
 
 void write_to_file(const char* fname, const char* name, const int data){
   preferences.begin(fname, false);
+  char str_buf[60];
+  sprintf(str_buf,"Saving at name: %s\n", name);
+  debug(DEBUG_FILE,str_buf);
   preferences.putInt(name,data);
   preferences.end();
 }
 
 void write_to_file(const char* fname, const char* name, const String data){
   preferences.begin(fname, false);
+  char str_buf[60];
+  sprintf(str_buf,"Saving at name: %s\n", name);
+  debug(DEBUG_FILE,str_buf);
   preferences.putString(name,data);
   preferences.end();
 }
 
 void write_to_file(const char* fname,  const char* name, const node* n){
   preferences.begin(fname, false);
-  Serial.printf("Saving at name: %s\n", name);
+  char str_buf[60];
+  sprintf(str_buf,"Saving at name: %s\n", name);
+  debug(DEBUG_FILE,str_buf);
   preferences.putBytes(name,n,sizeof(node));
   preferences.end();
 }
@@ -38,8 +52,9 @@ void read_from_file(const char* fname, const char* name, node* n)
 
   // Read data into node pointer location
   preferences.getBytes(name,n,sizeof(struct node));
-
-  debug(DEBUG_FILE,"Read line: %s ID: %d Previous ID: %d Prev vec: %f %f %f",name,n->id,n->previous,n->vector_to_prev(0),n->vector_to_prev(1),n->vector_to_prev(2));
+  char str_buf[60];
+  sprintf(str_buf,"Read line: %s ID: %d Previous ID: %d Prev vec: %f %f %f",name,n->id,n->previous,n->vector_to_prev(0),n->vector_to_prev(1),n->vector_to_prev(2));
+  debug(DEBUG_FILE,str_buf);
   
   // Close file
   preferences.end();

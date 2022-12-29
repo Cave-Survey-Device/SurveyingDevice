@@ -111,7 +111,6 @@ void Magnetometer::update()
 
 double Magnetometer::get_heading()
 {
-  Serial.println("MAGNETOMETER - getting heading...");
   // Find rotation about z-axis
   Matrix3d I;
   Vector3d x_axis;

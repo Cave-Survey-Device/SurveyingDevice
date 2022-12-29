@@ -22,7 +22,6 @@ Vector3d Accelerometer::get_gravity_unit_vec()
 
 double Accelerometer::get_inclination()
 {
-    Serial.println("ACCELEROMETER - getting inclination...");
     // Find rotation about y-axis
     Matrix3d I;
     Vector3d y_axis;

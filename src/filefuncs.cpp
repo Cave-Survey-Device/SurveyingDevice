@@ -48,16 +48,22 @@ void write_to_file(const char* fname,  const char* name, const node* n){
 void read_from_file(const char* fname, const char* name, node* n)
 {
   // Open file
+  debug(DEBUG_FILE,"Opening file");
   preferences.begin(fname, true);
 
   // Read data into node pointer location
-  preferences.getBytes(name,n,sizeof(struct node));
+  debug(DEBUG_FILE,"Reading bytes");
+  preferences.getBytes(name,&n,sizeof(struct node));
+
+  debug(DEBUG_FILE,"Constructing message to debug");
   char str_buf[60];
   sprintf(str_buf,"Read line: %s ID: %d Previous ID: %d Prev vec: %f %f %f",name,n->id,n->previous,n->vector_to_prev(0),n->vector_to_prev(1),n->vector_to_prev(2));
   debug(DEBUG_FILE,str_buf);
   
   // Close file
+  debug(DEBUG_FILE,"Closing file");
   preferences.end();
+  debug(DEBUG_FILE,"Closed file");
 }
 
 void erase_storage(){

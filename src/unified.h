@@ -12,6 +12,7 @@ struct node
 {
     unsigned int id;
     unsigned int previous;
+    bool base;
     Vector3d vector_to_prev;
 };
 

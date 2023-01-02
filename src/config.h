@@ -6,8 +6,8 @@ const static float DISTO_LEN = 0.1;
 const static bool DEBUG_FILE_ENA = false;
 const static bool DEBUG_LIDAR_ENA = false;
 const static bool DEBUG_OLED_ENA = false;
-const static bool DEBUG_MAG_ENA = false;
-const static bool DEBUG_ACCEL_ENA = false;
+const static bool DEBUG_MAG_ENA = true;
+const static bool DEBUG_ACCEL_ENA = true;
 const static bool DEBUG_MAIN_ENA = true;
 
 const static unsigned int DEBUG_FILE = 0;

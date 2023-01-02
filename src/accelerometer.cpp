@@ -44,6 +44,8 @@ double Accelerometer::get_inclination()
 
 
     rotation_mat = I + vx + vx*vx * (1/(1+c));
+    char str[30];
+    sprintf(str,"Got inclination: %f", RAD_TO_DEG * atan2(-rotation_mat(2,0), sqrt(rotation_mat(2,1)*rotation_mat(2,1) + rotation_mat(2,2)*rotation_mat(2,2))));
+    debug(DEBUG_ACCEL,str);
 	return atan2(-rotation_mat(2,0), sqrt(rotation_mat(2,1)*rotation_mat(2,1) + rotation_mat(2,2)*rotation_mat(2,2)));
-
 }

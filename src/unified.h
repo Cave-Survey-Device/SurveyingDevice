@@ -12,8 +12,8 @@ struct node
 {
     unsigned int id;
     unsigned int previous;
-    bool base;
-    Vector3d vector_to_prev;
+    double inclination;
+    double heading;
 };
 
 // Generate vector from current node back to base

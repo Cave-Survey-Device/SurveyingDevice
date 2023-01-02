@@ -70,35 +70,16 @@ static shot_status current_state = IDLE;
 static shot_status next_state = IDLE;
 
 // First distance measurement from lidar
-static double distance1 = 0;
-
-// Seconds distance measurement from lidar (only used for base station creation)
-static double distance2 = 0;
-
-// Define interrupt timer for second splay to make a base
-static hw_timer_t *base_timer = NULL;
+static double distance = 0;
 
 // Has the shot interrupt triggered?
 static bool shot_interrupt = false;
-// Has the timeout for the second shot for base station been exceeded?
-static bool base_timeout_interrupt = false;
+
 
 void IRAM_ATTR ISR_GET_SHOT()
 {
-  if (current_state == IDLE or current_state == WAITING)
-  {
-    shot_interrupt = true;
-  }
+  shot_interrupt = true;
 }
-
-void IRAM_ATTR ISR_BASE_TIMEOUT()
-{
-  if (current_state == IDLE or current_state == WAITING)
-  {
-    base_timeout_interrupt = true;
-  }
-}
-
 
 void save_splay(double distance,bool base=false)
 {
@@ -110,7 +91,7 @@ void save_splay(double distance,bool base=false)
   char str_id[4];
   // Heading of the disto (radians)
   double heading;
-  // Inclination of the diston (radians)
+  // Inclination of the disto (radians)
   double inclination;
 
   debug(DEBUG_MAIN, "Updating sensors");
@@ -126,8 +107,8 @@ void save_splay(double distance,bool base=false)
   debug(DEBUG_MAIN, "Assigning values to node object");
   n->id = new_node_id;
   n->previous = current_base_id;
-  n->base = base;
-  n->vector_to_prev = generate_vector(distance, heading, inclination);
+  n->heading = heading;
+  n->inclination = inclination;
 
   // Populate str_id with string version of int id
   debug(DEBUG_MAIN, "Writing to file");
@@ -151,16 +132,11 @@ void interrupt_loop()
       if (shot_interrupt)
       {
         shot_interrupt = false;
-        next_state = WAITING;
+        next_state = SPLAY;
+        debug(DEBUG_MAIN, "Received shot interrupt");
         try
         {
-          distance1 = lidar.get_measurement();
-
-          // Begin base station timer
-          timerRestart(base_timer);
-          timerStart(base_timer);
-          timerAlarmEnable(base_timer);
-
+          distance = lidar.get_measurement();
           debug(DEBUG_MAIN, "Succesfully got measurement");
         }
         catch(const char* e)
@@ -172,64 +148,14 @@ void interrupt_loop()
       }
       break;
 
-      
-    case WAITING:
-      if (shot_interrupt)
-      {
-        timerAlarmDisable(base_timer);
-        timerStop(base_timer);
-        next_state = BASE;
-        shot_interrupt = false;
-        base_timeout_interrupt = false;
-      } else if (base_timeout_interrupt) {
-        timerAlarmDisable(base_timer);
-        timerStop(base_timer);
-        next_state = SPLAY;
-        shot_interrupt = false;
-        base_timeout_interrupt = false;
-      }
-      break;
 
     case SPLAY:
-      debug(DEBUG_MAIN, "Entering in SPLAY state");
       next_state = IDLE;
-      save_splay(distance1);
+      save_splay(distance);
       new_node_id += 1;
-      debug(DEBUG_MAIN, "Exiting SPLAY state");
-      break;
-      
-    case BASE:
-      debug(DEBUG_MAIN, "Entering in BASE state");
-      next_state = IDLE;
-      try
-      {
-        distance2 = lidar.get_measurement();
-        debug(DEBUG_MAIN, "Succesfully got measurement");
-      }
-      catch(const char* e)
-      {
-        debug(DEBUG_MAIN, "Failed to got measurement");
-        Serial.println(e);
-        debug(DEBUG_MAIN, "Exiting BASE state");
-        break;
-      }
-
-      if (fabs(distance1 - distance2) / (distance1 + distance2) > 1e-2)
-      {
-        debug(DEBUG_MAIN, "Error in distance greater than 1%, please retry!");
-        //display.write("Error in distance greater than 1%, please retry!");
-      }
-      else {
-        debug(DEBUG_MAIN, "Saving base");
-        double d = 0.5*(distance1 + distance2);
-        save_splay(d,true);
-        new_node_id += 1;
-      }
-      debug(DEBUG_MAIN, "Exiting BASE state");
       break;
   }
 }
-
 
 // Runs on power on
 void setup(){
@@ -251,12 +177,6 @@ void setup(){
   display.clearDisplay();
   display.setCursor(0,0);
   display.display();
-
-  // Initialise base timeout interrupt for 5s after first shot
-  base_timer = timerBegin(0, 80, true);
-  timerAttachInterrupt(base_timer, &ISR_BASE_TIMEOUT, true);
-  timerAlarmWrite(base_timer, 10000000, true);
-  timerAlarmDisable(base_timer);
 
   // Initialise data objects and sensors
   debug(DEBUG_MAIN,"Initialising sensor objects");

@@ -1,7 +1,7 @@
 #ifndef HEADER_CONFIG
 #define HEADER_CONFIG
 
-const static bool DEBUG = true;
+const static bool DEBUG = false;
 const static float DISTO_LEN = 0.1;
 const static bool DEBUG_FILE_ENA = false;
 const static bool DEBUG_LIDAR_ENA = false;

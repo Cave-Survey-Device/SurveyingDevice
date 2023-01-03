@@ -106,6 +106,7 @@ void Magnetometer::update()
 {
   bno055_read_mag_xyz(sensor_connection);
   raw_mag_data << sensor_connection->x, sensor_connection->y, sensor_connection->z;
+  //Serial.printf("Data x: %f y: %f z: %f\n",raw_mag_data(0),raw_mag_data(1),raw_mag_data(2));
   corrected_mag_data = raw_mag_data; //correction_transformation * raw_mag_data;
 }
 

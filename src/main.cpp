@@ -27,7 +27,6 @@ static Adafruit_SSD1306 display;
 static struct bno055_t myBNO;
 static struct bno055_gravity myGravityData;
 static struct bno055_mag myMagData;
-
 // Global magnetometer object
 static Magnetometer magnetometer(&myMagData);
 
@@ -192,8 +191,17 @@ void setup(){
   }
 }
 
+
 // Runs aafter setup
 void loop(){
   interrupt_loop();
   delay(5);
+
+  // Magnetometer update code
+  // magnetometer.update();
+  // accelerometer.update();
+  // magnetometer.add_calibration_data();
+  // Serial.println(magnetometer.check_calibration_progress());
+  // delay(50);
+
 }

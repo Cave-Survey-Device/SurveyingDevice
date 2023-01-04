@@ -38,11 +38,12 @@ void write_to_file(const char* fname, const char* name, const String data){
 
 void write_to_file(const char* fname,  const char* name, const node* n){
   preferences.begin(fname, false);
-  char str_buf[60];
-  sprintf(str_buf,"Saving at name: %s ID: %d Heading: %f Inclination %f\n",name,n->id,n->heading,n->inclination);
+  char str_buf[100];
+  snprintf(str_buf,sizeof(str_buf),"Saving at name: %s ID: %d Heading: %f Inclination %f\n",name,n->id,n->heading,n->inclination);
   debug(DEBUG_FILE,str_buf);
   preferences.putBytes(name,n,sizeof(node));
   preferences.end();
+  debug(DEBUG_FILE, "Finished saving, returning...");
 }
 
 void read_from_file(const char* fname, const char* name, node* n)
@@ -53,17 +54,16 @@ void read_from_file(const char* fname, const char* name, node* n)
 
   // Read data into node pointer location
   debug(DEBUG_FILE,"Reading bytes");
-  preferences.getBytes(name,&n,sizeof(struct node));
+  preferences.getBytes(name,n,sizeof(node));
 
   debug(DEBUG_FILE,"Constructing message to debug");
-  char str_buf[60];
-  sprintf(str_buf,"Read line: %s ID: %d Heading: %f Inclination %f",name,n->id,n->heading,n->inclination);
+  char str_buf[100];
+  snprintf(str_buf,sizeof(str_buf),"Read line: %s ID: %d Heading: %f Inclination %f",name,n->id,n->heading,n->inclination);
   debug(DEBUG_FILE,str_buf);
   
   // Close file
-  debug(DEBUG_FILE,"Closing file");
   preferences.end();
-  debug(DEBUG_FILE,"Closed file");
+  debug(DEBUG_FILE,"Finished reading file, returning...");
 }
 
 void erase_storage(){

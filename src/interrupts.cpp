@@ -42,15 +42,15 @@ void IRAM_ATTR ISR_GET_SHOT()
 void init_uart_read_timer()
 {
     uart_read_timer = timerBegin(1, 80, true);
-    timerAttachInterrupt(uart_read_timer, &ISR_UART_TIMEOUT, true);
-    timerAlarmWrite(uart_read_timer, 3000000, true);
+    timerAttachInterrupt(uart_read_timer, &ISR_UART_TIMEOUT, false);
+    timerAlarmWrite(uart_read_timer, 3000000, false);
 }
 
 void init_shot_timer()
 {
     shot_timer = timerBegin(2, 80, true);
-    timerAttachInterrupt(shot_timer, &ISR_GET_SHOT, true);
-    timerAlarmWrite(shot_timer, 1500000, true);
+    timerAttachInterrupt(shot_timer, &ISR_GET_SHOT, false);
+    timerAlarmWrite(shot_timer, 1500000, false);
 }
 
 void start_shot_interrupt_timer()
@@ -62,6 +62,7 @@ void start_shot_interrupt_timer()
 
 void start_uart_read_timer()
 {
+    interrupt_uart_timeout = false;
     timerRestart(uart_read_timer);
     timerAlarmEnable(uart_read_timer);
     timerStart(uart_read_timer);
@@ -69,6 +70,7 @@ void start_uart_read_timer()
 
 void stop_shot_interrupt_timer()
 {
+    interrupt_uart_timeout = false;
     timerStop(uart_read_timer);
     timerAlarmDisable(uart_read_timer);
 }

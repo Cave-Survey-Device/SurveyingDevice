@@ -53,13 +53,21 @@ class BLEHandler
     BLEServer *pServer;
     BLEService *bean_boi_service;
     BLECharacteristic *model_number_characteristic;
+    
+
     BLECharacteristic *azimuth_characteristic;
+    BLEDescriptor *heading_descriptor;
+
     BLECharacteristic *inclination_characteristic;
+    BLEDescriptor *inclination_descriptor;
+
     BLECharacteristic *id_characteristic;
+    BLEDescriptor *id_descriptor;
+
     BLEAdvertising *pAdvertising;
 
 };
 
-BLEData shared_bledata;
+extern BLEData shared_bledata;
 
 #endif

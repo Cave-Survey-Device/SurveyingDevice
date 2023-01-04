@@ -137,6 +137,6 @@ double Magnetometer::get_heading()
   char str[30];
   sprintf(str,"Got heading: %f",RAD_TO_DEG * atan2(rotation_mat(1,0), rotation_mat(0,0)));
   debug(DEBUG_MAG,str);
-	return atan2(rotation_mat(1,0), rotation_mat(0,0));
+	return RAD_TO_DEG * atan2(rotation_mat(1,0), rotation_mat(0,0));
 
 }

@@ -228,12 +228,13 @@ void Lidar::read_msg_from_uart(char* buffer)
     single_char_buffer = 0;
     while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
     {
+        debug(DEBUG_LIDAR_EXTENDED,&single_char_buffer);
         Serial1.read(&single_char_buffer,1);
         if (interrupt_uart_timeout)
         {
             stop_uart_read_timer();
             interrupt_uart_timeout = false;
-            throw ("No message received!");
+            throw ("LIDAR UART READ ERROR: No message received!");
         }
         count++;
     }
@@ -263,9 +264,10 @@ double Lidar::get_measurement()
 
     // Generate lidar single measurement command and send
     debug(DEBUG_LIDAR,"Single measure");
+    generate_command(LIDAR_SINGLE_MEAS,generated_command);
+
     flush_serial1();
     erase_buffer();
-    generate_command(LIDAR_SINGLE_MEAS,generated_command);
     Serial1.write(generated_command);
     read_msg_from_uart(buffer);
 

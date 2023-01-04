@@ -108,7 +108,7 @@ void save_splay(double distance,bool base=false)
   // Populate str_id with string version of int id
   debug(DEBUG_MAIN, "Writing to file");
   sprintf(str_id,"%d",shot_ID);
-  write_to_file(current_file_name,str_id,(const node*)&n);
+  write_to_file(current_file_name,str_id,n);
 
   // read from file and print result as a debug
   // debug(DEBUG_MAIN, "Reading from file");
@@ -230,6 +230,7 @@ void setup(){
   }
 
   blehandler.start();
+  Serial.println("finished init");
 
 }
 

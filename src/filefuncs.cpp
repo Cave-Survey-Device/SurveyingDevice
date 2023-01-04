@@ -39,7 +39,7 @@ void write_to_file(const char* fname, const char* name, const String data){
 void write_to_file(const char* fname,  const char* name, const node* n){
   preferences.begin(fname, false);
   char str_buf[60];
-  sprintf(str_buf,"Saving at name: %s\n", name);
+  sprintf(str_buf,"Saving at name: %s ID: %d Heading: %f Inclination %f\n",name,n->id,n->heading,n->inclination);
   debug(DEBUG_FILE,str_buf);
   preferences.putBytes(name,n,sizeof(node));
   preferences.end();

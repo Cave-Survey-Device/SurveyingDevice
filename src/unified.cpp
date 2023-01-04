@@ -23,6 +23,7 @@ Vector3d generate_vector(double distance, double heading, double inclination)
     return -vector;
 }
 
+
 void check_heap()
 {
     Serial.print("Remaining heap: ");

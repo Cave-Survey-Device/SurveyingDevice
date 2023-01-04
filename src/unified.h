@@ -10,8 +10,7 @@ using namespace Eigen;
 
 struct node
 {
-    unsigned int id;
-    unsigned int previous;
+    int id;
     double inclination;
     double heading;
 };
@@ -20,5 +19,6 @@ struct node
 Vector3d generate_vector(double distance, double heading, double inclination);
 
 void debug(unsigned int mode, const char* str);
+
 
 #endif

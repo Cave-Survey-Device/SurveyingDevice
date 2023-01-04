@@ -57,7 +57,7 @@ void read_from_file(const char* fname, const char* name, node* n)
 
   debug(DEBUG_FILE,"Constructing message to debug");
   char str_buf[60];
-  sprintf(str_buf,"Read line: %s ID: %d Previous ID: %d Heading: %f Inclination %f",name,n->id,n->previous,n->heading,n->inclination);
+  sprintf(str_buf,"Read line: %s ID: %d Heading: %f Inclination %f",name,n->id,n->heading,n->inclination);
   debug(DEBUG_FILE,str_buf);
   
   // Close file

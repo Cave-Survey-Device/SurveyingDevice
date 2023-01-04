@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include "unified.h"
+#include "interrupts.h"
 
 // Const vars for lidar
 
@@ -25,10 +26,10 @@ const static char LIDAR_START_BYTE = 0xAA;
 const static char LIDAR_END_BYTE = 0xA8;
 const static int LIDAR_BUFFER_SIZE = 100;
 const static int LIDAR_MEAS_LEN = 6;
-static bool uart_read_timedout = false;
-static hw_timer_t* uart_read_timer = NULL;
 static int RX_BUFFER_SIZE = 256;
-// using namespace uart_types;
+
+// Current lidar laser status
+extern bool laser_on;
 
 // LIDAR message struct
 struct lidar_received_msg {
@@ -36,8 +37,6 @@ struct lidar_received_msg {
     char command;
     char data[LIDAR_RECEIVE_DATA_MAX_SIZE];
 };
-
-void IRAM_ATTR ISR_UART_TIMEOUT();
 
 // Class to deal with all things lidar
 class Lidar {
@@ -56,6 +55,9 @@ class Lidar {
 
         // Get lidar mesaurement
         double get_measurement();
+
+        // Toggle laser
+        void toggle_laser();
 
     private:
         // Enable lidar via GPIO pin
@@ -84,6 +86,7 @@ class Lidar {
 
         // Flush rx
         void flush_serial1();
+
 };
 
 #endif

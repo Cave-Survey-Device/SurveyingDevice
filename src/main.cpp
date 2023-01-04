@@ -114,7 +114,7 @@ void save_splay(double distance,bool base=false)
   // debug(DEBUG_MAIN, "Reading from file");
   // read_from_file(current_file_name,str_id,&n);
   // read_from_file(current_file_name,str_id,n);
-  // debug(DEBUG_MAIN, "Finished saving data, returning...");
+  debug(DEBUG_MAIN, "Finished saving data, returning...");
 }
 
 void idle_state()
@@ -167,9 +167,10 @@ void splay_state()
   next_state = IDLE;
   save_splay(distance);
 
+  debug(DEBUG_MAIN,"Reading splay and sending to BLE...");
   node n1;
   char str_id[4];
-  sprintf(str_id,"%d",shot_ID);
+  snprintf(str_id,sizeof(str_id),"%d",shot_ID);
   read_from_file(current_file_name,str_id,&n1);
   shared_bledata.write(&n1);
   blehandler.update();

@@ -1,10 +1,106 @@
 #include "lidar.h"
 
+// Global laser statuis flag
 bool laser_on = true;
 
 void IRAM_ATTR ISR_UART_TIMEOUT()
 {
     interrupt_uart_timeout = true;
+}
+
+// Utility functions
+void Lidar::flush_serial1()
+{
+    
+    char a[RX_BUFFER_SIZE];
+    Serial1.readBytes(a,RX_BUFFER_SIZE);
+}
+
+void Lidar::disable()
+{
+    digitalWrite(GPIO_NUM_14,LOW);
+}
+
+void Lidar::enable()
+{
+    digitalWrite(GPIO_NUM_14,HIGH);
+}
+
+void Lidar::erase_buffer()
+{
+    int i;
+    for (i=0; i<LIDAR_BUFFER_SIZE;++i)
+    {
+        buffer[i] = 0x00;
+    }
+}
+
+double Lidar::to_distance(char* data)
+{
+    double d;
+    sscanf(data, "%lf", &d);
+    d = d/1000.0;
+    return d;
+}
+
+
+// Main functions
+Lidar::Lidar()
+{   
+    // Using UART1
+    Serial1.setRxBufferSize(RX_BUFFER_SIZE);
+    Serial1.begin(9600);
+    single_char_buffer = { 0x00 };
+    *buffer = { 0x00 };
+    laser_on = false;
+}
+
+void Lidar::init()
+{
+    char generated_command[LIDAR_SEND_COMMAND_SIZE];
+    lidar_received_msg received_msg;
+    
+    Serial1.flush();
+    debug(DEBUG_LIDAR,"Get software version");
+    generate_command(LIDAR_READ_SOFTWARE_VERSION,generated_command);
+    Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
+    read_msg_from_uart(buffer);
+    Serial.println(buffer);
+    debug(DEBUG_LIDAR,"Disable beeper");
+    generate_command(LIDAR_DISABLE_BEEPER,generated_command);
+    Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
+
+    erase_buffer();
+
+    debug(DEBUG_LIDAR,"Finished INIT");
+};
+
+void Lidar::read_msg_from_uart(char* buffer)
+{
+    char b[10];
+    int count = 0;
+    debug(DEBUG_LIDAR,"Starting timer");
+    start_uart_read_timer();
+
+    // Reset single_char_buffer to prevent erroneous message success
+    single_char_buffer = 0;
+    while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
+    {
+        debug(DEBUG_LIDAR_EXTENDED,&single_char_buffer);
+        Serial1.read(&single_char_buffer,1);
+        if (interrupt_uart_timeout)
+        {
+            stop_uart_read_timer();
+            interrupt_uart_timeout = false;
+            throw ("LIDAR UART READ ERROR: No message received!");
+        }
+        count++;
+    }
+    // Erase buffer
+    erase_buffer();
+
+    // Reads bytes until terminator into buffer (not including terminator)
+    msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
 }
 
 void Lidar::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SIZE])
@@ -161,102 +257,11 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
     }
 }
 
-void Lidar::flush_serial1()
-{
-    
-    char a[RX_BUFFER_SIZE];
-    Serial1.readBytes(a,RX_BUFFER_SIZE);
-}
-
-Lidar::Lidar()
-{   
-    // Using UART1
-    Serial1.setRxBufferSize(RX_BUFFER_SIZE);
-    Serial1.begin(9600);
-    single_char_buffer = { 0x00 };
-    *buffer = { 0x00 };
-    laser_on = false;
-}
-
-void Lidar::init()
-{
-    char generated_command[LIDAR_SEND_COMMAND_SIZE];
-    lidar_received_msg received_msg;
-    
-    Serial1.flush();
-    debug(DEBUG_LIDAR,"Get software version");
-    generate_command(LIDAR_READ_SOFTWARE_VERSION,generated_command);
-    Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
-    read_msg_from_uart(buffer);
-    Serial.println(buffer);
-    debug(DEBUG_LIDAR,"Disable beeper");
-    generate_command(LIDAR_DISABLE_BEEPER,generated_command);
-    Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
-
-    erase_buffer();
-
-    debug(DEBUG_LIDAR,"Finished INIT");
-};
-
-void Lidar::disable()
-{
-    digitalWrite(GPIO_NUM_14,LOW);
-}
-
-void Lidar::enable()
-{
-    digitalWrite(GPIO_NUM_14,HIGH);
-}
-
-void Lidar::erase_buffer()
-{
-    int i;
-    for (i=0; i<LIDAR_BUFFER_SIZE;++i)
-    {
-        buffer[i] = 0x00;
-    }
-}
-
-void Lidar::read_msg_from_uart(char* buffer)
-{
-    char b[10];
-    int count = 0;
-    debug(DEBUG_LIDAR,"Starting timer");
-    start_uart_read_timer();
-    // Read buffer until either 20 characters have been read with no avail or start byte found
-    // Reset single_char_buffer to prevent erroneous message success
-    single_char_buffer = 0;
-    while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
-    {
-        debug(DEBUG_LIDAR_EXTENDED,&single_char_buffer);
-        Serial1.read(&single_char_buffer,1);
-        if (interrupt_uart_timeout)
-        {
-            stop_uart_read_timer();
-            interrupt_uart_timeout = false;
-            throw ("LIDAR UART READ ERROR: No message received!");
-        }
-        count++;
-    }
-    // Erase buffer
-    erase_buffer();
-
-    // Reads bytes until terminator into buffer (not including terminator)
-    msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
-}
-
-double Lidar::to_distance(char* data)
-{
-    double d;
-    sscanf(data, "%lf", &d);
-    d = d/1000.0;
-    return d;
-}
-
 double Lidar::get_measurement()
 {
-    // Distance returned by lidar
+    // Distance returned by LIDAR
     double distance = 0.0;
+    // Command to send to LIDAR
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
 
     lidar_received_msg received_msg;
@@ -266,12 +271,16 @@ double Lidar::get_measurement()
     debug(DEBUG_LIDAR,"Single measure");
     generate_command(LIDAR_SINGLE_MEAS,generated_command);
 
+    // Flush the hardware UART buffer to remove old messages
     flush_serial1();
+    // Flush the software message buffer to prevent erroneous reading
     erase_buffer();
+
+    // Send command to LIDAR and read the response
     Serial1.write(generated_command);
     read_msg_from_uart(buffer);
 
-    // Read lidar distance measurement
+    // Attempt to parse the message received over UART
     try {
         receive_response(buffer,&received_msg);
         Serial.println(received_msg.data);
@@ -282,9 +291,6 @@ double Lidar::get_measurement()
         Serial.println(e);
         return 0;
     }
-
-    // Flush uart     
-    Serial1.flush();
 
     // Disable laser
     disable();

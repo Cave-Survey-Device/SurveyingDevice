@@ -22,7 +22,7 @@
 #include "interrupts.h"
 #include "BLE.h"
 
-// Defining global variables
+
 static Adafruit_SSD1306 display;
 
 // Define sensor structs
@@ -30,20 +30,34 @@ static struct bno055_t myBNO;
 static struct bno055_gravity myGravityData;
 static struct bno055_mag myMagData;
 
-// Global magnetometer object
+// Static global objects
 static Magnetometer magnetometer(&myMagData);
-
-// Global accelerometer object
 static Accelerometer accelerometer(&myGravityData);
-
-// Global LIDAR object
 static Lidar lidar;
-
-// BLE handler
 static BLEHandler blehandler;
+
+// Mainloop flow state enum
+enum shot_status {IDLE, WAITING, SPLAY, BASE};
+// Holds current state to act on in after interrupt triggered
+static shot_status current_state = IDLE;
+// Holds next state to act on in after interrupt triggered
+static shot_status next_state = IDLE;
+
+// Distance measurement from lidar
+static double distance = 0;
+// Current shot ID
+static int shot_ID = 0;
+
 
 // File used to store all survey data in
 static char current_file_name[] = "test.survey";
+
+
+
+/****************************************************
+*   All global variables are now declared. Following
+*   declerations are for general mainloop functions.
+*****************************************************/
 
 // Initialises BNO sensor
 void init_bno(){
@@ -59,43 +73,20 @@ void init_bno(){
   delay(1);
 }
 
-// Mainloop flow state enum
-enum shot_status {IDLE, WAITING, SPLAY, BASE};
 
-// Holds current state to act on in after interrupt triggered
-static shot_status current_state = IDLE;
-
-// Holds next state to act on in after interrupt triggered
-static shot_status next_state = IDLE;
-
-int shot_retry_count = 0;
-
-const int SHOT_RETRY_LIMIT = 3;
-
-// First distance measurement from lidar
-static double distance = 0;
-
-static int shot_ID = 0;
 
 void save_splay(double distance,bool base=false)
 {
-  // Initialise local variables
-  // Node n to hold the node to be saved
-  //node n;
+  // Node struct to hold data to be saved
   node *n = (struct node*)malloc(sizeof(node));
-  // string format of the int id of the node to be saved
+
   char str_id[4];
-  // Heading of the disto (radians)
   double heading;
-  // Inclination of the disto (radians)
   double inclination;
 
   debug(DEBUG_MAIN, "Updating sensors");
-  // Get data from magnetometer
   magnetometer.update();
   heading = magnetometer.get_heading();
-
-  // Get data from accelerometer
   accelerometer.update();
   inclination = accelerometer.get_inclination();
 
@@ -109,11 +100,7 @@ void save_splay(double distance,bool base=false)
   debug(DEBUG_MAIN, "Writing to file");
   sprintf(str_id,"%d",shot_ID);
   write_to_file(current_file_name,str_id,n);
-
-  // read from file and print result as a debug
-  // debug(DEBUG_MAIN, "Reading from file");
-  // read_from_file(current_file_name,str_id,&n);
-  // read_from_file(current_file_name,str_id,n);
+  
   debug(DEBUG_MAIN, "Finished saving data, returning...");
 }
 
@@ -238,6 +225,11 @@ void setup(){
 
 // Runs aafter setup
 void loop(){
+  // TODO: Execute BLE commands which should have a struct made for them.
+  // After command executed ack should be sent back such that commands aren't spammed during operation.
+
+  // TODO: Move BLE onto CPU2 and operate all main HW stuff on CPU1. Make sure to init all interrupts on CPU1
+
   interrupt_loop();
   delay(500);
 

@@ -73,8 +73,6 @@ void init_bno(){
   delay(1);
 }
 
-
-
 void save_splay(double distance,bool base=false)
 {
   // Node struct to hold data to be saved
@@ -109,7 +107,10 @@ void idle_state()
   if (interrupt_button_pressed)
   {
     interrupt_button_pressed = false;
+    interrupt_get_shot = false;
     next_state = WAITING;
+    debug(DEBUG_MAIN,"\n\n---------------------------------------");
+    debug(DEBUG_MAIN,"Starting shot timer...");
     start_shot_interrupt_timer();
   }
 }
@@ -118,17 +119,21 @@ void waiting_state()
 {
   if (interrupt_button_released)
   {
+    debug(DEBUG_MAIN,"Stopping shot timer...");
     stop_shot_interrupt_timer();
     interrupt_button_pressed = false;
     interrupt_button_released = false;
+    interrupt_get_shot = false;
     Serial.println("Toggle laser");
     next_state = IDLE;
     lidar.toggle_laser();
   } else if (interrupt_get_shot)
   {
+    debug(DEBUG_MAIN,"Stopping shot timer...");
     stop_shot_interrupt_timer();
     interrupt_button_pressed = false;
     interrupt_button_released = false;
+    interrupt_get_shot = false;
     Serial.println("Get shot...");
     next_state = SPLAY;
     debug(DEBUG_MAIN, "Received shot interrupt");
@@ -136,7 +141,6 @@ void waiting_state()
     {
       distance = lidar.get_measurement();
       debug(DEBUG_MAIN, "Succesfully got measurement");
-      interrupt_get_shot = false;
     }
     catch(const char* e)
     {
@@ -159,7 +163,7 @@ void splay_state()
   char str_id[4];
   snprintf(str_id,sizeof(str_id),"%d",shot_ID);
   read_from_file(current_file_name,str_id,&n1);
-  shared_bledata.write(&n1);
+  blehandler.shared_bledata.write_data(&n1);
   blehandler.update();
 
   shot_ID += 1;
@@ -184,8 +188,13 @@ void interrupt_loop()
   }
 }
 
+void setup_BLE()
+{
+  debug(DEBUG_MAIN,"Starting BLE...");
+  blehandler.start();
+}
 // Runs on power on
-void setup(){
+void setup_hw(){
   // Initialise serial and UARTs
   Serial.begin(9600);
   Serial1.begin(9600);
@@ -216,10 +225,50 @@ void setup(){
   {
     Serial.println(e);
   }
+   debug(DEBUG_MAIN,"Finished hw setup...");
+}
 
-  blehandler.start();
-  Serial.println("finished init");
 
+void Core1Task(void * parameter)
+{
+  setup_hw();
+  while(true)
+  {
+    interrupt_loop();
+  }
+}
+
+void Core2Task(void * parameter)
+{
+  delay(1000);
+  setup_BLE();
+  while(true)
+  {
+    delay(1);
+  }
+}
+
+void setup()
+{
+  TaskHandle_t hardware_handle;
+  xTaskCreatePinnedToCore(
+      Core1Task, /* Function to implement the task */
+      "Hardware", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &hardware_handle,  /* Task handle. */
+      0); /* Core where the task should run */
+
+  TaskHandle_t BLE_handle;
+  xTaskCreatePinnedToCore(
+      Core2Task, /* Function to implement the task */
+      "BLE", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &BLE_handle,  /* Task handle. */
+      1); /* Core where the task should run */
 }
 
 
@@ -230,8 +279,8 @@ void loop(){
 
   // TODO: Move BLE onto CPU2 and operate all main HW stuff on CPU1. Make sure to init all interrupts on CPU1
 
-  interrupt_loop();
-  delay(500);
+  // interrupt_loop();
+  // delay(500);
 
   // Magnetometer update code
   // magnetometer.update();

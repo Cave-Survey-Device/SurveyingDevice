@@ -26,21 +26,40 @@ static char DEVICE_CONTROL_CHARACTERISTIC_UUID[]        = "000058e1-0000-1000-80
 static char AZIMUTH_CHARACTERISTIC_UUID[]               = "00e72748-8854-4107-857c-001140e0f1fc";
 static char INCLINATION_CHARACTERISTIC_UUID[]           = "c501a8ac-5334-4e1d-8d45-5befdc98f923";
 static char ID_CHARACTERISTIC_UUID[]                    = "c5a74ffa-c011-480c-83ac-b4601d0455a4";
+static char COMMAND_CHARACTERISTIC_UUID[]               = "e1c99549-386d-4b25-be0f-fc113317d794";
 
+// For some reason these can't be accessed if in the BLEData class?!
+static std::mutex ble_data_mtx;
+static std::mutex ble_command_mtx;
 
-struct BLEData
+class BLEData
 {
-  node data;
-  std::mutex ble_data_mtx;
-  void write(const node* new_data);
-  void read(node* node_obj);
-  void lock();
-  void unlock();
+  public:
+    void write_data(const node* new_data);
+    void read_data(node* node_obj);
+
+    void write_command(const char* command);
+    void read_command(char* command);
+
+  private:
+    // std::mutex ble_data_mtx;
+    // std::mutex ble_command_mtx;
+    node data;
+    char command[20];
 };
 
-class MyServerCallbacks: public BLEServerCallbacks {
+class MyServerCallbacks:public BLEServerCallbacks {
   void onConnect(BLEServer* pServer);
   void onDisconnect(BLEServer* pServer);
+};
+
+class MyCommandCharacteristicCallbacks:public BLECharacteristicCallbacks {
+  public:
+    MyCommandCharacteristicCallbacks(BLEData* ble_data_ptr);
+    
+  private:
+    void onWrite(BLECharacteristic* pCharacteristic);
+    BLEData* pBLEData;
 };
 
 class BLEHandler
@@ -48,8 +67,12 @@ class BLEHandler
   public:
     void start();
     void update();
+    BLEData shared_bledata;
 
   private:
+
+    void message_handler();
+
     BLEServer *pServer;
     BLEService *bean_boi_service;
     BLECharacteristic *model_number_characteristic;
@@ -64,10 +87,10 @@ class BLEHandler
     BLECharacteristic *id_characteristic;
     BLEDescriptor *id_descriptor;
 
+    BLECharacteristic *command_charateristic;
+    BLEDescriptor *command_descriptor;
+
     BLEAdvertising *pAdvertising;
-
 };
-
-extern BLEData shared_bledata;
 
 #endif

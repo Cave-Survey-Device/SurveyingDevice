@@ -1,12 +1,26 @@
 #include "BLE.h"
 
-BLEData shared_bledata;
-
 void MyServerCallbacks::onConnect(BLEServer* pServer) {
     device_connected = true;
 }
 void MyServerCallbacks::onDisconnect(BLEServer* pServer) {
     device_connected = false;
+}
+
+MyCommandCharacteristicCallbacks::MyCommandCharacteristicCallbacks(BLEData* ble_data_ptr)
+{
+    pBLEData = pBLEData;
+}
+void MyCommandCharacteristicCallbacks::onWrite(BLECharacteristic *pCharacteristic)
+{
+    int i;
+    Serial.printf("Received data:");
+    for (i=0; i<sizeof(pCharacteristic->getValue().c_str()); i++)
+    {
+        Serial.printf("%c ", pCharacteristic->getValue().c_str()[i]);
+    }
+    
+    pBLEData->write_command(pCharacteristic->getValue().c_str());
 }
 
 void BLEHandler::start()
@@ -50,6 +64,16 @@ void BLEHandler::start()
     id_characteristic->setValue("id");
     id_descriptor->setValue("ID Data");
 
+
+    command_charateristic = new BLECharacteristic(BLEUUID(COMMAND_CHARACTERISTIC_UUID),BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_WRITE);
+    command_descriptor = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
+    command_charateristic->addDescriptor(command_descriptor);
+
+    bean_boi_service->addCharacteristic(command_charateristic);
+    command_charateristic->setValue("none");
+    command_descriptor->setValue("Command characteristic");
+    command_charateristic->setCallbacks(new MyCommandCharacteristicCallbacks(&shared_bledata));
+
     // begin bluetooth...
     bean_boi_service->start();
     pAdvertising = BLEDevice::getAdvertising();
@@ -60,10 +84,12 @@ void BLEHandler::start()
 
 void BLEHandler::update()
 {
-    Serial.printf("Updating BLE. Data: %f %f %i \n",shared_bledata.data.heading,shared_bledata.data.inclination,shared_bledata.data.id);
-    azimuth_characteristic->setValue(shared_bledata.data.heading);
-    inclination_characteristic->setValue(shared_bledata.data.inclination);
-    id_characteristic->setValue(shared_bledata.data.id);
+    node tempNode;
+    shared_bledata.read_data(&tempNode);
+    Serial.printf("Updating BLE. Data: %f %f %i \n",tempNode.heading, tempNode.inclination,tempNode.id);
+    azimuth_characteristic->setValue(tempNode.heading);
+    inclination_characteristic->setValue(tempNode.inclination);
+    id_characteristic->setValue(tempNode.id);
 
     azimuth_characteristic->notify();
     inclination_characteristic->notify();
@@ -72,27 +98,25 @@ void BLEHandler::update()
     Serial.println("Received response!");
 }
 
-void BLEData::read(node* node_obj)
+void BLEData::read_data(node* node_obj)
 {
-    lock();
+    std::lock_guard<std::mutex> guard(ble_data_mtx);
     *node_obj = data;
-    unlock();
 }
-
-void BLEData::write(const node* new_data)
+void BLEData::write_data(const node* new_data)
 {
-    lock();
+    std::lock_guard<std::mutex> guard(ble_data_mtx);
     data = *new_data;
     // memcpy(&data,new_data,sizeof(node));
-    unlock();
 }
 
-void BLEData::lock()
+void BLEData::write_command(const char* cmd_to_write)
 {
-    ble_data_mtx.lock();
+    std::lock_guard<std::mutex> guard(ble_command_mtx);
+    snprintf(command,sizeof(command),cmd_to_write);
 }
-
-void BLEData::unlock()
+void BLEData::read_command(char* cmd_to_read)
 {
-    ble_data_mtx.unlock();
+    std::lock_guard<std::mutex> guard(ble_command_mtx);
+    snprintf(command,sizeof(cmd_to_read),cmd_to_read);
 }

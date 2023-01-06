@@ -45,9 +45,16 @@ static shot_status next_state = IDLE;
 
 // Distance measurement from lidar
 static double distance = 0;
+
+// Calibration arrays
+static Eigen::Matrix<double,3,10> calibraion_tilt_vecs;
+static Eigen::Vector<double,10> calibration_distances;
+static int calibration_num = 0;
+
 // Current shot ID
 static int shot_ID = 0;
-
+// Calibration flag
+static bool flag_calibrate = false;
 
 // File used to store all survey data in
 static char current_file_name[] = "test.survey";
@@ -170,6 +177,30 @@ void splay_state()
   enable_shot_interrupt();
 }
 
+void calibrate_state()
+{
+  disable_shot_interrupt();
+  next_state = IDLE;
+
+  if (calibration_num < 9)
+  {
+    Serial.println("Got calibration!");
+    calibration_num++;
+  } else {
+    flag_calibrate = false;
+    calibration_num = 0;
+    Vector3d norm = calc_normal_vec(calibraion_tilt_vecs);
+    calc_true_vec(norm,calibration_distances);
+  }
+  
+
+  accelerometer.update();
+  calibraion_tilt_vecs.col(calibration_num) = accelerometer.get_gravity_unit_vec();
+  calibration_distances[calibration_num] = distance;
+  
+  debug(DEBUG_MAIN, "Finished saving data, returning...");
+}
+
 void interrupt_loop()
 {
   current_state = next_state;
@@ -183,7 +214,12 @@ void interrupt_loop()
       break;
 
     case SPLAY:
-      splay_state();
+      if (flag_calibrate)
+      {
+        calibrate_state();
+      } else {
+        splay_state();
+      }
       break;
   }
 }
@@ -232,15 +268,25 @@ void setup_hw(){
 void Core1Task(void * parameter)
 {
   setup_hw();
+  char cmd[100];
   while(true)
   {
+    // maybe set a flag when cmd has changed to decrease processing?
+    blehandler.shared_bledata.read_command(cmd);
+    if (cmd == "calibrate")
+    {
+      flag_calibrate = true;
+    } else{
+      flag_calibrate = false;
+    }
+
     interrupt_loop();
-  }
+    delay(100);
+  } 
 }
 
 void Core2Task(void * parameter)
 {
-  delay(1000);
   setup_BLE();
   while(true)
   {
@@ -250,16 +296,6 @@ void Core2Task(void * parameter)
 
 void setup()
 {
-  TaskHandle_t hardware_handle;
-  xTaskCreatePinnedToCore(
-      Core1Task, /* Function to implement the task */
-      "Hardware", /* Name of the task */
-      10000,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
-      &hardware_handle,  /* Task handle. */
-      0); /* Core where the task should run */
-
   TaskHandle_t BLE_handle;
   xTaskCreatePinnedToCore(
       Core2Task, /* Function to implement the task */
@@ -269,6 +305,17 @@ void setup()
       0,  /* Priority of the task */
       &BLE_handle,  /* Task handle. */
       1); /* Core where the task should run */
+  delay(2000);
+
+  TaskHandle_t hardware_handle;
+  xTaskCreatePinnedToCore(
+      Core1Task, /* Function to implement the task */
+      "Hardware", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &hardware_handle,  /* Task handle. */
+      0); /* Core where the task should run */
 }
 
 

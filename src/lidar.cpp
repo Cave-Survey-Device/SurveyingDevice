@@ -265,7 +265,6 @@ double Lidar::get_measurement()
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
 
     lidar_received_msg received_msg;
-    enable();
 
     // Generate lidar single measurement command and send
     debug(DEBUG_LIDAR,"Single measure");
@@ -291,9 +290,6 @@ double Lidar::get_measurement()
         Serial.println(e);
         return 0;
     }
-
-    // Disable laser
-    disable();
 
     return distance;
 }

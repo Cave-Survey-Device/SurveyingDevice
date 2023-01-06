@@ -15,12 +15,13 @@ void MyCommandCharacteristicCallbacks::onWrite(BLECharacteristic *pCharacteristi
 {
     int i;
     Serial.printf("Received data:");
-    for (i=0; i<sizeof(pCharacteristic->getValue().c_str()); i++)
-    {
-        Serial.printf("%c ", pCharacteristic->getValue().c_str()[i]);
-    }
-    
-    pBLEData->write_command(pCharacteristic->getValue().c_str());
+    std::string s = pCharacteristic->getValue();
+    char* str = new char[s.length()+1];
+    strcpy(str,s.c_str());
+
+    Serial.println(str);
+    pBLEData->write_command(str);
+    delete[] str;
 }
 
 void BLEHandler::start()

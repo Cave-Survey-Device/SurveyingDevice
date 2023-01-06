@@ -2,7 +2,9 @@
 #define HEADER_CONFIG
 
 const static bool DEBUG = false;
-const static float DISTO_LEN = 0.1;
+const static bool DEBUG_LASER_CAL = true;
+
+const static float DISTO_LEN = 0.17;
 const static bool DEBUG_FILE_ENA = true;
 const static bool DEBUG_LIDAR_ENA = true;
 const static bool DEBUG_OLED_ENA = false;

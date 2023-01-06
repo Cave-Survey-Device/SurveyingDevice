@@ -1,6 +1,6 @@
 #include "lasercalibration.h"
 
-Vector3d calc_SVD(MatrixXd g_vec, bool debug /*= false*/){
+Vector3d calc_normal_vec(MatrixXd g_vec, bool debug /*= false*/){
   char buffer[150];
   Vector3d normal;
   MatrixXd left_singular_mat;
@@ -45,7 +45,7 @@ Matrix<double,3,1> calc_true_vec(Vector3d normal_vec, VectorXd laser_distances, 
 
   true_vec = l_3 * x_axis + l_0 * normal_vec;
 
-  if (DEBUG){
+  if (DEBUG_LASER_CAL){
     sprintf(buffer, "Alpha: %f \nNormal vector: %f %f %f\n", alpha, normal_vec[0], normal_vec[1], normal_vec[2]);
     Serial.printf(buffer);
     sprintf(buffer, "L0: %f \nL1: %f \nL2: %f \nL3: %f\n",l_0,l_1,l_2,l_3);

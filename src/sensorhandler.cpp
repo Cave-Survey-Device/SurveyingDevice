@@ -19,6 +19,7 @@ void SensorHandler::update()
 }
 
 // Returns heading and inclination
+// https://arduino.stackexchange.com/a/88707
 void SensorHandler::get_orientation()
 {
     Vector3d z_axis;
@@ -46,8 +47,31 @@ SensorHandler::SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lid
     lidar_sensor = lidar;
     inclination_correction = 0;
     inclination_correction = 0;
+    calibration_num = 0;
 
     // Add code to load/save sensor calibration data from file
+}
+
+bool SensorHandler::calibrate()
+{
+    if (calibration_num < 8)
+    {
+        Serial.printf("Got calibration %i!\n",calibration_num);
+        calibration_num++;
+        this->update();
+
+        calibraion_tilt_vecs.col(calibration_num) = grav_data;
+        calibration_distances[calibration_num] = distance;
+
+        return false;
+    } else {
+        Vector3d norm = calc_normal_vec(calibraion_tilt_vecs);
+        Vector3d true_vec = calc_true_vec(norm,calibration_distances);
+        Vector2d head_inc_corr = get_inclination_heading(true_vec);
+        heading_correction = head_inc_corr[0];
+        inclination_correction = head_inc_corr[1];
+        return true;
+    }
 }
 
 double SensorHandler::get_inclination()

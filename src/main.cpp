@@ -45,11 +45,6 @@ static shot_status current_state = IDLE;
 // Holds next state to act on in after interrupt triggered
 static shot_status next_state = IDLE;
 
-// Calibration arrays
-static Eigen::Matrix<double,3,10> calibraion_tilt_vecs;
-static Eigen::Vector<double,10> calibration_distances;
-static int calibration_num = 0;
-
 // Current shot ID
 static int shot_ID = 0;
 // Calibration flag
@@ -170,26 +165,18 @@ void splay_state()
 
 void calibrate_state()
 {
+  bool completed;
   disable_shot_interrupt();
   next_state = IDLE;
 
-  if (calibration_num < 8)
+  completed = sensorhandler.calibrate();
+  if (completed)
   {
-    Serial.printf("Got calibration %i!\n",calibration_num);
-    calibration_num++;
-      accelerometer.update();
-    calibraion_tilt_vecs.col(calibration_num) = accelerometer.get_gravity_unit_vec();
-    calibration_distances[calibration_num] = distance;
+    flag_calibrate = false;
   } else {
     blehandler.shared_bledata.write_command("no command");
-    calibration_num = 0;
-    Vector3d norm = calc_normal_vec(calibraion_tilt_vecs);
-    Vector3d true_vec = calc_true_vec(norm,calibration_distances);
-    Vector2d head_inc_corr = get_inclination_heading(true_vec);
-    heading_correction = head_inc_corr[0];
-    inclination_correction = head_inc_corr[1];
   }
-  
+
   debug(DEBUG_MAIN, "Finished adding calibration data, returning...");
   enable_shot_interrupt();
 }

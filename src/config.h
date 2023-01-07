@@ -5,10 +5,10 @@ const static bool DEBUG = false;
 const static bool DEBUG_LASER_CAL = true;
 
 const static float DISTO_LEN = 0.17;
-const static bool DEBUG_FILE_ENA = true;
-const static bool DEBUG_LIDAR_ENA = true;
+const static bool DEBUG_FILE_ENA = false;
+const static bool DEBUG_LIDAR_ENA = false;
 const static bool DEBUG_OLED_ENA = false;
-const static bool DEBUG_MAG_ENA = true;
+const static bool DEBUG_MAG_ENA = false;
 const static bool DEBUG_ACCEL_ENA = true;
 const static bool DEBUG_MAIN_ENA = true;
 const static bool DEBUG_LIDAR_EXTENDED_ENA = false;

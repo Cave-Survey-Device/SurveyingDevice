@@ -28,9 +28,12 @@ static char INCLINATION_CHARACTERISTIC_UUID[]           = "c501a8ac-5334-4e1d-8d
 static char ID_CHARACTERISTIC_UUID[]                    = "c5a74ffa-c011-480c-83ac-b4601d0455a4";
 static char COMMAND_CHARACTERISTIC_UUID[]               = "e1c99549-386d-4b25-be0f-fc113317d794";
 
+static const int CMD_SIZE = 20;
+
 // For some reason these can't be accessed if in the BLEData class?!
 static std::mutex ble_data_mtx;
 static std::mutex ble_command_mtx;
+static char command[CMD_SIZE] = "No command";
 
 class BLEData
 {
@@ -45,7 +48,7 @@ class BLEData
     // std::mutex ble_data_mtx;
     // std::mutex ble_command_mtx;
     node data;
-    char command[20];
+    
 };
 
 class MyServerCallbacks:public BLEServerCallbacks {

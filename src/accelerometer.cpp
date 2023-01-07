@@ -22,30 +22,19 @@ Vector3d Accelerometer::get_gravity_unit_vec()
 
 double Accelerometer::get_inclination()
 {
-    // Find rotation about y-axis
-    Matrix3d I;
-    Vector3d y_axis;
-    Matrix3d vx;
-    Matrix3d rotation_mat;
-    Vector3d cross_prod;
-    double c;
+    // Find angle to z-axis
+    Vector3d z_axis;
+    double dot_prod;
+    double scaling;
+    char str[50];
 
-    y_axis << 0,1,0;
-    cross_prod = corrected_gravity_data.cross(y_axis);
-    c = corrected_gravity_data.dot(y_axis);
+    z_axis << 0,0,1;
+    dot_prod = corrected_gravity_data.dot(z_axis);
+    // Serial.printf("dot_prod: %f\n",dot_prod);
+    scaling = z_axis.norm() * corrected_gravity_data.norm();
+    // Serial.printf("scaling: %f\n",scaling);
 
-    vx <<              0, -cross_prod[2],  cross_prod[1],
-           cross_prod[2],              0, -cross_prod[0],
-          -cross_prod[1],  cross_prod[0],              0;
-
-    I << 1,0,0,
-        0,1,0,
-        0,0,1;
-
-
-    rotation_mat = I + vx + vx*vx * (1/(1+c));
-    char str[30];
-    sprintf(str,"Got inclination: %f", RAD_TO_DEG * atan2(-rotation_mat(2,0), sqrt(rotation_mat(2,1)*rotation_mat(2,1) + rotation_mat(2,2)*rotation_mat(2,2))));
+    sprintf(str,"Got inclination: %f", RAD_TO_DEG * acos(dot_prod/scaling));
     debug(DEBUG_ACCEL,str);
-	return RAD_TO_DEG * atan2(-rotation_mat(2,0), sqrt(rotation_mat(2,1)*rotation_mat(2,1) + rotation_mat(2,2)*rotation_mat(2,2)));
+	return RAD_TO_DEG * acos(dot_prod/scaling);
 }

@@ -284,6 +284,8 @@ double Lidar::get_measurement()
         receive_response(buffer,&received_msg);
         Serial.println(received_msg.data);
         distance = to_distance(received_msg.data);
+        //toggle_laser();
+        laser_on = false;
     }
     catch(char* e ) {
         Serial.print("ERROR: ");

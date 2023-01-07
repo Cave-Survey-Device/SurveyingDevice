@@ -59,7 +59,7 @@ static bool flag_calibrate = false;
 // File used to store all survey data in
 static char current_file_name[] = "test.survey";
 
-
+static double heading_correction, inclination_correction = 0;
 
 /****************************************************
 *   All global variables are now declared. Following
@@ -98,8 +98,9 @@ void save_splay(double distance,bool base=false)
   // Populate node object
   debug(DEBUG_MAIN, "Assigning values to node object");
   n->id = shot_ID;
-  n->heading = heading;
-  n->inclination = inclination;
+  n->heading = heading+heading_correction;
+  n->inclination = inclination+inclination_correction;
+  n->distance = distance;
 
   // Populate str_id with string version of int id
   debug(DEBUG_MAIN, "Writing to file");
@@ -116,8 +117,8 @@ void idle_state()
     interrupt_button_pressed = false;
     interrupt_get_shot = false;
     next_state = WAITING;
-    debug(DEBUG_MAIN,"\n\n---------------------------------------");
-    debug(DEBUG_MAIN,"Starting shot timer...");
+    // debug(DEBUG_MAIN,"\n\n---------------------------------------");
+    // debug(DEBUG_MAIN,"Starting shot timer...");
     start_shot_interrupt_timer();
   }
 }
@@ -126,24 +127,24 @@ void waiting_state()
 {
   if (interrupt_button_released)
   {
-    debug(DEBUG_MAIN,"Stopping shot timer...");
+    //debug(DEBUG_MAIN,"Stopping shot timer...");
     stop_shot_interrupt_timer();
     interrupt_button_pressed = false;
     interrupt_button_released = false;
     interrupt_get_shot = false;
-    Serial.println("Toggle laser");
+    //Serial.println("Toggle laser");
     next_state = IDLE;
     lidar.toggle_laser();
   } else if (interrupt_get_shot)
   {
-    debug(DEBUG_MAIN,"Stopping shot timer...");
+    //debug(DEBUG_MAIN,"Stopping shot timer...");
     stop_shot_interrupt_timer();
     interrupt_button_pressed = false;
     interrupt_button_released = false;
     interrupt_get_shot = false;
-    Serial.println("Get shot...");
+    //Serial.println("Get shot...");
     next_state = SPLAY;
-    debug(DEBUG_MAIN, "Received shot interrupt");
+    //debug(DEBUG_MAIN, "Received shot interrupt");
     try
     {
       distance = lidar.get_measurement();
@@ -182,23 +183,25 @@ void calibrate_state()
   disable_shot_interrupt();
   next_state = IDLE;
 
-  if (calibration_num < 9)
+  if (calibration_num < 8)
   {
-    Serial.println("Got calibration!");
+    Serial.printf("Got calibration %i!\n",calibration_num);
     calibration_num++;
+      accelerometer.update();
+    calibraion_tilt_vecs.col(calibration_num) = accelerometer.get_gravity_unit_vec();
+    calibration_distances[calibration_num] = distance;
   } else {
-    flag_calibrate = false;
+    blehandler.shared_bledata.write_command("no command");
     calibration_num = 0;
     Vector3d norm = calc_normal_vec(calibraion_tilt_vecs);
-    calc_true_vec(norm,calibration_distances);
+    Vector3d true_vec = calc_true_vec(norm,calibration_distances);
+    Vector2d head_inc_corr = get_inclination_heading(true_vec);
+    heading_correction = head_inc_corr[0];
+    inclination_correction = head_inc_corr[1];
   }
   
-
-  accelerometer.update();
-  calibraion_tilt_vecs.col(calibration_num) = accelerometer.get_gravity_unit_vec();
-  calibration_distances[calibration_num] = distance;
-  
-  debug(DEBUG_MAIN, "Finished saving data, returning...");
+  debug(DEBUG_MAIN, "Finished adding calibration data, returning...");
+  enable_shot_interrupt();
 }
 
 void interrupt_loop()
@@ -214,11 +217,27 @@ void interrupt_loop()
       break;
 
     case SPLAY:
-      if (flag_calibrate)
+      // maybe set a flag when cmd has changed to decrease processing?
+      char cmd[20];
+      blehandler.shared_bledata.read_command(cmd);
+      if (strcmp(cmd, "calibrate") == 0 )
       {
-        calibrate_state();
-      } else {
+        flag_calibrate = true;
+      } else{
+        flag_calibrate = false;
+      }
+
+      if (flag_calibrate != true)
+      {
+        debug(DEBUG_MAIN,"Splay state");
         splay_state();
+      } else {
+        debug(DEBUG_MAIN,"Calibration state");
+        char cmd[50];
+        blehandler.shared_bledata.read_command(cmd);
+        Serial.println(cmd);
+
+        calibrate_state();
       }
       break;
   }
@@ -261,6 +280,8 @@ void setup_hw(){
   {
     Serial.println(e);
   }
+
+  flag_calibrate = false;
    debug(DEBUG_MAIN,"Finished hw setup...");
 }
 
@@ -268,18 +289,8 @@ void setup_hw(){
 void Core1Task(void * parameter)
 {
   setup_hw();
-  char cmd[100];
   while(true)
   {
-    // maybe set a flag when cmd has changed to decrease processing?
-    blehandler.shared_bledata.read_command(cmd);
-    if (cmd == "calibrate")
-    {
-      flag_calibrate = true;
-    } else{
-      flag_calibrate = false;
-    }
-
     interrupt_loop();
     delay(100);
   } 
@@ -317,7 +328,6 @@ void setup()
       &hardware_handle,  /* Task handle. */
       0); /* Core where the task should run */
 }
-
 
 // Runs aafter setup
 void loop(){

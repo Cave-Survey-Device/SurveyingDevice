@@ -11,17 +11,24 @@ MyCommandCharacteristicCallbacks::MyCommandCharacteristicCallbacks(BLEData* ble_
 {
     pBLEData = pBLEData;
 }
+
 void MyCommandCharacteristicCallbacks::onWrite(BLECharacteristic *pCharacteristic)
 {
     int i;
-    Serial.printf("Received data:");
+    char str[CMD_SIZE];
+    char str2[CMD_SIZE];
+
+    Serial.printf("Received data: ");
     std::string s = pCharacteristic->getValue();
-    char* str = new char[s.length()+1];
-    strcpy(str,s.c_str());
+    strlcpy(str,s.c_str(),CMD_SIZE);
 
     Serial.println(str);
+
     pBLEData->write_command(str);
-    delete[] str;
+    pBLEData->read_command(str2);
+
+    Serial.print("Saved data: ");
+    Serial.println(str2);
 }
 
 void BLEHandler::start()
@@ -87,10 +94,11 @@ void BLEHandler::update()
 {
     node tempNode;
     shared_bledata.read_data(&tempNode);
-    Serial.printf("Updating BLE. Data: %f %f %i \n",tempNode.heading, tempNode.inclination,tempNode.id);
+    Serial.printf("Updating BLE. Data: h: %f i: %f d: %f id: %i \n",tempNode.heading, tempNode.inclination, tempNode.distance, tempNode.id);
     azimuth_characteristic->setValue(tempNode.heading);
     inclination_characteristic->setValue(tempNode.inclination);
     id_characteristic->setValue(tempNode.id);
+    // set distance characteristic!
 
     azimuth_characteristic->notify();
     inclination_characteristic->notify();
@@ -114,10 +122,10 @@ void BLEData::write_data(const node* new_data)
 void BLEData::write_command(const char* cmd_to_write)
 {
     std::lock_guard<std::mutex> guard(ble_command_mtx);
-    snprintf(command,sizeof(command),cmd_to_write);
+    strlcpy(command,cmd_to_write,CMD_SIZE);
 }
 void BLEData::read_command(char* cmd_to_read)
 {
     std::lock_guard<std::mutex> guard(ble_command_mtx);
-    snprintf(command,sizeof(cmd_to_read),cmd_to_read);
+    strlcpy(cmd_to_read,command,CMD_SIZE);
 }

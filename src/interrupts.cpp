@@ -50,7 +50,7 @@ void init_shot_timer()
 {
     shot_timer = timerBegin(2, 80, true);
     timerAttachInterrupt(shot_timer, &ISR_GET_SHOT, false);
-    timerAlarmWrite(shot_timer, 1500000, false);
+    timerAlarmWrite(shot_timer, 1000000, false);
 }
 
 void start_shot_interrupt_timer()

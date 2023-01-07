@@ -21,6 +21,7 @@
 #include "unified.h"
 #include "interrupts.h"
 #include "BLE.h"
+#include "sensorhandler.h"
 
 
 static Adafruit_SSD1306 display;
@@ -35,6 +36,7 @@ static Magnetometer magnetometer(&myMagData);
 static Accelerometer accelerometer(&myGravityData);
 static Lidar lidar;
 static BLEHandler blehandler;
+static SensorHandler sensorhandler(&accelerometer, &magnetometer, &lidar);
 
 // Mainloop flow state enum
 enum shot_status {IDLE, WAITING, SPLAY, BASE};
@@ -42,9 +44,6 @@ enum shot_status {IDLE, WAITING, SPLAY, BASE};
 static shot_status current_state = IDLE;
 // Holds next state to act on in after interrupt triggered
 static shot_status next_state = IDLE;
-
-// Distance measurement from lidar
-static double distance = 0;
 
 // Calibration arrays
 static Eigen::Matrix<double,3,10> calibraion_tilt_vecs;
@@ -80,27 +79,18 @@ void init_bno(){
   delay(1);
 }
 
-void save_splay(double distance,bool base=false)
+void save_splay()
 {
   // Node struct to hold data to be saved
   node *n = (struct node*)malloc(sizeof(node));
 
   char str_id[4];
-  double heading;
-  double inclination;
-
-  debug(DEBUG_MAIN, "Updating sensors");
-  magnetometer.update();
-  heading = magnetometer.get_heading();
-  accelerometer.update();
-  inclination = accelerometer.get_inclination();
-
   // Populate node object
   debug(DEBUG_MAIN, "Assigning values to node object");
   n->id = shot_ID;
-  n->heading = heading+heading_correction;
-  n->inclination = inclination+inclination_correction;
-  n->distance = distance;
+  n->heading = sensorhandler.get_heading();
+  n->inclination = sensorhandler.get_inclination();
+  n->distance = sensorhandler.get_distance();
 
   // Populate str_id with string version of int id
   debug(DEBUG_MAIN, "Writing to file");
@@ -147,7 +137,7 @@ void waiting_state()
     //debug(DEBUG_MAIN, "Received shot interrupt");
     try
     {
-      distance = lidar.get_measurement();
+      sensorhandler.update();
       debug(DEBUG_MAIN, "Succesfully got measurement");
     }
     catch(const char* e)
@@ -164,7 +154,7 @@ void splay_state()
 {
   disable_shot_interrupt();
   next_state = IDLE;
-  save_splay(distance);
+  save_splay();
 
   debug(DEBUG_MAIN,"Reading splay and sending to BLE...");
   node n1;

@@ -110,10 +110,9 @@ void Magnetometer::update()
   corrected_mag_data = raw_mag_data; //correction_transformation * raw_mag_data;
 }
 
-double Magnetometer::get_heading()
-{
-  // Find rotation about z-axis  
-  Vector3d vector_north = corrected_mag_data - ((corrected_mag_data.dot(vector_down) / vector_down.dot(vector_down)) * vector_down);
-	return RAD_TO_DEG * atan2(corrected_mag_data(1), corrected_mag_data(0));
 
-}
+
+Vector3d Magnetometer::get_mag_unit_vec()
+{
+    return corrected_mag_data;
+};

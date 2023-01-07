@@ -41,7 +41,7 @@ class Magnetometer  {
         void update();
 
         // Returns the current heading (corrected)
-        double get_heading();
+        Vector3d get_mag_unit_vec();
 
     private:
         // Given an x,y, and z value, return the index where the data should be stored in the calibration array

@@ -5,6 +5,8 @@ void SensorHandler::update()
     Matrix<double,3,SAMPLING_SIZE> accel_samples;
     Matrix<double,3,SAMPLING_SIZE> mag_samples;
     int sample_num;
+
+    // get an average of SAMPLING_SIZE samples for accuracy
     for (sample_num=0;sample_num<SAMPLING_SIZE;sample_num++)
     {
         accel_sensor->update();
@@ -14,7 +16,10 @@ void SensorHandler::update()
     }
     mag_data = mag_samples.rowwise().mean();
     grav_data= accel_samples.rowwise().mean();
+
+    // get lidar distance measurement
     distance = lidar_sensor->get_measurement();
+    // Convert data to orientation
     get_orientation();
 }
 

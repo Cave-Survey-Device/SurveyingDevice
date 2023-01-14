@@ -39,6 +39,7 @@ void SensorHandler::get_orientation()
     roll = atan2(grav_data(1),pow(pow(grav_data(0),2) + pow(grav_data(2),2),0.5));
 
     Vector3d vector_north = mag_data - ((mag_data.dot(grav_data) / grav_data.dot(grav_data)) * grav_data);
+
     inclination = RAD_TO_DEG * inclination;
     roll = RAD_TO_DEG * roll;
     heading =  RAD_TO_DEG * atan2(vector_north(1), vector_north(0));
@@ -92,8 +93,8 @@ Vector3d SensorHandler::get_shot_data()
     Vector3d out;
     double x;
     double y;
-    double roll_correct_heading_correction;
-    double roll_correct_inclination_correction;
+    double roll_correct_heading_correction = 0;
+    double roll_correct_inclination_correction = 0;
 
     // Convert data to radians for maths to come
     heading = DEG_TO_RAD * heading;
@@ -120,7 +121,7 @@ Vector3d SensorHandler::get_shot_data()
     y = DISTO_LEN * sin(inclination);
     y += distance * sin(inclination+roll_correct_inclination_correction);
     out(1) = RAD_TO_DEG * atan2(y,x);
-    out(2) = DISTO_LEN + distance;
+    out(2) = pow(pow(DISTO_LEN,2) + pow(distance,2) ,0.5);
 
     // Convert data back to degrees
     heading = RAD_TO_DEG * heading;

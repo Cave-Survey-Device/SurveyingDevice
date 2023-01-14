@@ -12,10 +12,10 @@ void Accelerometer::update()
 {
     bno055_read_gravity_xyz(sensor_connection);
     raw_gravity_data << sensor_connection->x, sensor_connection->y, sensor_connection->z;
-    corrected_gravity_data = correction_transformation * raw_gravity_data;
+    corrected_gravity_data = raw_gravity_data; // *correction_transformation;
 };
 
-Vector3d Accelerometer::get_gravity_unit_vec()
+Vector3d Accelerometer::get_grav_vec()
 {
-    return corrected_gravity_data/corrected_gravity_data.norm();
+    return corrected_gravity_data;
 };

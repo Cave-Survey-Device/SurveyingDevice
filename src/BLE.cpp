@@ -104,7 +104,7 @@ void BLEHandler::update()
     inclination_characteristic->notify();
 
     id_characteristic->indicate();
-    Serial.println("Received response!");
+    // Serial.println("Received response!");
 }
 
 void BLEData::read_data(node* node_obj)

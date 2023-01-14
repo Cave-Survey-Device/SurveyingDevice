@@ -28,7 +28,7 @@ class Accelerometer  {
         void update();
 
         // Returns the current heading (corrected)
-        Vector3d get_gravity_unit_vec();
+        Vector3d get_grav_vec();
 
         // Returns rotation about y axis undergone by device
         double get_inclination();

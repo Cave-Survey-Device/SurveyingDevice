@@ -65,7 +65,7 @@ void Lidar::init()
     generate_command(LIDAR_READ_SOFTWARE_VERSION,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
     read_msg_from_uart(buffer);
-    Serial.println(buffer);
+    // Serial.println(buffer);
     debug(DEBUG_LIDAR,"Disable beeper");
     generate_command(LIDAR_DISABLE_BEEPER,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
@@ -216,13 +216,13 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
     // Start is 2 instead of 0 due to address, command
     start = 2;
 
-    Serial.printf("%X ",msg->address);
-    Serial.printf("%X ",msg->command);
+    // Serial.printf("%X ",msg->address);
+    // Serial.printf("%X ",msg->command);
 
     // Loop to populate the data array
     for (i=start;i<start+LIDAR_RECEIVE_DATA_MAX_SIZE;++i)
     {
-        Serial.printf("%X ",raw_message[i]);
+        // Serial.printf("%X ",raw_message[i]);
 
         if (i<start+data_size)
         {
@@ -236,7 +236,7 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
     // Populate checksum from raw_message
     checksum = raw_message[start+data_size];
 
-    Serial.println(checksum);
+    // Serial.println(checksum);
 
     // Calculate checksum
     calculated_checksum = 0x00;
@@ -282,7 +282,7 @@ double Lidar::get_measurement()
     // Attempt to parse the message received over UART
     try {
         receive_response(buffer,&received_msg);
-        Serial.println(received_msg.data);
+        // Serial.println(received_msg.data);
         distance = to_distance(received_msg.data);
         //toggle_laser();
         laser_on = false;

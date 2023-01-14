@@ -67,6 +67,9 @@ int Magnetometer::get_magnetometer_index(double x, double y,double z){
 }
 
 void Magnetometer::add_calibration_data(){
+  // Assigns each 1deg by 1 deg sector of the sphere an array value, overwrites old data
+  // Probably needs a reset function for a new calibration at some point
+  // Also needs to save calibration data to file!
   int index;
   double x,y,z;
   x = raw_mag_data(0);
@@ -91,6 +94,7 @@ void Magnetometer::add_calibration_data(){
 }
 
 int Magnetometer::check_calibration_progress(){
+  // Finds how much of the magnetometer_arr is populated 
   int progress = 0;
   int i;
   for (i=0;i<MAGNETOMETER_ARR_LEN;++i){
@@ -112,7 +116,7 @@ void Magnetometer::update()
 
 
 
-Vector3d Magnetometer::get_mag_unit_vec()
+Vector3d Magnetometer::get_mag_vec()
 {
     return corrected_mag_data;
 };

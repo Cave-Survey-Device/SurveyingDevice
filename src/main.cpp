@@ -12,7 +12,6 @@
 #include <Wire.h>
 
 #include "filefuncs.h"
-#include "lasercalibration.h"
 #include "magnetometer.h"
 #include "accelerometer.h"
 #include "OLED.h"
@@ -74,8 +73,12 @@ void init_bno(){
   delay(1);
 }
 
+// Code to save a splay to flash
 void save_splay()
 {
+  Vector3d splay_data;
+  splay_data = sensorhandler.get_shot_data();
+
   // Node struct to hold data to be saved
   node *n = (struct node*)malloc(sizeof(node));
 
@@ -83,9 +86,9 @@ void save_splay()
   // Populate node object
   debug(DEBUG_MAIN, "Assigning values to node object");
   n->id = shot_ID;
-  n->heading = sensorhandler.get_heading();
-  n->inclination = sensorhandler.get_inclination();
-  n->distance = sensorhandler.get_distance();
+  n->heading = splay_data(0);
+  n->inclination = splay_data(1);
+  n->distance = splay_data(2);
 
   // Populate str_id with string version of int id
   debug(DEBUG_MAIN, "Writing to file");
@@ -95,6 +98,7 @@ void save_splay()
   debug(DEBUG_MAIN, "Finished saving data, returning...");
 }
 
+// Waiting state
 void idle_state()
 {
   if (interrupt_button_pressed)
@@ -108,6 +112,7 @@ void idle_state()
   }
 }
 
+// State which decides between toggling laser and taking shot
 void waiting_state()
 {
   if (interrupt_button_released)
@@ -145,6 +150,7 @@ void waiting_state()
   } 
 }
 
+// State in which a splay is saved and BLE hdanler is updated
 void splay_state()
 {
   disable_shot_interrupt();
@@ -163,6 +169,7 @@ void splay_state()
   enable_shot_interrupt();
 }
 
+// State in which calibration of the LIDAR takes plcace
 void calibrate_state()
 {
   bool completed;
@@ -173,14 +180,13 @@ void calibrate_state()
   if (completed)
   {
     flag_calibrate = false;
-  } else {
-    blehandler.shared_bledata.write_command("no command");
   }
 
   debug(DEBUG_MAIN, "Finished adding calibration data, returning...");
   enable_shot_interrupt();
 }
 
+// Main loop in which interrupt causes break from IDLE state - main FSM of the system
 void interrupt_loop()
 {
   current_state = next_state;
@@ -199,9 +205,8 @@ void interrupt_loop()
       blehandler.shared_bledata.read_command(cmd);
       if (strcmp(cmd, "calibrate") == 0 )
       {
+        blehandler.shared_bledata.write_command("no command");
         flag_calibrate = true;
-      } else{
-        flag_calibrate = false;
       }
 
       if (flag_calibrate != true)
@@ -262,7 +267,7 @@ void setup_hw(){
    debug(DEBUG_MAIN,"Finished hw setup...");
 }
 
-
+// Task to execute on 2nd core
 void Core1Task(void * parameter)
 {
   setup_hw();
@@ -273,6 +278,7 @@ void Core1Task(void * parameter)
   } 
 }
 
+// Task to execute on 1st core
 void Core2Task(void * parameter)
 {
   setup_BLE();
@@ -282,6 +288,7 @@ void Core2Task(void * parameter)
   }
 }
 
+// Setup for ESP32 - ALWAYS RUNS ONCE, followed by execution of "void loop()"
 void setup()
 {
   TaskHandle_t BLE_handle;

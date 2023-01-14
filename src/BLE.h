@@ -1,3 +1,9 @@
+/*  BLE.h
+*   Handles all BLE related control, including a ble data object
+*   for sahred memory and a BLE handler object to keep the BLE running
+*   Additionally, contains all BLE UUIDs and characteristics
+*/
+
 #ifndef HEADER_BLE
 #define HEADER_BLE
 

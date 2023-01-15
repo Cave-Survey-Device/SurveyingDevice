@@ -181,14 +181,14 @@ void SensorHandler::align_laser()
     for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
     {
         cartesian_calibration_data.col(calib_num) << 
-        DISTO_LEN*cos(mean_calibration_data(1))*cos(mean_calibration_data(0)),
-        DISTO_LEN*cos(mean_calibration_data(1))*sin(mean_calibration_data(0)),
-        DISTO_LEN*sin(mean_calibration_data(1));
+        DISTO_LEN*cos(device_calibration_data(1,calib_num))*cos(device_calibration_data(0,calib_num)),
+        DISTO_LEN*cos(device_calibration_data(1,calib_num))*sin(device_calibration_data(0,calib_num)),
+        DISTO_LEN*sin(device_calibration_data(1,calib_num));
     }
 
     // Calculate target distance
     // Maybe add target vec directio nreversing if getting issues wit direction?
-    target_distance = pow(pow(DISTO_LEN,2) + pow(mean_data(3),2) ,0.5); // Pythagoras on disto len and splay len
+    target_distance = pow(pow(DISTO_LEN,2) + pow(mean_calibration_data(3),2) ,0.5); // Pythagoras on disto len and splay len
     target_vector = calc_normal_vec(cartesian_calibration_data) * target_distance;
     x = target_vector(0);
     y = target_vector(1);
@@ -205,9 +205,9 @@ void SensorHandler::align_laser()
     // Calculate cartesian coordinates for disto tip in each calibration shot
     for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
     {
-        xi = cartesian_calibration_data(0);
-        yi = cartesian_calibration_data(1);
-        zi = cartesian_calibration_data(2);
+        xi = cartesian_calibration_data(0,calib_num);
+        yi = cartesian_calibration_data(1,calib_num);
+        zi = cartesian_calibration_data(2,calib_num);
         Serial.printf("Disto tip coordinates X: %f, Y: %f, Z: %f\n",xi,yi,zi);
 
         // Rotation matrix about x depending on device roll

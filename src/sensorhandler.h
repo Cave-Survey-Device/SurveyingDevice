@@ -9,7 +9,7 @@
 static const int SAMPLING_SIZE = 10;
 static const int CALIBRATION_SIZE = 8;
 
-// Calculates the best fit plane to a set of points in 3d adn returns the vector normal to this plane
+// Calculates the best fit plane to a set of points in 3d and returns the vector normal to this plane
 Vector3d calc_normal_vec(MatrixXd point_vec, bool debug = false);
 
 // Catchall class for handling all sensors

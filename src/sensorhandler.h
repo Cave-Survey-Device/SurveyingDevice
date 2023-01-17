@@ -47,9 +47,9 @@ class SensorHandler{
         // Heading, Inclination, Roll, Distance
         Eigen::Matrix<double,4,CALIBRATION_SIZE> device_calibration_data;
 
-        double heading;
-        double inclination;
-        double roll;
+        // In radians
+        double heading, inclination, roll;
+        // In metres
         double distance;
 
         // Raw magnetometer data (vector) - of the device

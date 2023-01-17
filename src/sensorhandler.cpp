@@ -6,10 +6,15 @@ Vector3d calc_normal_vec(MatrixXd point_vec, bool debug /*= false*/){
   MatrixXd left_singular_mat;
   int U_cols;
 
+  // Subtract mean from each point otherwise its wrong XD
+  // https://www.ltu.se/cms_fs/1.51590!/svd-fitting.pdf
+  point_vec = point_vec.colwise()-point_vec.rowwise().mean();
+
   JacobiSVD<MatrixXd> svd(point_vec, ComputeThinU | ComputeThinV);
   left_singular_mat = svd.matrixU();
   U_cols = left_singular_mat.cols();
-  normal << left_singular_mat(0,U_cols-1), left_singular_mat(1,U_cols-1), left_singular_mat(2,U_cols-1);
+  // 3rd col of U contains normal vec
+  normal << left_singular_mat(0,2), left_singular_mat(1,2), left_singular_mat(2,2);
 
   if (debug){
     sprintf(buffer, "U: ", svd.matrixU(), "Sigma: ", svd.singularValues(), "\n");
@@ -46,8 +51,13 @@ void SensorHandler::update()
     // Convert data to orientation
     this->get_orientation();
 
+    Serial.print("Cartesian coordinates of disto tip: ");
+    Serial.printf("X: %f", DISTO_LEN*sin(M_PI_2 - inclination)*cos(-heading));
+    Serial.printf("   Y: %f", DISTO_LEN*sin(M_PI_2 - inclination)*sin(-heading));
+    Serial.printf("   Z: %f\n", DISTO_LEN*cos(M_PI_2 - inclination));
+
     char str_buf[60];
-    sprintf(str_buf,"Raw device data H: %f, I: %f, D: %f", heading, inclination, distance);
+    sprintf(str_buf,"Raw device data H: %f, I: %f, D: %f", RAD_TO_DEG*heading, RAD_TO_DEG*inclination, distance);
     debug(DEBUG_SENSOR,str_buf);
 }
 
@@ -61,15 +71,16 @@ void SensorHandler::get_orientation()
 
     Vector3d vector_north = mag_data - ((mag_data.dot(grav_data) / grav_data.dot(grav_data)) * grav_data);
 
-    inclination = RAD_TO_DEG * inclination;
-    roll = RAD_TO_DEG * roll;
-    heading =  RAD_TO_DEG * atan2(vector_north(1), vector_north(0));
+    inclination = inclination;
+    roll = roll;
+    heading =  atan2(vector_north(1), vector_north(0));
     if (grav_data(2) < 0)
     {
         heading = heading * -1;
     }
 }
 
+// Outputs data in degrees
 Vector3d SensorHandler::get_shot_data()
 {
     Vector3d out;
@@ -77,10 +88,6 @@ Vector3d SensorHandler::get_shot_data()
     double y;
     double roll_correct_heading_correction = 0;
     double roll_correct_inclination_correction = 0;
-
-    // Convert data to radians for maths to come
-    heading = DEG_TO_RAD * heading;
-    inclination = DEG_TO_RAD * inclination;
 
     if (roll > 180)
     {
@@ -105,10 +112,6 @@ Vector3d SensorHandler::get_shot_data()
     out(1) = RAD_TO_DEG * atan2(y,x);
     out(2) = pow(pow(DISTO_LEN,2) + pow(distance,2) ,0.5);
 
-    // Convert data back to degrees
-    heading = RAD_TO_DEG * heading;
-    inclination = RAD_TO_DEG * inclination;
-
     return out;
 }
 
@@ -127,14 +130,13 @@ SensorHandler::SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lid
 
 bool SensorHandler::calibrate()
 {
-    if (calibration_num < 7) // Do 8 times
+    if (calibration_num < 8) // Do 8 times
     {
         Serial.printf("Got calibration %i!\n",calibration_num);
-        calibration_num++;
-        this->update();
-
+        
         // Add data to the calibration data store
         device_calibration_data.col(calibration_num) << heading, inclination, roll, distance;
+        calibration_num++;
 
         return false;
     } else {
@@ -178,12 +180,13 @@ void SensorHandler::align_laser()
      * 4. multiply by target distance to get location of target
      * 5. Convert to cartesian coordinates of target point
      *************************************************************/
+    char str_buf[60];
     for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
     {
         cartesian_calibration_data.col(calib_num) << 
-        DISTO_LEN*cos(device_calibration_data(1,calib_num))*cos(device_calibration_data(0,calib_num)),
-        DISTO_LEN*cos(device_calibration_data(1,calib_num))*sin(device_calibration_data(0,calib_num)),
-        DISTO_LEN*sin(device_calibration_data(1,calib_num));
+        DISTO_LEN*sin(M_PI_2 - device_calibration_data(1,calib_num))*cos(-device_calibration_data(0,calib_num)),
+        DISTO_LEN*sin(M_PI_2 - device_calibration_data(1,calib_num))*sin(-device_calibration_data(0,calib_num)),
+        DISTO_LEN*cos(M_PI_2 - device_calibration_data(1,calib_num));
     }
 
     // Calculate target distance
@@ -193,6 +196,12 @@ void SensorHandler::align_laser()
     x = target_vector(0);
     y = target_vector(1);
     z = target_vector(2);
+
+    if (cartesian_calibration_data.col(0)(0) * target_vector(0) < 0)
+    {
+        target_vector = -target_vector;
+    }
+
     Serial.printf("Target coordinates X: %f, Y: %f, Z: %f\n",x,y,z);
     
 
@@ -220,7 +229,7 @@ void SensorHandler::align_laser()
         misalignement_mat.col(calib_num) << x-xi, y-yi, z-zi;
         // Reverse the effects of tilt on the misalignement vector
         misalignement_mat.col(calib_num) = rotation_matrix * misalignement_mat.col(calib_num);
-        Serial.printf("Misalignment vector: X: %f, Y: %f, Z: %f\n",misalignement_mat(0),misalignement_mat(1),misalignement_mat(2));
+        //Serial.printf("Misalignment vector: X: %f, Y: %f, Z: %f\n",misalignement_mat(0,calib_num),misalignement_mat(1,calib_num),misalignement_mat(2,calib_num));
     }
 
 

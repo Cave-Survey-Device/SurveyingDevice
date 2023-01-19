@@ -95,13 +95,19 @@ void state_idle(){
   if (strcmp(cmd, "calibrate accel") == 0 )
   {
     next_state = ACCEL_CALIB;
+    cmd = "NO COMMAND";
+    blehandler.shared_bledata.write_command(cmd);
   } else if (strcmp(cmd, "calibrate mag") == 0 )
   {
     magnetometer.init();
     next_state = MAG_CALIB;
+    cmd = "NO COMMAND";
+    blehandler.shared_bledata.write_command(cmd);
   } else if (strcmp(cmd, "align laser") == 0 )
   {
     next_state = LASER_ALIGN;
+    cmd = "NO COMMAND";
+    blehandler.shared_bledata.write_command(cmd);
   } else if (interrupt_button_pressed)
   {
     next_state = MASTER_PRESS;
@@ -285,11 +291,10 @@ void setup_hw(){
 void Core1Task(void * parameter)
 {
   setup_hw();
-  reset_flow_interrupt_flags();
   while(true)
   {
     flow_handler();
-    delay(1);
+    delay(10);
   } 
 }
 
@@ -299,7 +304,7 @@ void Core2Task(void * parameter)
   setup_BLE();
   while(true)
   {
-    delay(1);
+    delay(10);
   }
 }
 
@@ -312,7 +317,7 @@ void setup()
       "BLE", /* Name of the task */
       10000,  /* Stack size in words */
       NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
+      2,  /* Priority of the task */
       &BLE_handle,  /* Task handle. */
       1); /* Core where the task should run */
 
@@ -322,7 +327,7 @@ void setup()
       "Hardware", /* Name of the task */
       10000,  /* Stack size in words */
       NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
+      2,  /* Priority of the task */
       &hardware_handle,  /* Task handle. */
       0); /* Core where the task should run */
 }

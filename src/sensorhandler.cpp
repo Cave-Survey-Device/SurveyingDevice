@@ -14,7 +14,8 @@ Matrix3d getXRotation(double theta)
 Vector3d toCartesian(Vector3d spherical)
 {
     Vector3d cartesian;
-    cartesian << spherical(2)*(cos(spherical(1))*sin(spherical(0))),
+    // Serial.printf("Heading: %f   Inclination: %f\n", spherical(0), spherical(1));
+    cartesian << spherical(2)*(sin(spherical(1))*cos(spherical(0))),
                  spherical(2)*(sin(spherical(1))*sin(spherical(0))),
                  spherical(2)*(cos(spherical(1)));
     return cartesian;
@@ -186,8 +187,8 @@ bool SensorHandler::calibrate()
     //     calibration_num = 0;
     //     return true;
     // }
-    device_calibration_data <<  0.7853981633974483 ,1.0471975511965976 ,1.5707963267948966 ,2.0943951023931953 ,2.356194490192345 ,2.0943951023931957 ,1.5707963267948968 ,1.0471975511965979 ,
-                                0.0 ,-0.6154797086703874 ,-0.7853981633974483 ,-0.6154797086703874 ,-1.2246467991473532e-16 ,0.6154797086703873 ,0.7853981633974483 ,0.6154797086703875 ,
+    device_calibration_data <<  0.0 ,-0.6154797086703874 ,-0.7853981633974483 ,-0.6154797086703874 ,-1.2246467991473532e-16 ,0.6154797086703873 ,0.7853981633974483 ,0.6154797086703875 ,
+                                0.7853981633974483 ,1.0471975511965976 ,1.5707963267948966 ,2.0943951023931953 ,2.356194490192345 ,2.0943951023931957 ,1.5707963267948968 ,1.0471975511965979 ,
                                 0.0 ,0.7853981633974483 ,1.5707963267948966 ,2.356194490192345 ,3.141592653589793 ,3.9269908169872414 ,4.71238898038469 ,5.497787143782138,
                                 4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9; 
     this->align_laser();        
@@ -243,7 +244,7 @@ void SensorHandler::align_laser()
     // Maybe add target vec direction reversing if getting issues wit direction?
     target_distance = pow(pow(DISTO_LEN,2) + pow(mean_calibration_data(3),2) ,0.5); // Pythagoras on disto len and splay len
     // Get normal to best fit plane and multiply by distance
-    target_vector = -calc_normal_vec(cartesian_calibration_data) * target_distance;
+    target_vector = calc_normal_vec(cartesian_calibration_data) * target_distance;
     // Convert to easier variables
     x = target_vector(0);
     y = target_vector(1);
@@ -274,7 +275,7 @@ void SensorHandler::align_laser()
 
         // Rotation matrix about x depending on device roll
         roll = device_calibration_data(2,calib_num);
-        rotation_matrix = getXRotation(roll);
+        rotation_matrix = getXRotation(-roll);
 
         // Calculalate vector between tip of disto and actual target
         misalignement_mat.col(calib_num) << x-xi, y-yi, z-zi;

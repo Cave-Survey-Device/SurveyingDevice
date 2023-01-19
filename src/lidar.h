@@ -47,12 +47,6 @@ class Lidar {
         // Initialise lidar
         void init();
 
-        // Generate lidar command 
-        void generate_command(int type, char command_arr[LIDAR_SEND_COMMAND_SIZE]);
-
-        // Pack received lidar message into lidar msg struct
-        void receive_response(char raw_data[], lidar_received_msg* receivec_msg);
-
         // Get lidar mesaurement
         double get_measurement();
 
@@ -86,6 +80,12 @@ class Lidar {
 
         // Flush rx
         void flush_serial1();
+
+        // Generate lidar command 
+        void generate_command(int type, char command_arr[LIDAR_SEND_COMMAND_SIZE]);
+
+        // Pack received lidar message into lidar msg struct
+        void receive_response(char raw_data[], lidar_received_msg* receivec_msg);
 
 };
 

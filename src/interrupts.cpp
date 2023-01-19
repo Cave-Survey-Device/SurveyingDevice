@@ -5,8 +5,6 @@ bool interrupt_button_pressed = false;
 bool interrupt_uart_timeout = false;
 bool interrupt_get_shot = false;
 
-
-
 void init_interrupts()
 {
     

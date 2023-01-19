@@ -43,6 +43,7 @@ Vector3d calc_normal_vec(MatrixXd point_vec, bool debug /*= false*/){
   // 3rd col of U contains normal vec
   normal << left_singular_mat(0,2), left_singular_mat(1,2), left_singular_mat(2,2);
 
+  // Debugging if necessary
   if (debug){
     sprintf(buffer, "U: ", svd.matrixU(), "Sigma: ", svd.singularValues(), "\n");
     Serial.println(buffer);
@@ -58,6 +59,13 @@ void SensorHandler::update()
     Matrix<double,3,SAMPLING_SIZE> accel_samples;
     Matrix<double,3,SAMPLING_SIZE> mag_samples;
     int sample_num;
+
+    /***************************************************************
+     * 1. Get a set of SAMPLING_SIZE samples and average them
+     * 2. Get the lidar distance
+     * 3. Convert the cartesian data to a heading and inclination
+     * 4. Apply modifications to data for formatting
+    ***************************************************************/
 
     // get an average of SAMPLING_SIZE samples for accuracy
     for (sample_num=0;sample_num<SAMPLING_SIZE;sample_num++)
@@ -83,33 +91,29 @@ void SensorHandler::update()
     inclination = -inclination;
     roll = -roll;
 
-    // Convert to spherical coordinates version i.e. heading measured in anticlockwise direction
+    // Convert to spherical coordinates i.e. heading measured in anticlockwise direction
     heading = -heading;
     // Convert so spherical coordinates i.e.inclination measured from +z
     inclination = M_PI_2 - inclination;
 
-    // Serial.print("Cartesian coordinates of disto tip: ");
-    // Serial.printf("X: %f", DISTO_LEN*sin(M_PI_2 - inclination)*cos(-heading));
-    // Serial.printf("   Y: %f", DISTO_LEN*sin(M_PI_2 - inclination)*sin(-heading));
-    // Serial.printf("   Z: %f\n", DISTO_LEN*cos(M_PI_2 - inclination));
 
     char str_buf[60];
     sprintf(str_buf,"Raw device data H: %f, I: %f, D: %f", RAD_TO_DEG*heading, RAD_TO_DEG*inclination, distance);
     debug(DEBUG_SENSOR,str_buf);
 }
 
-// Returns heading and inclination
-// https://arduino.stackexchange.com/a/88707
+
 void SensorHandler::get_orientation()
 {    
+    // Returns heading and inclination
+    // https://arduino.stackexchange.com/a/88707
     // https://www.analog.com/en/app-notes/an-1057.html equation (11)
 	inclination =  atan2(grav_data(0),pow(pow(grav_data(1),2) + pow(grav_data(2),2),0.5));
     roll = atan2(grav_data(1),pow(pow(grav_data(0),2) + pow(grav_data(2),2),0.5));
 
+    // Project magnetic vector onto horizontal plane
     Vector3d vector_north = mag_data - ((mag_data.dot(grav_data) / grav_data.dot(grav_data)) * grav_data);
 
-    inclination = inclination;
-    roll = roll;
     heading =  atan2(vector_north(1), vector_north(0));
     if (grav_data(2) < 0)
     {

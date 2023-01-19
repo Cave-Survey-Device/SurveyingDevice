@@ -43,10 +43,8 @@ class SensorHandler{
     private:
         // Connection to accelerometer sensor
         Accelerometer* accel_sensor;
-
         // Connection to magnetometer sensor
         Magnetometer* mag_sensor;
-
         // Connection to LIDAR sensor
         Lidar* lidar_sensor;
 

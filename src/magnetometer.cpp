@@ -8,6 +8,14 @@ Magnetometer::Magnetometer(struct bno055_mag *myMagData)
 }
 
 void Magnetometer::calc_magnetometer_HSI(){
+  /**************************************************************************************************
+   * 1. Subtract mean of point cloud from data to remove hard iron effects and center the data
+   * 2. Find the covariance of the data to find the transformation from a perfect sphere
+   * 3. Get the eigen-decomposition of the covariance
+   * 4. Find the squareroot of the eigenvalues
+   * 5. Multiply the eigenvectors by the diagonal matrix formed by the squareroot of the eigenvalues
+   * 6. Find the inverse of this and return it
+  **************************************************************************************************/
   MatrixXd centered = magnetometer_arr.colwise() - magnetometer_arr.rowwise().mean();
   Matrix3d cov = (centered.transpose() * centered) / double(magnetometer_arr.cols() - 1);
   EigenSolver<Matrix3d> eig;
@@ -22,6 +30,9 @@ void Magnetometer::calc_magnetometer_HSI(){
 }
 
 void Magnetometer::init(){  
+  /**********************************************************
+   * Initialises the calibration array for the magnetometer
+  ***********************************************************/
   int i;
   for (i=0;i<MAGNETOMETER_ARR_LEN;++i){
     magnetometer_arr(0,i) = 0;
@@ -67,9 +78,11 @@ int Magnetometer::get_magnetometer_index(double x, double y,double z){
 }
 
 void Magnetometer::add_calibration_data(){
-  // Assigns each 1deg by 1 deg sector of the sphere an array value, overwrites old data
-  // Probably needs a reset function for a new calibration at some point
-  // Also needs to save calibration data to file!
+  /**************************************************************************************
+   * Adds calibration data from raw_mag_data updated by update() to the calibration array
+   * Data is added to spaces corresponding to 1deg sectors of the spheres surface and is
+   * overwritten when new data at the same location is provided.
+  ***************************************************************************************/
   int index;
   double x,y,z;
   x = raw_mag_data(0);
@@ -94,7 +107,10 @@ void Magnetometer::add_calibration_data(){
 }
 
 int Magnetometer::check_calibration_progress(){
-  // Finds how much of the magnetometer_arr is populated 
+  /***************************************************************************************
+   * Checks the calibration progress of the magnetometer by counting how many locations
+   * are nonzero and the dividing by the total number of possible positions
+  ****************************************************************************************/
   int progress = 0;
   int i;
   for (i=0;i<MAGNETOMETER_ARR_LEN;++i){
@@ -108,13 +124,14 @@ int Magnetometer::check_calibration_progress(){
 
 void Magnetometer::update()
 {
+  /****************************************************************
+   * Updates the magnetometers stored values from the sensor
+   * Stores both raw and corrected data
+  *****************************************************************/
   bno055_read_mag_xyz(sensor_connection);
   raw_mag_data << sensor_connection->x, sensor_connection->y, sensor_connection->z;
-  //Serial.printf("Data x: %f y: %f z: %f\n",raw_mag_data(0),raw_mag_data(1),raw_mag_data(2));
-  corrected_mag_data = raw_mag_data; //correction_transformation * raw_mag_data;
+  corrected_mag_data = correction_transformation * raw_mag_data;
 }
-
-
 
 Vector3d Magnetometer::get_mag_vec()
 {

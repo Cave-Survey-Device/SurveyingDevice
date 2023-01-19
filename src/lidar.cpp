@@ -43,7 +43,6 @@ double Lidar::to_distance(char* data)
     return d;
 }
 
-
 // Main functions
 Lidar::Lidar()
 {   

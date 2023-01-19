@@ -345,6 +345,7 @@ void setup()
 //   flag_calibrate = false;
 // }
 
+
 // Runs aafter setup
 void loop(){
   // TODO: Execute BLE commands which should have a struct made for them.

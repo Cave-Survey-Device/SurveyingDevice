@@ -8,6 +8,8 @@ static bool interrupts_initialised = false;
 extern bool interrupt_button_released;
 extern bool interrupt_button_pressed;
 
+void reset_flow_interrupt_flags();
+
 void IRAM_ATTR ISR_BUTTON_CHANGE();
 
 extern bool interrupt_get_shot;

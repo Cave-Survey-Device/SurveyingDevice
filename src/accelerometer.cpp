@@ -19,3 +19,9 @@ Vector3d Accelerometer::get_grav_vec()
 {
     return corrected_gravity_data;
 };
+
+
+void Accelerometer::calibrate()
+{
+    
+}

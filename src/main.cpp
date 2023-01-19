@@ -21,6 +21,7 @@
 #include "interrupts.h"
 #include "BLE.h"
 #include "sensorhandler.h"
+#include "programflow.h"
 
 
 static Adafruit_SSD1306 display;
@@ -40,13 +41,6 @@ static Accelerometer accelerometer(&myGravityData);
 static Lidar lidar;
 static BLEHandler blehandler;
 static SensorHandler sensorhandler(&accelerometer, &magnetometer, &lidar);
-
-// Mainloop flow state enum
-enum shot_status {IDLE, WAITING, SPLAY, BASE};
-// Holds current state to act on in after interrupt triggered
-static shot_status current_state = IDLE;
-// Holds next state to act on in after interrupt triggered
-static shot_status next_state = IDLE;
 
 // Current shot ID
 static int shot_ID = 0;
@@ -77,164 +71,11 @@ void init_bno(){
   delay(1);
 }
 
-// Code to save a splay to flash
-void save_splay()
-{
-  Vector3d splay_data;
-  splay_data = sensorhandler.get_shot_data();
-
-  // Node struct to hold data to be saved
-  node *n = (struct node*)malloc(sizeof(node));
-
-  char str_id[4];
-  // Populate node object
-  debug(DEBUG_MAIN, "Assigning values to node object");
-  n->id = shot_ID;
-  n->heading = splay_data(0);
-  n->inclination = splay_data(1);
-  n->distance = splay_data(2);
-
-  // Populate str_id with string version of int id
-  debug(DEBUG_MAIN, "Writing to file");
-  sprintf(str_id,"%d",shot_ID);
-  write_to_file(current_file_name,str_id,n);
-  
-  debug(DEBUG_MAIN, "Finished saving data, returning...");
-}
-
-// Waiting state
-void idle_state()
-{
-  if (interrupt_button_pressed)
-  {
-    interrupt_button_pressed = false;
-    interrupt_get_shot = false;
-    next_state = WAITING;
-    // debug(DEBUG_MAIN,"\n\n---------------------------------------");
-    // debug(DEBUG_MAIN,"Starting shot timer...");
-    start_shot_interrupt_timer();
-  }
-}
-
-// State which decides between toggling laser and taking shot
-void waiting_state()
-{
-  if (interrupt_button_released)
-  {
-    //debug(DEBUG_MAIN,"Stopping shot timer...");
-    stop_shot_interrupt_timer();
-    interrupt_button_pressed = false;
-    interrupt_button_released = false;
-    interrupt_get_shot = false;
-    //Serial.println("Toggle laser");
-    next_state = IDLE;
-    lidar.toggle_laser();
-  } else if (interrupt_get_shot)
-  {
-    //debug(DEBUG_MAIN,"Stopping shot timer...");
-    stop_shot_interrupt_timer();
-    interrupt_button_pressed = false;
-    interrupt_button_released = false;
-    interrupt_get_shot = false;
-    //Serial.println("Get shot...");
-    next_state = SPLAY;
-    //debug(DEBUG_MAIN, "Received shot interrupt");
-    try
-    {
-      sensorhandler.update();
-      debug(DEBUG_MAIN, "Succesfully got measurement");
-    }
-    catch(const char* e)
-    {
-      debug(DEBUG_MAIN, "Failed to got measurement");
-      laser_on = false;
-      Serial.println(e);
-      next_state = IDLE;
-    }
-  } 
-}
-
-// State in which a splay is saved and BLE hdanler is updated
-void splay_state()
-{
-  disable_shot_interrupt();
-  next_state = IDLE;
-  save_splay();
-
-  debug(DEBUG_MAIN,"Reading splay and sending to BLE...");
-  node n1;
-  char str_id[4];
-  snprintf(str_id,sizeof(str_id),"%d",shot_ID);
-  read_from_file(current_file_name,str_id,&n1);
-  blehandler.shared_bledata.write_data(&n1);
-  blehandler.update();
-
-  shot_ID += 1;
-  enable_shot_interrupt();
-}
-
-// State in which calibration of the LIDAR takes plcace
-void calibrate_state()
-{
-  bool completed;
-  disable_shot_interrupt();
-  next_state = IDLE;
-
-  completed = sensorhandler.calibrate();
-  if (completed)
-  {
-    flag_calibrate = false;
-  }
-
-  debug(DEBUG_MAIN, "Finished adding calibration data, returning...");
-  enable_shot_interrupt();
-}
-
-// Main loop in which interrupt causes break from IDLE state - main FSM of the system
-void interrupt_loop()
-{
-  current_state = next_state;
-  switch (current_state){
-    case IDLE:
-      idle_state();
-      break;
-
-    case WAITING:
-      waiting_state();
-      break;
-
-    case SPLAY:
-      // maybe set a flag when cmd has changed to decrease processing?
-      char cmd[20];
-      blehandler.shared_bledata.read_command(cmd);
-      if (strcmp(cmd, "calibrate") == 0 )
-      {
-        blehandler.shared_bledata.write_command("no command");
-        flag_calibrate = true;
-      }
-
-      if (flag_calibrate != true)
-      {
-        debug(DEBUG_MAIN,"Splay state");
-        splay_state();
-      } else {
-        debug(DEBUG_MAIN,"Calibration state");
-        char cmd[50];
-        blehandler.shared_bledata.read_command(cmd);
-        Serial.println(cmd);
-
-        calibrate_state();
-      }
-      break;
-  }
-}
-
 void setup_BLE()
 {
   debug(DEBUG_MAIN,"Starting BLE...");
   blehandler.start();
 }
-
 
 void setup_hw(){
   // Initialise serial and UARTs
@@ -278,8 +119,8 @@ void Core1Task(void * parameter)
   setup_hw();
   while(true)
   {
-    interrupt_loop();
-    delay(100);
+    flow_handler();
+    delay(1);
   } 
 }
 

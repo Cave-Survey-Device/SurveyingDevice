@@ -25,7 +25,7 @@ class SensorHandler{
         void update();
 
         // Calibrates the alignement of all sensors
-        bool calibrate();
+        bool add_laser_calibration();
 
         // Returns the data of a shot [Heading, Inclination, Distance]
         Vector3d get_shot_data();

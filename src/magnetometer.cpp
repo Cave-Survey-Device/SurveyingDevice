@@ -7,7 +7,8 @@ Magnetometer::Magnetometer(struct bno055_mag *myMagData)
   init();
 }
 
-void Magnetometer::calc_magnetometer_HSI(){
+
+void Magnetometer::calibrate(){
   /**************************************************************************************************
    * 1. Subtract mean of point cloud from data to remove hard iron effects and center the data
    * 2. Find the covariance of the data to find the transformation from a perfect sphere

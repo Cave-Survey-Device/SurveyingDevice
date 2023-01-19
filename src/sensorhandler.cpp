@@ -169,7 +169,7 @@ SensorHandler::SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lid
     // Add code to load/save sensor calibration data from file
 }
 
-bool SensorHandler::calibrate()
+bool SensorHandler::add_laser_calibration()
 {
     // if (calibration_num < CALIBRATION_SIZE) // Do 8 times
     // {

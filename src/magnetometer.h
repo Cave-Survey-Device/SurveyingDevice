@@ -31,8 +31,8 @@ class Magnetometer  {
         // Initialises the calibration array
         void init();
 
-        // Calculates the magnetometer HSI correction
-        void calc_magnetometer_HSI();
+        // Calculates the magnetometer HSI correction and Calculates calibration matrix for accelerometer
+        void calibrate();
 
         // returns the current calibration array progress
         int check_calibration_progress();

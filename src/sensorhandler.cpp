@@ -1,5 +1,34 @@
 #include "sensorhandler.h"
 
+// Get rotation matrix clockwise about x axis
+Matrix3d getXRotation(double theta)
+{
+    Matrix3d T;
+    T << 1,0,0,
+         0,cos(theta),-sin(theta),
+         0,sin(theta),cos(theta);
+    return T;
+}
+
+// Given sperical coordinates, heading, inclination, distance return the cartesian coordinates 
+Vector3d toCartesian(Vector3d spherical)
+{
+    Vector3d cartesian;
+    cartesian << spherical(2)*(cos(spherical(1))*sin(spherical(0))),
+                 spherical(2)*(sin(spherical(1))*sin(spherical(0))),
+                 spherical(2)*(cos(spherical(1)));
+    return cartesian;
+}
+
+// Given cartesan coordinates x,y,z return spherical coordinates heading, inclination, distance
+Vector3d toSpherical(Vector3d cartesian){
+    Vector3d spherical;
+    spherical << atan2(cartesian(1), cartesian(0)),
+                 atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
+                 cartesian.norm();
+    return spherical;
+}
+
 Vector3d calc_normal_vec(MatrixXd point_vec, bool debug /*= false*/){
   char buffer[150];
   Vector3d normal;
@@ -51,10 +80,20 @@ void SensorHandler::update()
     // Convert data to orientation
     this->get_orientation();
 
-    Serial.print("Cartesian coordinates of disto tip: ");
-    Serial.printf("X: %f", DISTO_LEN*sin(M_PI_2 - inclination)*cos(-heading));
-    Serial.printf("   Y: %f", DISTO_LEN*sin(M_PI_2 - inclination)*sin(-heading));
-    Serial.printf("   Z: %f\n", DISTO_LEN*cos(M_PI_2 - inclination));
+    // Lsaer mounted on other side :)
+    heading = heading + M_PI;
+    inclination = -inclination;
+    roll = -roll;
+
+    // Convert to spherical coordinates version i.e. heading measured in anticlockwise direction
+    heading = -heading;
+    // Convert so spherical coordinates i.e.inclination measured from +z
+    inclination = M_PI_2 - inclination;
+
+    // Serial.print("Cartesian coordinates of disto tip: ");
+    // Serial.printf("X: %f", DISTO_LEN*sin(M_PI_2 - inclination)*cos(-heading));
+    // Serial.printf("   Y: %f", DISTO_LEN*sin(M_PI_2 - inclination)*sin(-heading));
+    // Serial.printf("   Z: %f\n", DISTO_LEN*cos(M_PI_2 - inclination));
 
     char str_buf[60];
     sprintf(str_buf,"Raw device data H: %f, I: %f, D: %f", RAD_TO_DEG*heading, RAD_TO_DEG*inclination, distance);
@@ -130,20 +169,31 @@ SensorHandler::SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lid
 
 bool SensorHandler::calibrate()
 {
-    if (calibration_num < 8) // Do 8 times
-    {
-        Serial.printf("Got calibration %i!\n",calibration_num);
+    // if (calibration_num < CALIBRATION_SIZE) // Do 8 times
+    // {
+    //     Serial.printf("Got calibration %i!\n",calibration_num);
         
-        // Add data to the calibration data store
-        device_calibration_data.col(calibration_num) << heading, inclination, roll, distance;
-        calibration_num++;
+        
+    //     // Add data to the calibration data store
+    //     device_calibration_data.col(calibration_num) << heading, inclination, roll, distance;
+    //     Serial.printf("Roll %f\n", device_calibration_data(2,calibration_num));
+    //     calibration_num++;
 
-        return false;
-    } else {
-        // Once enough data is collected, attempt to align the laser
-        this->align_laser();        
-        return true;
-    }
+    //     return false;
+    // } else {
+    //     // Once enough data is collected, attempt to align the laser
+    //     this->align_laser();        
+    //     calibration_num = 0;
+    //     return true;
+    // }
+    device_calibration_data <<  0.7853981633974483 ,1.0471975511965976 ,1.5707963267948966 ,2.0943951023931953 ,2.356194490192345 ,2.0943951023931957 ,1.5707963267948968 ,1.0471975511965979 ,
+                                0.0 ,-0.6154797086703874 ,-0.7853981633974483 ,-0.6154797086703874 ,-1.2246467991473532e-16 ,0.6154797086703873 ,0.7853981633974483 ,0.6154797086703875 ,
+                                0.0 ,0.7853981633974483 ,1.5707963267948966 ,2.356194490192345 ,3.141592653589793 ,3.9269908169872414 ,4.71238898038469 ,5.497787143782138,
+                                4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9; 
+    this->align_laser();        
+    calibration_num = 0;
+    return true;
+
 }
 
 void SensorHandler::align_laser()
@@ -153,6 +203,8 @@ void SensorHandler::align_laser()
     Vector4d mean_calibration_data;
     // Mean misalignement vector
     Vector3d misalignement_mean;
+    // Dummy variable for cartesian <=> spherical conversions
+    Vector3d conversion_dummy;
     // Vector direction to target
     Vector3d target_vector;
     // Matrix to hold each calculated misalignement vector
@@ -175,29 +227,30 @@ void SensorHandler::align_laser()
 
     /*************************************************************
      * 1. Find the locations of the tip of the disto
-     * 2. find the plane which best fits those points
-     * 3. find the normal vector to this
-     * 4. multiply by target distance to get location of target
+     * 2. Find the plane which best fits those points
+     * 3. Find the normal vector to this
+     * 4. Multiply by target distance to get location of target
      * 5. Convert to cartesian coordinates of target point
      *************************************************************/
-    char str_buf[60];
+    // Calculate cartesian coordinates for disto tip in each calibration shot
     for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
     {
-        cartesian_calibration_data.col(calib_num) << 
-        DISTO_LEN*sin(M_PI_2 - device_calibration_data(1,calib_num))*cos(-device_calibration_data(0,calib_num)),
-        DISTO_LEN*sin(M_PI_2 - device_calibration_data(1,calib_num))*sin(-device_calibration_data(0,calib_num)),
-        DISTO_LEN*cos(M_PI_2 - device_calibration_data(1,calib_num));
+        conversion_dummy << device_calibration_data(0,calib_num), device_calibration_data(1,calib_num), DISTO_LEN;
+        cartesian_calibration_data.col(calib_num) << toCartesian(conversion_dummy);
     }
 
     // Calculate target distance
-    // Maybe add target vec directio nreversing if getting issues wit direction?
+    // Maybe add target vec direction reversing if getting issues wit direction?
     target_distance = pow(pow(DISTO_LEN,2) + pow(mean_calibration_data(3),2) ,0.5); // Pythagoras on disto len and splay len
-    target_vector = calc_normal_vec(cartesian_calibration_data) * target_distance;
+    // Get normal to best fit plane and multiply by distance
+    target_vector = -calc_normal_vec(cartesian_calibration_data) * target_distance;
+    // Convert to easier variables
     x = target_vector(0);
     y = target_vector(1);
     z = target_vector(2);
 
-    if (cartesian_calibration_data.col(0)(0) * target_vector(0) < 0)
+    // Not working :( IDK why
+    if (cartesian_calibration_data(0,0) * target_vector(0) < 0)
     {
         target_vector = -target_vector;
     }
@@ -211,7 +264,7 @@ void SensorHandler::align_laser()
      * 3. Calculate the vector between the target and disto tip
      * 4. Rotate this vector by the matrix to revers the effects of tilt on the result
      *************************************************************************************/
-    // Calculate cartesian coordinates for disto tip in each calibration shot
+    
     for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
     {
         xi = cartesian_calibration_data(0,calib_num);
@@ -221,15 +274,15 @@ void SensorHandler::align_laser()
 
         // Rotation matrix about x depending on device roll
         roll = device_calibration_data(2,calib_num);
-        rotation_matrix << 1,0,0,
-                           0,cos(roll),sin(roll),
-                           0,sin(roll),cos(roll);
+        rotation_matrix = getXRotation(roll);
 
         // Calculalate vector between tip of disto and actual target
         misalignement_mat.col(calib_num) << x-xi, y-yi, z-zi;
         // Reverse the effects of tilt on the misalignement vector
         misalignement_mat.col(calib_num) = rotation_matrix * misalignement_mat.col(calib_num);
         //Serial.printf("Misalignment vector: X: %f, Y: %f, Z: %f\n",misalignement_mat(0,calib_num),misalignement_mat(1,calib_num),misalignement_mat(2,calib_num));
+        Serial.printf("Misalignment mat X: %f, Y: %f, Z: %f\n",x-xi, y-yi, z-zi);
+        Serial.printf("Rotated misalignment mat X: %f, Y: %f, Z: %f\n\n",misalignement_mat(0,calib_num), misalignement_mat(1,calib_num), misalignement_mat(2,calib_num));
     }
 
 
@@ -260,7 +313,7 @@ double SensorHandler::get_inclination()
 }
 double SensorHandler::get_heading()
 {
-    return heading + heading_correction;
+    return heading; // + heading_correction;
 }
 double SensorHandler::get_distance()
 {

@@ -43,7 +43,7 @@ void init_uart_read_timer()
 {
     uart_read_timer = timerBegin(1, 80, true);
     timerAttachInterrupt(uart_read_timer, &ISR_UART_TIMEOUT, false);
-    timerAlarmWrite(uart_read_timer, 3000000, false);
+    timerAlarmWrite(uart_read_timer, 500000, false);
 }
 
 void init_shot_timer()

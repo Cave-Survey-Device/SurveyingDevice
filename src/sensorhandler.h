@@ -11,6 +11,9 @@ static const int CALIBRATION_SIZE = 8;
 
 // Calculates the best fit plane to a set of points in 3d and returns the vector normal to this plane
 Vector3d calc_normal_vec(MatrixXd point_vec, bool debug = false);
+Vector3d toCartesian(Vector3d spherical);
+Vector3d toSpherical(Vector3d cartesian);
+Matrix3d getXRotation(double theta);
 
 // Catchall class for handling all sensors
 class SensorHandler{

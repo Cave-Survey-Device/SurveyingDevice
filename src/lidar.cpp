@@ -75,7 +75,7 @@ void Lidar::init()
     debug(DEBUG_LIDAR,"Finished INIT");
 };
 
-void Lidar::read_msg_from_uart(char* buffer)
+bool Lidar::read_msg_from_uart(char* buffer)
 {
     char b[10];
     int count = 0;
@@ -92,7 +92,10 @@ void Lidar::read_msg_from_uart(char* buffer)
         {
             stop_uart_read_timer();
             interrupt_uart_timeout = false;
-            throw ("LIDAR UART READ ERROR: No message received!");
+            // Throw broken due to threads in ESP32
+            // throw ("LIDAR UART READ ERROR: No message received!");
+            // Instead changed to return bool
+            return 0;
         }
         count++;
     }
@@ -101,6 +104,7 @@ void Lidar::read_msg_from_uart(char* buffer)
 
     // Reads bytes until terminator into buffer (not including terminator)
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
+    return 1;
 }
 
 void Lidar::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SIZE])
@@ -277,7 +281,10 @@ double Lidar::get_measurement()
 
     // Send command to LIDAR and read the response
     Serial1.write(generated_command);
-    read_msg_from_uart(buffer);
+    if (!read_msg_from_uart(buffer))
+    {
+        return 0;
+    }
 
     // Attempt to parse the message received over UART
     try {
@@ -287,9 +294,13 @@ double Lidar::get_measurement()
         //toggle_laser();
         laser_on = false;
     }
-    catch(char* e ) {
+    catch(const char* e ) {
         Serial.print("ERROR: ");
         Serial.println(e);
+        return 0;
+    }
+    catch (...)
+    {
         return 0;
     }
 

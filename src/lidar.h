@@ -79,7 +79,7 @@ class Lidar {
         void erase_buffer();
 
         // Reads a message from the UART into buffer
-        void read_msg_from_uart(char* buffer);
+        bool read_msg_from_uart(char* buffer);
 
         // Converts a string containing the distance to a double
         double to_distance(char* data);

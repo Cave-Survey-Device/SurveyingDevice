@@ -29,6 +29,10 @@ static Adafruit_SSD1306 display;
 static struct bno055_t myBNO;
 static struct bno055_gravity myGravityData;
 static struct bno055_mag myMagData;
+unsigned char accelCalibStatus = 0;		//Variable to hold the calibration status of the Accelerometer
+unsigned char magCalibStatus = 0;		//Variable to hold the calibration status of the Magnetometer
+unsigned char gyroCalibStatus = 0;		//Variable to hold the calibration status of the Gyroscope
+unsigned char sysCalibStatus = 0;		//Variable to hold the calibration status of the System (BNO055's MCU)
 
 // Static global objects
 static Magnetometer magnetometer(&myMagData);
@@ -264,7 +268,7 @@ void setup_hw(){
   }
 
   flag_calibrate = false;
-   debug(DEBUG_MAIN,"Finished hw setup...");
+  debug(DEBUG_MAIN,"Finished hw setup...");
 }
 
 // Task to execute on 2nd core
@@ -313,6 +317,34 @@ void setup()
       0); /* Core where the task should run */
 }
 
+// void setup()
+// {
+//   // Initialise serial and UARTs
+//   Serial.begin(9600);
+//   Serial1.begin(9600);
+
+//   // Set GPIO_14 as LIDAR enable
+//   pinMode(GPIO_NUM_14, OUTPUT);
+//   digitalWrite(GPIO_NUM_14,LOW);
+
+//   // Initialise data objects and sensors
+//   debug(DEBUG_MAIN,"Initialising sensor objects");
+//   init_bno();
+//   magnetometer.init();
+
+//   init_interrupts();
+//   try
+//   {
+//     lidar.init();
+//   }
+//   catch(const char* e)
+//   {
+//     Serial.println(e);
+//   }
+
+//   flag_calibrate = false;
+// }
+
 // Runs aafter setup
 void loop(){
   // TODO: Execute BLE commands which should have a struct made for them.
@@ -330,4 +362,16 @@ void loop(){
   // Serial.println(magnetometer.check_calibration_progress());
   // delay(50);
 
+  
+  // sensorhandler.update();
+  // Serial.print("Calculated direction: ");
+  // Serial.println(RAD_TO_DEG * sensorhandler.get_heading());
+  // Serial.printf("Magnetometer X %f   Y %f    Z %f\n", (double)myMagData.x, (double)myMagData.y, (double)myMagData.z);
+    
+  // bno055_get_syscalib_status(&sysCalibStatus);
+  // Serial.print("System Calibration Status: ");			//To read out the Magnetometer Calibration Status (0-3)
+  // Serial.println(sysCalibStatus);
+  
+  // Serial.println();				
+  // delay(250);
 }

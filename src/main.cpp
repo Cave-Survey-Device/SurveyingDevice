@@ -303,8 +303,7 @@ void setup()
       NULL,  /* Task input parameter */
       0,  /* Priority of the task */
       &BLE_handle,  /* Task handle. */
-      1); /* Core where the task should run */
-  delay(2000);
+      0); /* Core where the task should run */
 
   TaskHandle_t hardware_handle;
   xTaskCreatePinnedToCore(

@@ -34,7 +34,9 @@ void IRAM_ATTR ISR_BUTTON_CHANGE()
     if (digitalRead(A0))
     {
         interrupt_button_pressed = true;
+        interrupt_button_released = false;
     } else {
+        interrupt_button_pressed = false;
         interrupt_button_released = true;
     }
 }
@@ -60,7 +62,7 @@ void init_shot_timer()
 
 void start_shot_interrupt_timer()
 {
-    enable_shot_interrupt();
+    // Serial.println("Starting shot timer...");
     timerRestart(shot_timer);
     timerAlarmEnable(shot_timer);
     timerStart(shot_timer);
@@ -76,8 +78,8 @@ void start_uart_read_timer()
 
 void stop_shot_interrupt_timer()
 {
+    // Serial.println("Stopping shot timer...");
     interrupt_uart_timeout = false;
-    disable_shot_interrupt();
     timerStop(uart_read_timer);
     timerAlarmDisable(uart_read_timer);
 }

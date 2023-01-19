@@ -34,7 +34,7 @@ public:
     double get_inclination();
 
     // Calculate calibration matrix for accelerometer
-    void Accelerometer::calibrate();
+    void calibrate();
 
 private:
     // Pointer to the struct containing sensor data

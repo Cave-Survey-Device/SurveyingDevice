@@ -21,7 +21,7 @@ using namespace Eigen;
 class RMC3100
 {
 public:
-    Vector3d RMC3100::get_measurement();
+    Vector3d get_measurement();
 
 private:
     // options

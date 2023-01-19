@@ -245,16 +245,17 @@ void SensorHandler::align_laser()
     target_distance = pow(pow(DISTO_LEN,2) + pow(mean_calibration_data(3),2) ,0.5); // Pythagoras on disto len and splay len
     // Get normal to best fit plane and multiply by distance
     target_vector = calc_normal_vec(cartesian_calibration_data) * target_distance;
-    // Convert to easier variables
-    x = target_vector(0);
-    y = target_vector(1);
-    z = target_vector(2);
 
     // Not working :( IDK why
     if (cartesian_calibration_data(0,0) * target_vector(0) < 0)
     {
         target_vector = -target_vector;
     }
+
+    // Convert to easier variables
+    x = target_vector(0);
+    y = target_vector(1);
+    z = target_vector(2);
 
     Serial.printf("Target coordinates X: %f, Y: %f, Z: %f\n",x,y,z);
     

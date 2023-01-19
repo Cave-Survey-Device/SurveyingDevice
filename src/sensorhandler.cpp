@@ -1,6 +1,5 @@
 #include "sensorhandler.h"
 
-// Get rotation matrix clockwise about x axis
 Matrix3d getXRotation(double theta)
 {
     Matrix3d T;
@@ -10,7 +9,6 @@ Matrix3d getXRotation(double theta)
     return T;
 }
 
-// Given sperical coordinates, heading, inclination, distance return the cartesian coordinates 
 Vector3d toCartesian(Vector3d spherical)
 {
     Vector3d cartesian;
@@ -21,7 +19,6 @@ Vector3d toCartesian(Vector3d spherical)
     return cartesian;
 }
 
-// Given cartesan coordinates x,y,z return spherical coordinates heading, inclination, distance
 Vector3d toSpherical(Vector3d cartesian){
     Vector3d spherical;
     spherical << atan2(cartesian(1), cartesian(0)),

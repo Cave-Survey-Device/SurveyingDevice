@@ -234,7 +234,8 @@ void setup_BLE()
   debug(DEBUG_MAIN,"Starting BLE...");
   blehandler.start();
 }
-// Runs on power on
+
+
 void setup_hw(){
   // Initialise serial and UARTs
   Serial.begin(9600);
@@ -271,7 +272,7 @@ void setup_hw(){
   debug(DEBUG_MAIN,"Finished hw setup...");
 }
 
-// Task to execute on 2nd core
+// Task to execute on 1st core
 void Core1Task(void * parameter)
 {
   setup_hw();
@@ -282,7 +283,7 @@ void Core1Task(void * parameter)
   } 
 }
 
-// Task to execute on 1st core
+// Task to execute on 2nd core
 void Core2Task(void * parameter)
 {
   setup_BLE();
@@ -303,7 +304,7 @@ void setup()
       NULL,  /* Task input parameter */
       0,  /* Priority of the task */
       &BLE_handle,  /* Task handle. */
-      0); /* Core where the task should run */
+      1); /* Core where the task should run */
 
   TaskHandle_t hardware_handle;
   xTaskCreatePinnedToCore(

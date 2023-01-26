@@ -1,6 +1,6 @@
 # SurveyingDevice
 
-This project sets out to create a prototype representing the simplest form of Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
+This project sets out to create a prototype that is the simplest form of Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
 The aim of the project is to create a prototype device which can serve as a platform for further development by ourselves and others wanting to develop the technology by adding additional enhancements.
 
 **Minimum device requirements (MVP):**

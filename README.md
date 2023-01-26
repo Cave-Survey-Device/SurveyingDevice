@@ -1,9 +1,6 @@
 # SurveyingDevice
-The scope of the device this code is for and a user experience description is oulined below.
 
-This document outlines the scope of required user interaction for the mk1 cave survey device.
-
-The first iteration of the device should be the simplest form of Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
+This project sets out to create a prototype representing the simplest form of Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
 The aim of the project is to create a prototype device which can serve as a platform for further development by ourselves and others wanting to develop the technology by adding additional enhancements.
 
 **Minimum device requirements (MVP):**
@@ -52,9 +49,3 @@ The on/off status of bluetooth should be kept in device memory and recalled when
 By default the display should show live constantly updating compass clino readings, when the user takes a reading the display should remain static until the user presses the button again to toggle the device back to live updating mode. 
 The device should also include a flashing bluetooth symbol in the top left corner to indicate that bluetooth is enabled, this stops flashing once connected to a device. If the blutooth is turned off the blutooth symbol disappers. 
 A battery level indication symbol should be shown in the top right hand side of the display. 
-
-
-
-
-
-

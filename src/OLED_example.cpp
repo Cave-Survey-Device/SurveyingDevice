@@ -10,19 +10,18 @@ void setup() {
 
 void loop() {
 
-  double distance = 10.23;
-  bool ble_status = 1;
-  double batt_voltage;
+  double distance = random(0,100);
+  double compass = random(0,359);
+  double clino = random(-90,90);
+  bool ble_status = random(0,100);
+  double batt_voltage = random(0,100);
 
   oled.Distance(distance);
-  delay(3000);
-  oled.Compass();
-  delay(300);
-  oled.Clino();
-  delay(300);
+  oled.Compass(compass);
+  oled.Clino(clino);
   oled.Blutooth(ble_status);
-  delay(50);
+  delay(100);
   oled.Battery(batt_voltage);
-  delay(300);
+  delay(100);
 
 }

@@ -12,11 +12,17 @@ class OLED {
     int rand_no;
     OLED();
     void Distance(double distance);
-    void Compass();
-    void Clino();
+    void Compass(double compass);
+    void Clino(double clino);
     void Blutooth(bool ble_status);
     void Battery(double batt_voltage);
     void Initialise();
+    
+    double batt_voltage;
+    int batt_percentage;
+    double distance;
+    double compass;
+    double clino;
 
   private:
     
@@ -24,7 +30,6 @@ class OLED {
     #define SCREEN_HEIGHT 128 // OLED display height, in pixels
     #define OLED_RESET -1     // can set an oled reset pin if desired
     Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000, 100000);
-    
 };
 
 #endif

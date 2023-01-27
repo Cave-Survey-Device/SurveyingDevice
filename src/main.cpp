@@ -22,9 +22,6 @@
 #include "BLE.h"
 #include "sensorhandler.h"
 
-
-static Adafruit_SSD1306 display;
-
 // Define sensor structs
 static struct bno055_t myBNO;
 static struct bno055_gravity myGravityData;
@@ -260,13 +257,6 @@ void setup_hw(){
   pinMode(GPIO_NUM_14, OUTPUT);
   digitalWrite(GPIO_NUM_14,LOW);
 
-  // Initialise OLED displays
-  display = init_OLED(0x3C);
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.clearDisplay();
-  display.setCursor(0,0);
-  display.display();
 
   // Initialise data objects and sensors
   debug(DEBUG_MAIN,"Initialising sensor objects");

@@ -1,9 +1,8 @@
 #include "magnetometer.h"
 
 
-Magnetometer::Magnetometer(struct bno055_mag *myMagData)
+Magnetometer::Magnetometer()
 {
-  sensor_connection = myMagData;
   init();
 }
 
@@ -129,8 +128,7 @@ void Magnetometer::update()
    * Updates the magnetometers stored values from the sensor
    * Stores both raw and corrected data
   *****************************************************************/
-  bno055_read_mag_xyz(sensor_connection);
-  raw_mag_data << sensor_connection->x, sensor_connection->y, sensor_connection->z;
+  read_xyz();
   corrected_mag_data = correction_transformation * raw_mag_data;
 }
 

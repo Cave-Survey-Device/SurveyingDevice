@@ -23,7 +23,7 @@ const static int MAGNETOMETER_ARR_LEN = 36*18;
 class Magnetometer  {
     public:
         // Default constructor
-        Magnetometer(struct bno055_mag *myMagData);
+        Magnetometer();
 
         // Reads the current raw magnetometer data into the calibration array
         void add_calibration_data();
@@ -47,20 +47,21 @@ class Magnetometer  {
         // Given an x,y, and z value, return the index where the data should be stored in the calibration array
         int get_magnetometer_index(double x, double y,double z);
 
-        // Pointer to the struct containing sensor data
-        struct bno055_mag *sensor_connection;
-
         // Magnetometer calibration array
         Matrix<double,3,MAGNETOMETER_ARR_LEN> magnetometer_arr;
-
-        // Raw magnetic data - un-corrected
-        Vector3d raw_mag_data;
 
         //Corrected magnetometer data
         Vector3d corrected_mag_data;
 
         // Tranformation used to correct the magnetometer data
         Matrix3d correction_transformation;
+
+    protected:
+        // Raw magnetic data - un-corrected
+        Vector3d raw_mag_data;
+
+        // Read data from the sensor into raw_mag_data
+        virtual void read_xyz();
 
         
 };

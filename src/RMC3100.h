@@ -5,7 +5,8 @@
 #include <Arduino.h>
 #include <ArduinoEigen.h>
 #include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
+#include <ArduinoEigenSparse.h
+#include "magnetometer.h"
 
 using namespace Eigen;
 
@@ -18,11 +19,8 @@ using namespace Eigen;
 #define RM3100_CCX0_REG 0x05 // Hexadecimal address for the Cycle Count X0 internal register
 
 
-class RMC3100
+class RMC3100: protected Magnetometer
 {
-public:
-    Vector3d get_measurement();
-
 private:
     // options
     const int pin_drdy = 9; // CHANGE THIS
@@ -41,9 +39,6 @@ private:
     void changeCycleCount(uint16_t newCC);
     // Reads from a register
     uint8_t readReg(uint8_t addr);
-
-    // Data in microtesla
-    Vector3d mag_data;
 
     void init();
     void update();

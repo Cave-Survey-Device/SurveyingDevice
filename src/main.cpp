@@ -89,7 +89,8 @@ void save_shot_to_BLE()
     blehandler.update();
 }
 
-void state_idle(){
+void state_idle()
+{
   char cmd[30];
   blehandler.shared_bledata.read_command(cmd);
   if (strcmp(cmd, "calibrate accel") == 0 )
@@ -160,7 +161,8 @@ void state_take_shot()
   shot_ID += 1;
 }
 
-void state_laser_align(){
+void state_laser_align()
+{
     if (interrupt_button_released)
     {
         stop_shot_interrupt_timer();

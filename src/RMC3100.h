@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <ArduinoEigen.h>
 #include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h
+#include <ArduinoEigenSparse.h>
 #include "magnetometer.h"
 
 using namespace Eigen;
@@ -18,9 +18,14 @@ using namespace Eigen;
 #define RM3100_CCX1_REG 0x04 // Hexadecimal address for Cycle Count X1 internal register
 #define RM3100_CCX0_REG 0x05 // Hexadecimal address for the Cycle Count X0 internal register
 
+// I'd rather this be protected but cant get it to work
 
-class RMC3100: protected Magnetometer
+class RMC3100: public Magnetometer
 {
+public:
+    RMC3100();
+    void update();
+
 private:
     // options
     const int pin_drdy = 9; // CHANGE THIS
@@ -33,15 +38,16 @@ private:
     uint16_t cycleCount;
     float gain;
 
+    void init();
+
     // Writes to a register
     void writeReg(uint8_t addr, uint8_t data);
+
     // Changes the cycle count
     void changeCycleCount(uint16_t newCC);
+    
     // Reads from a register
     uint8_t readReg(uint8_t addr);
-
-    void init();
-    void update();
 };
 
 

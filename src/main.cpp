@@ -14,26 +14,24 @@
 #include "filefuncs.h"
 #include "magnetometer.h"
 #include "accelerometer.h"
-#include "OLED.h"
 #include "config.h"
 #include "lidar.h"
 #include "unified.h"
 #include "interrupts.h"
 #include "BLE.h"
 #include "sensorhandler.h"
+#include "RMC3100.h"
+#include "LDK_2M.h"
 
-
-static Adafruit_SSD1306 display;
 
 // Define sensor structs
 static struct bno055_t myBNO;
 static struct bno055_gravity myGravityData;
-static struct bno055_mag myMagData;
 
-// Static global objects
-Magnetometer magnetometer(&myMagData);
-Accelerometer accelerometer(&myGravityData);
-Lidar lidar;
+static RMC3100 magnetometer;
+static LDK_2M lidar;
+static Accelerometer accelerometer(&myGravityData);
+
 BLEHandler blehandler;
 SensorHandler sensorhandler(&accelerometer, &magnetometer, &lidar);
 
@@ -96,18 +94,18 @@ void state_idle()
   if (strcmp(cmd, "calibrate accel") == 0 )
   {
     next_state = ACCEL_CALIB;
-    cmd = "NO COMMAND";
+    char cmd[] = "NO COMMAND";
     blehandler.shared_bledata.write_command(cmd);
   } else if (strcmp(cmd, "calibrate mag") == 0 )
   {
-    magnetometer.init();
+    magnetometer.reset_calibration_arr();
     next_state = MAG_CALIB;
-    cmd = "NO COMMAND";
+    char cmd[] = "NO COMMAND";
     blehandler.shared_bledata.write_command(cmd);
   } else if (strcmp(cmd, "align laser") == 0 )
   {
     next_state = LASER_ALIGN;
-    cmd = "NO COMMAND";
+    char cmd[] = "NO COMMAND";
     blehandler.shared_bledata.write_command(cmd);
   } else if (interrupt_button_pressed)
   {
@@ -262,18 +260,10 @@ void setup_hw(){
   pinMode(GPIO_NUM_14, OUTPUT);
   digitalWrite(GPIO_NUM_14,LOW);
 
-  // Initialise OLED displays
-  display = init_OLED(0x3C);
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.clearDisplay();
-  display.setCursor(0,0);
-  display.display();
-
   // Initialise data objects and sensors
   debug(DEBUG_MAIN,"Initialising sensor objects");
   init_bno();
-  magnetometer.init();
+  magnetometer.reset_calibration_arr();
 
   init_interrupts();
   try

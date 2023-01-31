@@ -46,8 +46,6 @@ void IRAM_ATTR ISR_GET_SHOT()
 
 
 
-
-
 void init_shot_timer()
 {
     shot_timer = timerBegin(2, 80, true);
@@ -63,15 +61,13 @@ void start_shot_interrupt_timer()
     timerStart(shot_timer);
 }
 
-
 void stop_shot_interrupt_timer()
 {
     // Serial.println("Stopping shot timer...");
-    interrupt_uart_timeout = false;
-    timerStop(uart_read_timer);
-    timerAlarmDisable(uart_read_timer);
+    interrupt_get_shot = false;
+    timerStop(shot_timer);
+    timerAlarmDisable(shot_timer);
 }
-
 
 void disable_shot_interrupt()
 {

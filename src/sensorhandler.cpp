@@ -1,5 +1,9 @@
 #include "sensorhandler.h"
 
+/************************************
+ * General purpose functions...
+*************************************/
+
 Matrix3d getXRotation(double theta)
 {
     Matrix3d T;
@@ -54,6 +58,11 @@ Vector3d calc_normal_vec(MatrixXd point_vec, bool debug /*= false*/){
   return normal;
 };
 
+
+/************************************
+ * SensorHandler functions...
+*************************************/
+
 void SensorHandler::update()
 {
     Matrix<double,3,SAMPLING_SIZE> accel_samples;
@@ -101,7 +110,6 @@ void SensorHandler::update()
     sprintf(str_buf,"Raw device data H: %f, I: %f, D: %f", RAD_TO_DEG*heading, RAD_TO_DEG*inclination, distance);
     debug(DEBUG_SENSOR,str_buf);
 }
-
 
 void SensorHandler::get_orientation()
 {    
@@ -308,6 +316,22 @@ void SensorHandler::align_laser()
     heading_correction = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
     Serial.printf("Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",inclination_correction,heading_correction);
 
+}
+
+void SensorHandler::sensor_test()
+{
+
+    // Print heading and vector
+
+    // Get accelerometer raw data
+    // Calculate heading
+    // Print inclination and vector
+
+    // Get magnetometer raw data and calculate heading
+    this->update();
+
+    Serial.print("Heading");
+    Serial.println(this->heading);
 }
 
 double SensorHandler::get_inclination()

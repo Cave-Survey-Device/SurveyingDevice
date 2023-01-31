@@ -1,9 +1,11 @@
-#include "lidar.h"
+#include "LDK_2M.h"
 
 // Global laser statuis flag
 bool laser_on = true;
 bool interrupt_uart_timeout = false;
 
+
+// UART interrup functions
 void init_uart_read_timer()
 {
     uart_read_timer = timerBegin(1, 80, true);
@@ -31,24 +33,24 @@ void IRAM_ATTR ISR_UART_TIMEOUT()
 }
 
 // Utility functions
-void Lidar::flush_serial1()
+void LDK_2M::flush_serial1()
 {
     
     char a[RX_BUFFER_SIZE];
     Serial1.readBytes(a,RX_BUFFER_SIZE);
 }
 
-void Lidar::disable()
+void LDK_2M::disable()
 {
     digitalWrite(GPIO_NUM_14,LOW);
 }
 
-void Lidar::enable()
+void LDK_2M::enable()
 {
     digitalWrite(GPIO_NUM_14,HIGH);
 }
 
-void Lidar::erase_buffer()
+void LDK_2M::erase_buffer()
 {
     int i;
     for (i=0; i<LIDAR_BUFFER_SIZE;++i)
@@ -57,7 +59,7 @@ void Lidar::erase_buffer()
     }
 }
 
-double Lidar::to_distance(char* data)
+double LDK_2M::to_distance(char* data)
 {
     double d;
     sscanf(data, "%lf", &d);
@@ -66,7 +68,7 @@ double Lidar::to_distance(char* data)
 }
 
 // Main functions
-Lidar::Lidar()
+LDK_2M::LDK_2M()
 {   
     // Using UART1
     Serial1.setRxBufferSize(RX_BUFFER_SIZE);
@@ -76,7 +78,7 @@ Lidar::Lidar()
     laser_on = false;
 }
 
-void Lidar::init()
+void LDK_2M::init()
 {
     init_uart_read_timer();
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
@@ -97,7 +99,7 @@ void Lidar::init()
     debug(DEBUG_LIDAR,"Finished INIT");
 };
 
-bool Lidar::read_msg_from_uart(char* buffer)
+bool LDK_2M::read_msg_from_uart(char* buffer)
 {
     char b[10];
     int count = 0;
@@ -129,7 +131,7 @@ bool Lidar::read_msg_from_uart(char* buffer)
     return 1;
 }
 
-void Lidar::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SIZE])
+void LDK_2M::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SIZE])
 {
     char address = 0x01;
     char command = 0;
@@ -215,7 +217,7 @@ void Lidar::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_SI
     debug(DEBUG_LIDAR,str_buf);
 };
 
-void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
+void LDK_2M::receive_response(char raw_message[], lidar_received_msg* msg)
 {
     int i;
 
@@ -283,7 +285,7 @@ void Lidar::receive_response(char raw_message[], lidar_received_msg* msg)
     }
 }
 
-double Lidar::get_measurement()
+double LDK_2M::get_measurement()
 {
     // Distance returned by LIDAR
     double distance = 0.0;
@@ -329,7 +331,7 @@ double Lidar::get_measurement()
     return distance;
 }
 
-void Lidar::toggle_laser()
+void LDK_2M::toggle_laser()
 {
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
 

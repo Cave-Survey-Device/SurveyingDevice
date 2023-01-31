@@ -18,11 +18,6 @@ uint8_t RMC3100::readReg(uint8_t addr){
   return data;
 }
 
-void RMC3100::read_xyz()
-{
-  this->raw_mag_data = 
-}
-
 //addr is the 7 bit (No r/w bit) value of the internal register's address, data is 8 bit data being written
 void RMC3100::writeReg(uint8_t addr, uint8_t data){
   Wire.beginTransmission(RM3100Address);
@@ -122,6 +117,7 @@ void RMC3100::update() {
   raw_mag_data << (float)(x)/gain, (float)(y)/gain, (float)(z)/gain;
   double uT = raw_mag_data.norm();
   raw_mag_data = raw_mag_data/uT;
+  corrected_mag_data = correction_transformation * raw_mag_data;
 
   //calculate magnitude of results
   
@@ -146,4 +142,9 @@ void RMC3100::update() {
 //   Serial.print("Magnitude(uT):");
   Serial.println(uT);
 //   Serial.println();     
+}
+
+RMC3100::RMC3100()
+{
+  init();
 }

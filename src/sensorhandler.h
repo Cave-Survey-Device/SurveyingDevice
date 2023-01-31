@@ -40,6 +40,8 @@ class SensorHandler{
         // Main constructor, must be fed connections to all sensor objects
         SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lidar);
 
+        void sensor_test();
+
     private:
         // Connection to accelerometer sensor
         Accelerometer* accel_sensor;

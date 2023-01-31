@@ -3,9 +3,21 @@
 
 Magnetometer::Magnetometer()
 {
-  init();
+  reset_calibration_arr();
 }
 
+void Magnetometer::reset_calibration_arr()
+{
+  /**********************************************************
+   * Initialises the calibration array for the magnetometer
+  ***********************************************************/
+  int i;
+  for (i=0;i<MAGNETOMETER_ARR_LEN;++i){
+    magnetometer_arr(0,i) = 0;
+    magnetometer_arr(1,i) = 0;
+    magnetometer_arr(2,i) = 0;
+  }
+}
 
 void Magnetometer::calibrate(){
   /**************************************************************************************************
@@ -27,18 +39,6 @@ void Magnetometer::calibrate(){
   Matrix3cd T = eig.eigenvectors() * diag_sqrt_eig;
   Matrix3cd inv_T = T.inverse();
   correction_transformation = inv_T.real();
-}
-
-void Magnetometer::init(){  
-  /**********************************************************
-   * Initialises the calibration array for the magnetometer
-  ***********************************************************/
-  int i;
-  for (i=0;i<MAGNETOMETER_ARR_LEN;++i){
-    magnetometer_arr(0,i) = 0;
-    magnetometer_arr(1,i) = 0;
-    magnetometer_arr(2,i) = 0;
-  }
 }
 
 int Magnetometer::get_magnetometer_index(double x, double y,double z){
@@ -122,17 +122,6 @@ int Magnetometer::check_calibration_progress(){
   return int(progress*100.0/643.0);
 }
 
-void Magnetometer::update()
-{
-  /****************************************************************
-   * Updates the magnetometers stored values from the sensor
-   * Stores both raw and corrected data
-  *****************************************************************/
-  read_xyz();
-  corrected_mag_data = correction_transformation * raw_mag_data;
-}
-
-Vector3d Magnetometer::get_mag_vec()
-{
+Vector3d Magnetometer::get_mag_vec(){
     return corrected_mag_data;
 };

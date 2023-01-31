@@ -16,18 +16,14 @@ extern bool interrupt_get_shot;
 static hw_timer_t* shot_timer = NULL;
 void IRAM_ATTR ISR_GET_SHOT();
 
-extern bool interrupt_uart_timeout;
-static hw_timer_t* uart_read_timer = NULL;
-void IRAM_ATTR ISR_UART_TIMEOUT();
 
 void init_shot_timer();
-void init_uart_read_timer();
+
 
 void start_shot_interrupt_timer();
-void start_uart_read_timer();
 
 void stop_shot_interrupt_timer();
-void stop_uart_read_timer();
+
 
 void init_interrupts();
 

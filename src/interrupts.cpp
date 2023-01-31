@@ -2,7 +2,6 @@
 
 bool interrupt_button_released = false;
 bool interrupt_button_pressed = false;
-bool interrupt_uart_timeout = false;
 bool interrupt_get_shot = false;
 
 void init_interrupts()
@@ -12,7 +11,6 @@ void init_interrupts()
     // {
         // interrupts_initialised = true;
         init_shot_timer();
-        init_uart_read_timer();
 
         // Enable pin A0 as an input
         pinMode(A0, INPUT);
@@ -46,12 +44,9 @@ void IRAM_ATTR ISR_GET_SHOT()
   interrupt_get_shot = true;
 }
 
-void init_uart_read_timer()
-{
-    uart_read_timer = timerBegin(1, 80, true);
-    timerAttachInterrupt(uart_read_timer, &ISR_UART_TIMEOUT, false);
-    timerAlarmWrite(uart_read_timer, 500000, false);
-}
+
+
+
 
 void init_shot_timer()
 {
@@ -68,13 +63,6 @@ void start_shot_interrupt_timer()
     timerStart(shot_timer);
 }
 
-void start_uart_read_timer()
-{
-    interrupt_uart_timeout = false;
-    timerRestart(uart_read_timer);
-    timerAlarmEnable(uart_read_timer);
-    timerStart(uart_read_timer);
-}
 
 void stop_shot_interrupt_timer()
 {
@@ -84,11 +72,6 @@ void stop_shot_interrupt_timer()
     timerAlarmDisable(uart_read_timer);
 }
 
-void stop_uart_read_timer()
-{
-    timerStop(uart_read_timer);
-    timerAlarmDisable(uart_read_timer);
-}
 
 void disable_shot_interrupt()
 {

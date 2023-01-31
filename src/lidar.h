@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include "unified.h"
-#include "interrupts.h"
 
 // Const vars for lidar
 
@@ -37,6 +36,13 @@ struct lidar_received_msg {
     char command;
     char data[LIDAR_RECEIVE_DATA_MAX_SIZE];
 };
+
+extern bool interrupt_uart_timeout;
+static hw_timer_t* uart_read_timer = NULL;
+void IRAM_ATTR ISR_UART_TIMEOUT();
+void init_uart_read_timer();
+void start_uart_read_timer();
+void stop_uart_read_timer();
 
 // Class to deal with all things lidar
 class Lidar {

@@ -2,6 +2,28 @@
 
 // Global laser statuis flag
 bool laser_on = true;
+bool interrupt_uart_timeout = false;
+
+void init_uart_read_timer()
+{
+    uart_read_timer = timerBegin(1, 80, true);
+    timerAttachInterrupt(uart_read_timer, &ISR_UART_TIMEOUT, false);
+    timerAlarmWrite(uart_read_timer, 500000, false);
+}
+
+void start_uart_read_timer()
+{
+    interrupt_uart_timeout = false;
+    timerRestart(uart_read_timer);
+    timerAlarmEnable(uart_read_timer);
+    timerStart(uart_read_timer);
+}
+
+void stop_uart_read_timer()
+{
+    timerStop(uart_read_timer);
+    timerAlarmDisable(uart_read_timer);
+}
 
 void IRAM_ATTR ISR_UART_TIMEOUT()
 {
@@ -56,6 +78,7 @@ Lidar::Lidar()
 
 void Lidar::init()
 {
+    init_uart_read_timer();
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
     lidar_received_msg received_msg;
     

@@ -1,22 +1,52 @@
+// OLED.cpp
 #include "OLED.h"
 
-Adafruit_SSD1306 init_OLED(uint8_t address){
-  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
-  
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if(!display.begin(SSD1306_SWITCHCAPVCC, address)) {
-    Serial.println("SSD1306 allocation failed");
-    for(;;); // Don't proceed, loop forever
-  }
-  Serial.println("Initialised OLED display");
+OLED::OLED() {
+}
 
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
-  display.display();
-  delay(2000); // Pause for 2 seconds
-
-  // Clear the buffer
+void OLED::Initialise() {
+  display.begin(0x3D, true); // Address 0x3D default
+  display.setTextSize(2);             // Normal 1:1 pixel scale
+  display.setTextColor(SH110X_WHITE);        // Draw white text
+  //display.setContrast (0); // dim display
   display.clearDisplay();
+  display.display();
+}
 
-  return display;
+void OLED::Distance(double distance) {
+  display.clearDisplay();
+  display.setCursor(0,0);// Start at top-left corner
+  display.println(distance);
+  display.display();
+}
+
+void OLED::Compass() {
+  display.clearDisplay();
+  display.setCursor(0,0);// Start at top-left corner
+  display.println(F("Hello, world!"));
+  display.display();
+}
+
+void OLED::Clino() {
+  display.clearDisplay();
+  display.setCursor(0,20);// Start at top-left corner
+  display.println(F("Hello, world!"));
+  display.display();
+}
+
+void OLED::Blutooth(bool ble_status) {
+
+  //insert switch case to updat
+
+  display.clearDisplay();
+  display.setCursor(0,40);// Start at top-left corner
+  display.println(F("Hello, world!"));
+  display.display();
+}
+
+void OLED::Battery(double batt_voltage) {
+  display.clearDisplay();
+  display.setCursor(0,60);// Start at top-left corner
+  display.println(F("Hello, world!"));
+  display.display();
 }

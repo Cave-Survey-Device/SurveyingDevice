@@ -7,7 +7,8 @@
 #include "utility.h"
 
 static const int SAMPLING_SIZE = 10;
-static const int CALIBRATION_SIZE = 8;
+static const int LASER_CALIBRATION_SIZE = 8;
+static const int INERTIAL_CALIBRATION_SIZE = 100;
 
 // Calculates the best fit plane to a set of points in 3d and returns the vector normal to this plane
 Vector3d calc_normal_vec(MatrixXd point_vec, bool debug = false);
@@ -37,6 +38,9 @@ class SensorHandler{
         // Returns the current distance saved, must call update first to get newest data
         double get_distance();
 
+        // Calibrate accelerometer and magnetometer
+        void calibrate_inertial_sensors();
+
         // Main constructor, must be fed connections to all sensor objects
         SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lidar);
 
@@ -51,7 +55,10 @@ class SensorHandler{
         Lidar* lidar_sensor;
 
         // Heading, Inclination, Roll, Distance
-        Eigen::Matrix<double,4,CALIBRATION_SIZE> device_calibration_data;
+        Eigen::Matrix<double,4,LASER_CALIBRATION_SIZE> laser_calibration_data;
+        // Heading, Inclination, Roll, Distance
+        Eigen::Matrix<double,4,INERTIAL_CALIBRATION_SIZE> inertial_calibration_data;
+        
 
         // In radians
         double heading, inclination, roll;
@@ -64,8 +71,14 @@ class SensorHandler{
         Vector3d grav_data;
         // Device vector - vector of the device
         Vector3d device_vec;
+
+        // Laser alignment vector
+        Vector3d laser_alignment_vector;
+
+        // Accelerometer calibration matrix
+        Matrix3d acc_calibration_mat;
         // Calibration vector
-        Vector3d calibration_vector;
+        Matrix3d mag_calibration_mat;
 
         // Laser alignment inclination correction in deg WHEN UPRIGHT - MUST INVERT IF TILT > 180!
         double inclination_correction;

@@ -172,21 +172,21 @@ SensorHandler::SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lid
     inclination_correction = 0;
     heading_correction = 0;
     calibration_num = 0;
-    calibration_vector << 0, 0, 0;
+    laser_alignment_vector << 0, 0, 0;
 
     // Add code to load/save sensor calibration data from file
 }
 
 bool SensorHandler::add_laser_calibration()
 {
-    // if (calibration_num < CALIBRATION_SIZE) // Do 8 times
+    // if (calibration_num < LASER_CALIBRATION_SIZE) // Do 8 times
     // {
     //     Serial.printf("Got calibration %i!\n",calibration_num);
         
         
     //     // Add data to the calibration data store
-    //     device_calibration_data.col(calibration_num) << heading, inclination, roll, distance;
-    //     Serial.printf("Roll %f\n", device_calibration_data(2,calibration_num));
+    //     laser_calibration_data.col(calibration_num) << heading, inclination, roll, distance;
+    //     Serial.printf("Roll %f\n", laser_calibration_data(2,calibration_num));
     //     calibration_num++;
 
     //     return false;
@@ -196,7 +196,7 @@ bool SensorHandler::add_laser_calibration()
     //     calibration_num = 0;
     //     return true;
     // }
-    device_calibration_data <<  0.7853981633974483 ,-5.977864660084226e-17 ,-0.7853981633974483 ,-0.9553166181245093 ,-0.7853981633974484 ,-1.7142882376064614e-16 ,0.7853981633974482 ,0.9553166181245093 ,
+    laser_calibration_data <<  0.7853981633974483 ,-5.977864660084226e-17 ,-0.7853981633974483 ,-0.9553166181245093 ,-0.7853981633974484 ,-1.7142882376064614e-16 ,0.7853981633974482 ,0.9553166181245093 ,
                                 0.9553166181245093 ,0.6154797086703874 ,0.9553166181245092 ,1.5707963267948966 ,2.186276035465284 ,2.526112944919406 ,2.1862760354652844 ,1.5707963267948968 ,
                                 0.0 ,0.7853981633974483 ,1.5707963267948966 ,2.356194490192345 ,3.141592653589793 ,3.9269908169872414 ,4.71238898038469 ,5.497787143782138 ,
                                 4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9 ,4.9;
@@ -218,9 +218,9 @@ void SensorHandler::align_laser()
     // Vector direction to target
     Vector3d target_vector;
     // Matrix to hold each calculated misalignement vector
-    Matrix<double,3,CALIBRATION_SIZE> misalignement_mat;
+    Matrix<double,3,LASER_CALIBRATION_SIZE> misalignement_mat;
     // Matrix to hold cartesian versions of calibration data
-    Matrix<double,3,CALIBRATION_SIZE> cartesian_calibration_data;
+    Matrix<double,3,LASER_CALIBRATION_SIZE> cartesian_calibration_data;
     // Rotation matrix for reversing the effect of tilt
     Matrix3d rotation_matrix;
 
@@ -232,7 +232,7 @@ void SensorHandler::align_laser()
     double xi, yi, zi;
 
     // Mean of all calibration data collected
-    mean_calibration_data = device_calibration_data.rowwise().mean();
+    mean_calibration_data = laser_calibration_data.rowwise().mean();
 
 
     /*************************************************************
@@ -243,9 +243,9 @@ void SensorHandler::align_laser()
      * 5. Convert to cartesian coordinates of target point
      *************************************************************/
     // Calculate cartesian coordinates for disto tip in each calibration shot
-    for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
+    for (calib_num=0; calib_num<LASER_CALIBRATION_SIZE; calib_num++)
     {
-        conversion_dummy << device_calibration_data(0,calib_num), device_calibration_data(1,calib_num), DISTO_LEN;
+        conversion_dummy << laser_calibration_data(0,calib_num), laser_calibration_data(1,calib_num), DISTO_LEN;
         cartesian_calibration_data.col(calib_num) << toCartesian(conversion_dummy);
     }
 
@@ -276,7 +276,7 @@ void SensorHandler::align_laser()
      * 4. Rotate this vector by the matrix to revers the effects of tilt on the result
      *************************************************************************************/
     
-    for (calib_num=0; calib_num<CALIBRATION_SIZE; calib_num++)
+    for (calib_num=0; calib_num<LASER_CALIBRATION_SIZE; calib_num++)
     {
         xi = cartesian_calibration_data(0,calib_num);
         yi = cartesian_calibration_data(1,calib_num);
@@ -284,7 +284,7 @@ void SensorHandler::align_laser()
         Serial.printf("Disto tip coordinates X: %f, Y: %f, Z: %f\n",xi,yi,zi);
 
         // Rotation matrix about x depending on device roll
-        roll = device_calibration_data(2,calib_num);
+        roll = laser_calibration_data(2,calib_num);
         rotation_matrix = getXRotation(-roll);
 
         // Calculalate vector between tip of disto and actual target

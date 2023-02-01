@@ -6,6 +6,11 @@ Magnetometer::Magnetometer()
   reset_calibration_arr();
 }
 
+void Magnetometer::update(){
+  get_raw_data();
+  corrected_mag_data = correction_transformation * raw_mag_data;
+}
+
 void Magnetometer::reset_calibration_arr()
 {
   /**********************************************************

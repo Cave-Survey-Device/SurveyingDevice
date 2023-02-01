@@ -24,7 +24,9 @@ class RMC3100: public Magnetometer
 {
 public:
     RMC3100();
-    void update();
+
+protected:
+    void get_raw_data();
 
 private:
     // options

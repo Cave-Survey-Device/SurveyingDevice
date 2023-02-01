@@ -36,13 +36,14 @@ public:
     // Calculate calibration matrix for accelerometer
     void calibrate();
 
-private:
-    // Pointer to the struct containing sensor data
-    struct bno055_gravity *sensor_connection;
-
+protected:
     // Raw gravity data - un-corrected
     Vector3d raw_gravity_data;
 
+    // Gets the raw data from the underlying sensor
+    virtual void get_raw_data()=0;
+
+private:
     //Corrected gravity data
     Vector3d corrected_gravity_data;
 

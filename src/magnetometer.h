@@ -40,9 +40,14 @@ class Magnetometer  {
         
         void reset_calibration_arr();
 
-        // Reads data from the sensor and processes it
-        virtual void update()=0;
+        void update();
 
+    protected:
+        // Reads data from the sensor and processes it
+        virtual void get_raw_data()=0;
+
+        // Raw magnetic data - un-corrected
+        Vector3d raw_mag_data;
 
     private:
         // Given an x,y, and z value, return the index where the data should be stored in the calibration array
@@ -50,10 +55,6 @@ class Magnetometer  {
 
         // Magnetometer calibration array
         Matrix<double,3,MAGNETOMETER_ARR_LEN> magnetometer_arr;
-
-    protected:
-        // Raw magnetic data - un-corrected
-        Vector3d raw_mag_data;
 
         //Corrected magnetometer data
         Vector3d corrected_mag_data;

@@ -57,18 +57,18 @@ void save_shot_to_flash()
     shot_data = sensorhandler.get_shot_data();
 
     // Populate node object
-    debug(DEBUG_MAIN, "Assigning values to node object");
+    debug(DEBUG_MAIN, "(Save shot to flash 1/3) Assigning values to node object");
     n->id = shot_ID;
     n->heading = shot_data(0);
     n->inclination = shot_data(1);
     n->distance = shot_data(2);
 
     // Populate str_id with string version of int id
-    debug(DEBUG_MAIN, "Writing to file");
+    debug(DEBUG_MAIN, "(Save shot to flash 2/3) Writing to file");
     sprintf(str_id,"%d",shot_ID);
     write_to_file(current_file_name,str_id,n);
     
-    debug(DEBUG_MAIN, "Finished saving data, returning...");
+    debug(DEBUG_MAIN, "(Save shot to flash 3/3) Finished saving data, returning...");
 }
 
 void save_shot_to_BLE()
@@ -140,7 +140,7 @@ void state_accel_calibration()
 
 void state_mag_calibration()
 {
-    magnetometer.update();
+    magnetometer.get_raw_data();
     magnetometer.add_calibration_data();
     if (touchRead(4))
     {

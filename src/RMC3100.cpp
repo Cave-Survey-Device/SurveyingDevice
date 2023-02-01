@@ -64,7 +64,7 @@ void RMC3100::init() {
   }
 }
 
-void RMC3100::update() {
+void RMC3100::get_raw_data() {
   long x = 0;
   long y = 0;
   long z = 0;
@@ -117,7 +117,6 @@ void RMC3100::update() {
   raw_mag_data << (float)(x)/gain, (float)(y)/gain, (float)(z)/gain;
   double uT = raw_mag_data.norm();
   raw_mag_data = raw_mag_data/uT;
-  corrected_mag_data = correction_transformation * raw_mag_data;
 
   //calculate magnitude of results
   

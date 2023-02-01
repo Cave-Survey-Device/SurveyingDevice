@@ -1,6 +1,6 @@
 #include "LDK_2M.h"
 
-// Global laser statuis flag
+// Global laser status flag
 bool laser_on = true;
 bool interrupt_uart_timeout = false;
 
@@ -85,25 +85,25 @@ void LDK_2M::init()
     lidar_received_msg received_msg;
     
     Serial1.flush();
-    debug(DEBUG_LIDAR,"Get software version");
+    debug(DEBUG_LIDAR,"(Init 1/3) Get software version");
     generate_command(LIDAR_READ_SOFTWARE_VERSION,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
     read_msg_from_uart(buffer);
     // Serial.println(buffer);
-    debug(DEBUG_LIDAR,"Disable beeper");
+    debug(DEBUG_LIDAR,"(Init 2/3) Disable beeper");
     generate_command(LIDAR_DISABLE_BEEPER,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
 
     erase_buffer();
 
-    debug(DEBUG_LIDAR,"Finished INIT");
+    debug(DEBUG_LIDAR,"(Init 3/3) Finished INIT");
 };
 
 bool LDK_2M::read_msg_from_uart(char* buffer)
 {
     char b[10];
     int count = 0;
-    debug(DEBUG_LIDAR,"Starting timer");
+    debug(DEBUG_LIDAR,"(Read from UART 1/3) Starting timer");
     start_uart_read_timer();
 
     // Reset single_char_buffer to prevent erroneous message success
@@ -116,9 +116,10 @@ bool LDK_2M::read_msg_from_uart(char* buffer)
         {
             stop_uart_read_timer();
             interrupt_uart_timeout = false;
+            debug(DEBUG_LIDAR,"(Read from UART 2/3) timer expired, read failed");
             // Throw broken due to threads in ESP32
             // throw ("LIDAR UART READ ERROR: No message received!");
-            // Instead changed to return bool
+            // Instead changed to return bool, maybe return to trow later...
             return 0;
         }
         count++;
@@ -127,7 +128,9 @@ bool LDK_2M::read_msg_from_uart(char* buffer)
     erase_buffer();
 
     // Reads bytes until terminator into buffer (not including terminator)
+    debug(DEBUG_LIDAR,"(Read from UART 2/3) Reading data");
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
+    debug(DEBUG_LIDAR,"(Read from UART 3/3) Succesfully read data");
     return 1;
 }
 
@@ -213,26 +216,18 @@ void LDK_2M::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_S
     }
     
     char str_buf[60];
-    sprintf(str_buf,"Generated command (in func): %X %X %X %X %X %X\n", command_packet[0],command_packet[1],command_packet[2],command_packet[3],command_packet[4],command_packet[5]);
+    sprintf(str_buf,"(Generate command 1/1) Generated command: %X %X %X %X %X %X\n", command_packet[0],command_packet[1],command_packet[2],command_packet[3],command_packet[4],command_packet[5]);
     debug(DEBUG_LIDAR,str_buf);
 };
 
-void LDK_2M::receive_response(char raw_message[], lidar_received_msg* msg)
+void LDK_2M::parse_response(char raw_message[], lidar_received_msg* msg)
 {
     int i;
 
-    // Size of data in message (i.e. not address, command, or checksum)
-    int data_size;
-
-    // Loop start position
-    int start;
-
-    // Received checksum
-    char checksum;
-
-    // Calculated checksum
-    unsigned int calculated_checksum;
-
+    int data_size; // Size of data in message (i.e. not address, command, or checksum)
+    int start; // Loop start position
+    char checksum; // Received checksum
+    unsigned int calculated_checksum; // Calculated checksum
 
     // Assign address and command form raw message
     msg->address = raw_message[0];
@@ -244,14 +239,9 @@ void LDK_2M::receive_response(char raw_message[], lidar_received_msg* msg)
     // Start is 2 instead of 0 due to address, command
     start = 2;
 
-    // Serial.printf("%X ",msg->address);
-    // Serial.printf("%X ",msg->command);
-
     // Loop to populate the data array
     for (i=start;i<start+LIDAR_RECEIVE_DATA_MAX_SIZE;++i)
     {
-        // Serial.printf("%X ",raw_message[i]);
-
         if (i<start+data_size)
         {
             msg->data[i-start] = raw_message[i];
@@ -260,11 +250,8 @@ void LDK_2M::receive_response(char raw_message[], lidar_received_msg* msg)
         }
     }
     
-
     // Populate checksum from raw_message
     checksum = raw_message[start+data_size];
-
-    // Serial.println(checksum);
 
     // Calculate checksum
     calculated_checksum = 0x00;
@@ -287,15 +274,13 @@ void LDK_2M::receive_response(char raw_message[], lidar_received_msg* msg)
 
 double LDK_2M::get_measurement()
 {
-    // Distance returned by LIDAR
-    double distance = 0.0;
-    // Command to send to LIDAR
-    char generated_command[LIDAR_SEND_COMMAND_SIZE];
-
+    
+    double distance = 0.0; // Distance returned by LIDAR
+    char generated_command[LIDAR_SEND_COMMAND_SIZE]; // Command to send to LIDAR
     lidar_received_msg received_msg;
 
     // Generate lidar single measurement command and send
-    debug(DEBUG_LIDAR,"Single measure");
+    debug(DEBUG_LIDAR,"(Get measurement 1/4) Request single measure");
     generate_command(LIDAR_SINGLE_MEAS,generated_command);
 
     // Flush the hardware UART buffer to remove old messages
@@ -303,19 +288,21 @@ double LDK_2M::get_measurement()
     // Flush the software message buffer to prevent erroneous reading
     erase_buffer();
 
-    // Send command to LIDAR and read the response
+    // Send command to LIDAR
     Serial1.write(generated_command);
+
+    // Parse resonse
+    debug(DEBUG_LIDAR,"(Get measurement 2/4) Read response");
     if (!read_msg_from_uart(buffer))
     {
         return 0;
     }
 
     // Attempt to parse the message received over UART
+    debug(DEBUG_LIDAR,"(Get measurement 3/4) Parse read response");
     try {
-        receive_response(buffer,&received_msg);
-        // Serial.println(received_msg.data);
+        parse_response(buffer,&received_msg);
         distance = to_distance(received_msg.data);
-        //toggle_laser();
         laser_on = false;
     }
     catch(const char* e ) {
@@ -328,6 +315,8 @@ double LDK_2M::get_measurement()
         return 0;
     }
 
+    // Return result
+    debug(DEBUG_LIDAR,"(Get measurement 4/4) Return response");
     return distance;
 }
 
@@ -337,7 +326,7 @@ void LDK_2M::toggle_laser()
 
     // Generate lidar LASER ON command and send
     // TODO: check whether receive response before changing laser status
-    debug(DEBUG_LIDAR,"Toggle laser");
+    debug(DEBUG_LIDAR,"(Toggle laser 1/1) Toggle laser");
     if (laser_on)
     {
         generate_command(LIDAR_LASER_OFF,generated_command);

@@ -9,7 +9,7 @@
 #include <ArduinoEigenSparse.h>
 
 #include "config.h"
-#include "unified.h"
+#include "utility.h"
 
 
 static Preferences preferences;

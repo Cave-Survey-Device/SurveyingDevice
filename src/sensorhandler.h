@@ -4,7 +4,7 @@
 #include "magnetometer.h"
 #include "accelerometer.h"
 #include "lidar.h"
-#include "unified.h"
+#include "utility.h"
 
 static const int SAMPLING_SIZE = 10;
 static const int CALIBRATION_SIZE = 8;

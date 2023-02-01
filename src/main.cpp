@@ -16,7 +16,7 @@
 #include "accelerometer.h"
 #include "config.h"
 #include "lidar.h"
-#include "unified.h"
+#include "utility.h"
 #include "interrupts.h"
 #include "BLE.h"
 #include "sensorhandler.h"

@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <HardwareSerial.h>
-#include "unified.h"
+#include "utility.h"
 #include "lidar.h"
 
 // Const vars for lidar
@@ -92,7 +92,7 @@ class LDK_2M: public Lidar {
         void generate_command(int type, char command_arr[LIDAR_SEND_COMMAND_SIZE]);
 
         // Pack received lidar message into lidar msg struct
-        void receive_response(char raw_data[], lidar_received_msg* receivec_msg);
+        void parse_response(char raw_data[], lidar_received_msg* receivec_msg);
 
 };
 

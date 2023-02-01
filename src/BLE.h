@@ -12,7 +12,7 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <mutex>
-#include "unified.h"
+#include "utility.h"
 
 #define bleServerName "bean_boi"
 #define BEAN_BOI_SERVICE "8040889e-1df9-4279-ad09-7cc5ed83761a"

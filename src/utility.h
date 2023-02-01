@@ -1,5 +1,5 @@
-#ifndef HEADER_UNIFIED
-#define HEADER_UNIFIED
+#ifndef HEADER_UTILITY
+#define HEADER_UTILITY
 
 #include <ArduinoEigen.h>
 #include <ArduinoEigenDense.h>

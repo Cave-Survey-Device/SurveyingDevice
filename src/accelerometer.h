@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include "config.h"
-#include "unified.h"
+#include "utility.h"
 
 
 using namespace Eigen;

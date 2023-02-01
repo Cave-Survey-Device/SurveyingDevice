@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include "config.h"
-#include "unified.h"
+#include "utility.h"
 
 
 using namespace Eigen;
@@ -20,6 +20,7 @@ using std::cout;
 
 const static int MAGNETOMETER_ARR_LEN = 36*18;
 
+// Abstract function to allow usage of different magnetometers
 class Magnetometer  {
     public:
         // Default constructor

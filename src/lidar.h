@@ -1,6 +1,7 @@
 #ifndef HEADER_LIDAR
 #define HEADER_LIDAR
 
+// Abstract class to allow usage of different sensors
 class Lidar {
     public:
         // Initialise lidar module

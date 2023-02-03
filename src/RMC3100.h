@@ -33,8 +33,8 @@ private:
     const int pin_drdy = 9; // CHANGE THIS
     const int RM3100Address = 0x20;
     const int initialCC = 200;
-    const int singleMode = 1;
-    const int useDRDYPin = 1;
+    const bool singleMode = true;
+    const bool useDRDYPin = true;
 
     uint8_t revid;
     uint16_t cycleCount;

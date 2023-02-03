@@ -3,7 +3,7 @@
 
 Magnetometer::Magnetometer()
 {
-  reset_calibration_arr();
+  reset_calibration_data();
 }
 
 void Magnetometer::update(){
@@ -11,7 +11,7 @@ void Magnetometer::update(){
   corrected_mag_data = correction_transformation * raw_mag_data;
 }
 
-void Magnetometer::reset_calibration_arr()
+void Magnetometer::reset_calibration_data()
 {
   /**********************************************************
    * Initialises the calibration array for the magnetometer
@@ -22,28 +22,41 @@ void Magnetometer::reset_calibration_arr()
     magnetometer_arr(1,i) = 0;
     magnetometer_arr(2,i) = 0;
   }
+  correction_transformation << 1, 0, 0,
+                               0, 1, 0,
+                               0, 0, 1;
 }
 
-void Magnetometer::calibrate(){
-  /**************************************************************************************************
+bool Magnetometer::calibrate(){
+  /****************************************************************************************************
+   * Update the sensor, add the data to the calibration array, and check if the sensor has enough data.
+   * If it does:
    * 1. Subtract mean of point cloud from data to remove hard iron effects and center the data
    * 2. Find the covariance of the data to find the transformation from a perfect sphere
    * 3. Get the eigen-decomposition of the covariance
    * 4. Find the squareroot of the eigenvalues
    * 5. Multiply the eigenvectors by the diagonal matrix formed by the squareroot of the eigenvalues
    * 6. Find the inverse of this and return it
-  **************************************************************************************************/
-  MatrixXd centered = magnetometer_arr.colwise() - magnetometer_arr.rowwise().mean();
-  Matrix3d cov = (centered.transpose() * centered) / double(magnetometer_arr.cols() - 1);
-  EigenSolver<Matrix3d> eig;
-  eig.compute(cov);
-  cout << eig.eigenvalues() << "\n";
-  Vector3cd vec = eig.eigenvalues();
-  Vector3cd eigenvalues_sqrt = vec.array().pow(0.5);
-  DiagonalMatrix<std::complex<double>, 3> diag_sqrt_eig(eigenvalues_sqrt);
-  Matrix3cd T = eig.eigenvectors() * diag_sqrt_eig;
-  Matrix3cd inv_T = T.inverse();
-  correction_transformation = inv_T.real();
+  ****************************************************************************************************/
+  update();
+  add_calibration_data();
+  if (check_calibration_progress() >= 90)
+  {
+    
+    MatrixXd centered = magnetometer_arr.colwise() - magnetometer_arr.rowwise().mean();
+    Matrix3d cov = (centered.transpose() * centered) / double(magnetometer_arr.cols() - 1);
+    EigenSolver<Matrix3d> eig;
+    eig.compute(cov);
+    cout << eig.eigenvalues() << "\n";
+    Vector3cd vec = eig.eigenvalues();
+    Vector3cd eigenvalues_sqrt = vec.array().pow(0.5);
+    DiagonalMatrix<std::complex<double>, 3> diag_sqrt_eig(eigenvalues_sqrt);
+    Matrix3cd T = eig.eigenvectors() * diag_sqrt_eig;
+    Matrix3cd inv_T = T.inverse();
+    correction_transformation = inv_T.real();
+    return true;
+  }
+  return false;
 }
 
 int Magnetometer::get_magnetometer_index(double x, double y,double z){
@@ -94,17 +107,6 @@ void Magnetometer::add_calibration_data(){
   y = raw_mag_data(1);
   z = raw_mag_data(2);
   index = get_magnetometer_index(x,y,z);
-
-  if (DEBUG){
-    Serial.print("Index:" );
-    Serial.println(index);
-    Serial.print("RAW_DATA:" );
-    Serial.print(x);
-    Serial.print(", ");
-    Serial.print(y);
-    Serial.print(", ");
-    Serial.println(z);
-  }
 
   magnetometer_arr(0,index) = x;
   magnetometer_arr(1,index) = y;

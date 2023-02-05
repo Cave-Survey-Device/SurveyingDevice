@@ -30,7 +30,7 @@ protected:
 
 private:
     // options
-    const int pin_drdy = 9; // CHANGE THIS
+    const int pin_drdy = GPIO_NUM_27; // CHANGE THIS
     const int RM3100Address = 0x20;
     const int initialCC = 200;
     const bool singleMode = true;

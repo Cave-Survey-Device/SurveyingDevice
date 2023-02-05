@@ -42,7 +42,7 @@ void RM3100::changeCycleCount(uint16_t newCC){
   Wire.endTransmission();  
 }
 
-void RM3100::init() {
+void RM3100::init(){
   Wire.begin();
   pinMode(pin_drdy, INPUT);
   revid = readReg(RM3100_REVID_REG);

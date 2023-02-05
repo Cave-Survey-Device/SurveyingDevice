@@ -24,6 +24,7 @@ class RM3100: public Magnetometer
 {
 public:
     RM3100();
+    void init();
 
 protected:
     void get_raw_data();
@@ -33,14 +34,13 @@ private:
     const int pin_drdy = GPIO_NUM_27; // CHANGE THIS
     const int RM3100Address = 0x20;
     const int initialCC = 200;
-    const bool singleMode = true;
+    const bool singleMode = false;
     const bool useDRDYPin = true;
 
     uint8_t revid;
     uint16_t cycleCount;
     float gain;
 
-    void init();
 
     // Writes to a register
     void writeReg(uint8_t addr, uint8_t data);
@@ -50,6 +50,7 @@ private:
     
     // Reads from a register
     uint8_t readReg(uint8_t addr);
+
 };
 
 

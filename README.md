@@ -1,16 +1,31 @@
 # SurveyingDevice
 
-This project sets out to create a prototype that is the simplest form of Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
-The aim of the project is to create a device which can serve as a platform for further development by ourselves and others wanting to create new cave surveying technology by adding additional features/enhancements.
+This project sets out to create a simple Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
+The aim of the project is to create a device which can serve as a platform for further development by ourselves or others wishing to create new cave surveying technology by adding additional features/enhancements.
+
+In recent years there has been an increase in the use of paperless electronic surveying devices. These devices combined with rugged smart phones have enabled cavers to survey caves with much greater speed and efficiency. 
+Unfortunately, as cave mapping is a niece pursuit, there are a lack of suitable cost-effective devices available on the market. At the time of writing the only available devices capable of this are the BRIC4 and Shetland attack pony. As of 2019 DistoX2 boards are no longer being made as Leica DistoX range finders have become smaller and more integrated making it impossible to fit modified boards inside newer Disto devices.
+With older components becoming obsolete and worldwide chip shortages, the need for more innovation and development to produce such devices has become especially apparent. This project sets out to provide a universal platform for the design of paperless cave surveying devices, which would allow anyone with a basic knowledge of electronics to build their own cave surveying device from readily available components. 
+The project will involve the production/open-source design of 2 prototype devices capable of producing grade 5 cave surveys. These devices would have an intuitive calibration procedure, the ability to interface with cave surveying applications, be waterproof and ergonomic.
+A crucial aspect of the design would be that the device be constructed from push fit modular interchangeable units on a single printed circuit board. As well as making the devices easier to produce this would also improve the reparability. This design would be especially useful on expeditions where often multiple surveying devices are available, if two devices were to break then using just basic tools the broken components of one could be easily swapped with the working components of another. 
+The initial development phase of this project will involve the evaluation of different sensor chips and microcontroller boards. These will be compared in terms of accuracy, power consumption, size and cost. Then based on this investigation an ensemble of suitable components will be used in the final design.
+Despite their reputation 3D printed components these can now be produced with the rugged waterproof properties required for a cave environment. An ergonomic enclosure will be designed for printing with the final 3D files made available online for others to print. The laser and screen will be protected with a laser cut pieces of acrylic sealed against the enclosure with rubber gaskets. 
+The firmware will be written in C++, using a layered programming architecture. The bottom layer of this code will be the drivers for each of the individual sensors, if the sensors come with pre-made drivers a layer of wrapper functions will be written on top of these drivers. This way the code can be easily adapted to allow new sensors to be integrated into the platform. The middle layer will involve a set of calibration functions to improve the accuracy of the sensor outputs. The final layer will be a user interface which will allow the user to interact with the device using the built in display, main push button and another Bluetooth device. The code will be documented and made open source for the rest of the caving community to use.
+The funding requested below would be to cover the development costs for 2 survey devices + additional components for evaluation of different sensors. Some work on the project has been started already and we aim to have an initial working prototype ready for evaluation over the summer expeditions. Once receiving feedback from initial field testing, we will make improvements to the design before aiming to publish our findings in the Cave Radio and Electronics Group (CREG) journal and hopefully an article in Descent magazine. 
+
+
+User requirements:
 
 **Minimum device requirements (MVP):**
 
 ·         Must have an intuitive user interface.<br/>
-·         Be waterproof and robust enough to endure a caving trip without additional protection.<br/>
+·         Be tough enough to withstand a cave environment.<br/>
 ·         Meet grade 5 survey requirements<br/>
 ·         Have a simple calibration procedure<br/>
 ·         Remember calibration settings until recalibrated<br/>
 ·         Store survey data until sent out to Bluetooth device or deleted<br/>
+·         Last several hours on a single charge<br/>
+·         Be ergonomic and portable<br/>
 
 **External (case) button actions**
 While the device is sealed the user will only be able to physically interact with the device by pressing the single button on the back of the case.

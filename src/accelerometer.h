@@ -18,6 +18,11 @@
 using namespace Eigen;
 using std::cout;
 
+static const double CALIB_VAR_LIM = 0.025;
+static const int ACCEL_CALIBRATION_N = 23;
+
+// Computes kronecker product of two 3 vectors
+Vector<double, 9> kronecker3(Vector3d a, Vector3d b);
 
 class Accelerometer  {
 public:
@@ -34,22 +39,24 @@ public:
     double get_inclination();
 
     // Calculate calibration matrix for accelerometer
-    void calibrate();
+    bool calibrate();
 
 protected:
-    // Raw gravity data - un-corrected
-    Vector3d raw_gravity_data;
-
     // Gets the raw data from the underlying sensor
-    virtual void get_raw_data()=0;
+    virtual void get_raw_data()=0; 
+
+    Vector3d raw_gravity_data; // Raw gravity data - un-corrected
 
 private:
-    //Corrected gravity data
-    Vector3d corrected_gravity_data;
+    Vector3d corrected_gravity_data; // Corrected gravity data
+    Matrix3d correction_transformation; // Tranformation used to correct the gravity data
 
-    // Tranformation used to correct the gravity data
-    Matrix3d correction_transformation;
-        
+    // Acceleration calibration data
+    Matrix<double,3,10> samples_mat; // Accelerometer sensor calibration data
+    Matrix<double,3,ACCEL_CALIBRATION_N> calib_data; // Accelerometer sensor calibration data
+    Vector3d mean_acceleration;
+    int sample_num, calibration_num;
+    bool calibrated;
 };
 
 #endif

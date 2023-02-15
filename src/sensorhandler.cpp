@@ -77,6 +77,7 @@ void SensorHandler::update()
     ***************************************************************/
 
     // get an average of SAMPLING_SIZE samples for accuracy
+    // TODO: wait until SD low enough...
     for (sample_num=0;sample_num<SAMPLING_SIZE;sample_num++)
     {
         accel_sensor->update();
@@ -109,6 +110,30 @@ void SensorHandler::update()
     char str_buf[60];
     sprintf(str_buf,"Raw device data H: %f, I: %f, D: %f", RAD_TO_DEG*heading, RAD_TO_DEG*inclination, distance);
     debug(DEBUG_SENSOR,str_buf);
+}
+
+
+// Calibrates the magnetometer and aligns the accelerometer
+bool SensorHandler::calibrate_inertial_sensors(){
+    if (!acc_calibrated)
+    {
+        if(accel_sensor->calibrate())
+        {
+            acc_calibrated = true;
+        }
+    } 
+    else if (!mag_calibrated)
+    {
+        if(mag_sensor->calibrate())
+        {
+            mag_calibrated = true;
+        }
+    }
+    else
+    {
+        // Run joint calibration
+    }
+    return false;
 }
 
 void SensorHandler::get_orientation()
@@ -172,7 +197,8 @@ SensorHandler::SensorHandler(Accelerometer* accel, Magnetometer* mag, Lidar* lid
     inclination_correction = 0;
     heading_correction = 0;
     calibration_num = 0;
-    laser_alignment_vector << 0, 0, 0;
+    imu_correction_mat << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+
 
     // Add code to load/save sensor calibration data from file
 }

@@ -20,17 +20,18 @@
 #include "interrupts.h"
 #include "BLE.h"
 #include "sensorhandler.h"
-#include "RMC3100.h"
+#include "RM3100.h"
 #include "LDK_2M.h"
+#include "SCA3300.h"
 
 
 // Define sensor structs
 static struct bno055_t myBNO;
 static struct bno055_gravity myGravityData;
 
-static RMC3100 magnetometer;
+static RM3100 magnetometer;
 static LDK_2M lidar;
-static Accelerometer accelerometer(&myGravityData);
+static SCA3300 accelerometer;
 
 BLEHandler blehandler;
 SensorHandler sensorhandler(&accelerometer, &magnetometer, &lidar);
@@ -98,7 +99,7 @@ void state_idle()
     blehandler.shared_bledata.write_command(cmd);
   } else if (strcmp(cmd, "calibrate mag") == 0 )
   {
-    magnetometer.reset_calibration_arr();
+    magnetometer.reset_calibration_data();
     next_state = MAG_CALIB;
     char cmd[] = "NO COMMAND";
     blehandler.shared_bledata.write_command(cmd);
@@ -140,7 +141,7 @@ void state_accel_calibration()
 
 void state_mag_calibration()
 {
-    magnetometer.get_raw_data();
+    magnetometer.update();
     magnetometer.add_calibration_data();
     if (touchRead(4))
     {
@@ -263,7 +264,7 @@ void setup_hw(){
   // Initialise data objects and sensors
   debug(DEBUG_MAIN,"Initialising sensor objects");
   init_bno();
-  magnetometer.reset_calibration_arr();
+  magnetometer.reset_calibration_data();
 
   init_interrupts();
   try

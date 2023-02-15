@@ -76,7 +76,7 @@ bool Accelerometer::calibrate()
 
 
 
-void calculate_newton_iteration()
+RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<double,12+4*ACCEL_CALIBRATION_N> theta)
 {
     /********************************************************************************************************************
      * The goal here is to run the newton interation method described in https://doi.org/10.1155/2020/4617365.
@@ -225,54 +225,75 @@ void calculate_newton_iteration()
     Matrix<double,N,3> H42 = H24.transpose(); 
 
 
-    // H33 k3x3
-    Matrix<double,3*N,3> H33;
-    for (k=0;k<N;k++)
+    // H33 3kx3k
+    // All non-diagonal elements of H33' are zero(3,3) where H33' is a NxN matrix of 3x3 matrices
+    Matrix<double,3*N,3*N> H33;
+    int row, col;
+    H33.setZero();
+    for (row=0;row<N;row++)
     {
-        lambda_k = lambda(k);
-        H33.block(k*3,0,3,3) = 2*T.transpose() * T + 2*MatrixX3d::Identity(3,3)*lambda_k;
+        for (col=0;col<N;col++)
+        {
+            if(row==col)
+            {
+                lambda_k = lambda(k);
+                H33.block(row*3,col*3,3,3) = 2*T.transpose() * T + 2*MatrixX3d::Identity(3,3)*lambda_k;
+            }
+        }
     }
 
 
-    // H34 3kx1 
-    Matrix<double,1,3*N> H34;
-    for (k=0;k<N;k++)
+    // H34 3kxk 
+    // All non-diagonal elements of H32' are 0 where H32' is a NxN matrix of 3vectors
+    Matrix<double, 3*N, N> H34;
+    H32.setZero();
+    for (row=0;row<N;row++)
     {
-        yb_k = yb.col(k);
-        H34.block(k*3,0,3,3) = 2*yb_k;
+        for (col=0;col<N;col++)
+        {
+            if(row==col)
+            {
+                yb_k = yb.col(k);
+                H34.block(row*3,col,3,1) = 2*yb_k;
+            }
+            
+        }
     }
     // H43 1x3k
-    Matrix<double,1,3*N> H43 = H34.transpose(); 
+    Matrix<double, N, 3*N> H43 = H34.transpose();
 
 
     // H44 kxk
     Matrix<double,N,N> H44;
     H44.setZero();
 
+
     // Hessian
     hessian.setZero();
-    hessian.block(0,0,9,9) = H11;
-    hessian.block(0,9,9,3) = H12;
-    hessian.block(0,12,9,3*N) = H13;
-    hessian.block(0,12+3*N,9,N) = H14;
+    hessian.block(0,0,      9,9)    = H11;
+    hessian.block(0,9,      9,3)    = H12;
+    hessian.block(0,12,     9,3*N)  = H13;
+    hessian.block(0,12+3*N, 9,N)    = H14;
 
-    hessian.block(9,0,9,9) = H21;
-    hessian.block(9,9,9,3) = H22;
-    hessian.block(9,12,9,3*N) = H23;
-    hessian.block(9,12+3*N,9,N) = H24;
+    hessian.block(9,0,      9,9)    = H21;
+    hessian.block(9,9,      9,3)    = H22;
+    hessian.block(9,12,     9,3*N)  = H23;
+    hessian.block(9,12+3*N, 9,N)    = H24;
 
-    hessian.block(12,0,9,9) = H31;
-    hessian.block(12,9,9,3) = H32;
-    hessian.block(12,12,9,3*N) = H33;
-    hessian.block(12,12+3*N,9,N) = H34;
+    hessian.block(12,0,     9,9)    = H31;
+    hessian.block(12,9,     9,3)    = H32;
+    hessian.block(12,12,    3*N,3*N)= H33;
+    hessian.block(12,12+3*N,3*N,N)  = H34;
 
-    hessian.block(12+3*N,0,9,9) = H41;
-    hessian.block(12+3*N,9,9,3) = H42;
-    hessian.block(12+3*N,12,9,3*N) = H43;
+    hessian.block(12+3*N,0, 9,9)    = H41;
+    hessian.block(12+3*N,9, 9,3)    = H42;
+    hessian.block(12+3*N,12,N,3*N)  = H43;
     
     hessian.block(12+3*N,12+3*N,N,N) = H44;
 
 
     // Multiply Jacobian by inverse of hessian
+
+    return theta - (hessian.inverse() * jacobian.transpose());
 
 }

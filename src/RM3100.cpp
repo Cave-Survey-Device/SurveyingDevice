@@ -81,7 +81,7 @@ void RM3100::get_raw_data() {
   else{
     while((readReg(RM3100_STATUS_REG) & 0x80) != 0x80); //read internal status register
   }
-  
+
   Wire.beginTransmission(RM3100Address);
   Wire.write(0x24); //request from the first measurement results register
   Wire.endTransmission();
@@ -118,36 +118,33 @@ void RM3100::get_raw_data() {
   y = (y * 256 * 256 * 256) | (int32_t)(y2) * 256 * 256 | (uint16_t)(y1) * 256 | y0;
   z = (z * 256 * 256 * 256) | (int32_t)(z2) * 256 * 256 | (uint16_t)(z1) * 256 | z0;
 
-  raw_mag_data << (float)(x)/gain, (float)(y)/gain, (float)(z)/gain;
-  double uT = raw_mag_data.norm();
-  raw_mag_data = raw_mag_data/uT;
-
   //calculate magnitude of results
-  
-//   //display results
-//   Serial.print("Data in counts:");
-//   Serial.print("   X:");
-//   Serial.print(x);
-//   Serial.print("   Y:");
-//   Serial.print(y);
-//   Serial.print("   Z:");
-//   Serial.println(z);
+  double uT = sqrt(pow(((float)(x)/gain),2) + pow(((float)(y)/gain),2)+ pow(((float)(z)/gain),2));
 
-//   Serial.print("Data in microTesla(uT):");
-//   Serial.print("   X:");
-//   Serial.print((float)(x)/gain);
-//   Serial.print("   Y:");
-//   Serial.print((float)(y)/gain);
-//   Serial.print("   Z:");
-//   Serial.println((float)(z)/gain);
+  raw_mag_data << (double)x, (double)y, (double)z;
 
-//   //Magnitude should be around 45 uT (+/- 15 uT)
-//   Serial.print("Magnitude(uT):");
+  //display results
+  Serial.print("Data in counts:");
+  Serial.print("   X:");
+  Serial.print(x);
+  Serial.print("   Y:");
+  Serial.print(y);
+  Serial.print("   Z:");
+  Serial.println(z);
+
+  Serial.print("Data in microTesla(uT):");
+  Serial.print("   X:");
+  Serial.print((float)(x)/gain);
+  Serial.print("   Y:");
+  Serial.print((float)(y)/gain);
+  Serial.print("   Z:");
+  Serial.println((float)(z)/gain);
+
+  //Magnitude should be around 45 uT (+/- 15 uT)
+  Serial.print("Magnitude(uT):");
   Serial.println(uT);
-//   Serial.println();     
+  Serial.println();      
 }
 
 RM3100::RM3100()
-{
-  init();
-}
+{}

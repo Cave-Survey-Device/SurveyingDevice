@@ -24,6 +24,7 @@ class RM3100: public Magnetometer
 {
 public:
     RM3100();
+    void init();
 
 protected:
     void get_raw_data();
@@ -40,7 +41,6 @@ private:
     uint16_t cycleCount;
     float gain;
 
-    void init();
 
     // Writes to a register
     void writeReg(uint8_t addr, uint8_t data);
@@ -50,6 +50,7 @@ private:
     
     // Reads from a register
     uint8_t readReg(uint8_t addr);
+
 };
 
 

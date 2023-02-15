@@ -1,16 +1,26 @@
 # SurveyingDevice
 
-This project sets out to create a prototype that is the simplest form of Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
-The aim of the project is to create a device which can serve as a platform for further development by ourselves and others wanting to create new cave surveying technology by adding additional features/enhancements.
+This project sets out to create a simple Bluetooth enabled electronic survey instrument capable of achieving grade 5 survey requirments.
+The idea is to create universal platform for the design of paperless cave surveying devices, which would allow anyone with a basic knowledge of electronics to build their own cave surveying device from readily available components. 
+
+To make building the device more approcable to beginners this design outlined here is constructed from push fit modular interchangeable units on a single printed circuit board, speeding up production time while increaing reliabiliy. This design would be especially useful on expeditions where often multiple surveying devices are available, if two devices were to break then using just basic tools the broken components of one could be easily swapped with the working components of another. 
+
+These day's 3D printed components are rugged enough to witstand a cave environment just as well as a DistoX2. This also allows the case to be tailored exactly to contain any array of components while mainingtaing ergonomics. The laser and screen are protected with a laser cut pieces of acrylic sealed against the enclosure with rubber gaskets. 
+
+The firmware in this repo is written in C++, using a layered programming architecture. The bottom layer of this code will be the drivers for each of the individual sensors, if the sensors come with pre-made drivers a layer of wrapper functions will be written on top of these drivers. This way the code can be easily adapted to allow new sensors to be integrated into the platform. The middle layer will involve a set of calibration functions to improve the accuracy of the sensor outputs. The final layer will be a user interface which will allow the user to interact with the device using the built in display, main push button and another Bluetooth device. The code will be documented and made open source for the rest of the caving community to use.
+
+Below are a list of user requirements:
 
 **Minimum device requirements (MVP):**
 
 ·         Must have an intuitive user interface.<br/>
-·         Be waterproof and robust enough to endure a caving trip without additional protection.<br/>
+·         Be tough enough to withstand a cave environment.<br/>
 ·         Meet grade 5 survey requirements<br/>
 ·         Have a simple calibration procedure<br/>
 ·         Remember calibration settings until recalibrated<br/>
 ·         Store survey data until sent out to Bluetooth device or deleted<br/>
+·         Last several hours on a single charge<br/>
+·         Be ergonomic and portable<br/>
 
 **External (case) button actions**
 While the device is sealed the user will only be able to physically interact with the device by pressing the single button on the back of the case.

@@ -1,6 +1,6 @@
 #include "accelerometer.h"
 
-Accelerometer::Accelerometer(struct bno055_gravity *myGravityData)
+Accelerometer::Accelerometer()
 {
     correction_transformation << 1, 0, 0,
                                  0, 1, 0,
@@ -9,7 +9,7 @@ Accelerometer::Accelerometer(struct bno055_gravity *myGravityData)
 
 void Accelerometer::update(){
     get_raw_data();
-    corrected_gravity_data = raw_gravity_data*correction_transformation;
+    corrected_gravity_data = correction_transformation*raw_gravity_data;
 }
 
 Vector3d Accelerometer::get_grav_vec()
@@ -40,27 +40,17 @@ MatrixXd kronecker(MatrixXd a, MatrixXd b)
     return out;
 }
 
-Vector<double, 9> kronecker_13_31(Vector3d a, Vector3d b)
-{
-    int i;
-    Matrix3d out;
-    for (i=0; i<3; i++)
-    {
-        out.col(i) << i * b;
-    }
-    return (Vector<double,9>) out.array();
-}
 
 
 bool Accelerometer::calibrate()
 {
     update();
-    samples_mat.col(sample_num%3) = get_grav_vec(); 
+    samples_mat << samples_mat.block(0,1,3,N_ACC_SAMPLES-1), get_grav_vec();
     sample_num++;
 
     // Check standard deviation
-    mean_acceleration = samples_mat.rowwise().mean();
-    Vector3d minus_mean = samples_mat.colwise()-mean_acceleration;
+    Vector3d mean_acceleration = samples_mat.rowwise().mean();
+    Matrix<double,3,N_ACC_SAMPLES> minus_mean = samples_mat.colwise()-mean_acceleration;
     minus_mean = minus_mean.array()/3;
     double sd = minus_mean.norm();
     if (sd < CALIB_VAR_LIM)
@@ -97,6 +87,7 @@ void calculate_newton_iteration()
     const int N =  ACCEL_CALIBRATION_N;
     Matrix<double,3,N> yb;
     Matrix<double,3,N> ym;
+    Matrix<double,3,N> d;
     Vector<double,N> lambda;
 
     Vector3d b_a;
@@ -110,7 +101,7 @@ void calculate_newton_iteration()
     
     double lambda_k;
 
-    Vector<double, 12+4*N> jacobian;
+    RowVector<double, 12+4*N> jacobian;
     Matrix<double, 12+4*N, 12+4*N> hessian;
     
 
@@ -130,7 +121,7 @@ void calculate_newton_iteration()
     J_1 = -2*J_1;
 
     // df/db_a 3x1
-    Vector3d J_2 = 2 * (T*yb - d_k).rowwise().sum();
+    Vector3d J_2 = 2 * (T*yb - d).rowwise().sum();
 
     // df/dyb_k 3kx1
     Matrix<double,3,N> J_3_mat;
@@ -140,13 +131,13 @@ void calculate_newton_iteration()
         J_3_mat.col(k) = -2 * T_a.transpose() * (d_k - T*yb_k) + 2*lambda_k*yb_k;
     }
     // Convert to Vector << col1(0), col1(1), col1(2), col2(0), col2(1), col2(2), ... , coln(0), coln(1), coln(2)
-    Vector<double,3*N> J_3 = J_3_mat.reshaped();
+    RowVector<double,3*N> J_3 = J_3_mat.reshaped();
 
     // df/dlambda_k kx1
-    Vector<double,N> J_4 = yb_k.colwise().norm().array().pow(2) - 1;
+    RowVector<double,N> J_4 = (yb.colwise().norm().array().pow(2)) - 1;
 
     // Jacobian
-    jacobian << J_1, J_2, J_3, J_4;
+    jacobian << J_1.transpose(), J_2.transpose(), J_3, J_4;
 
 
     /*********************************************************************************************
@@ -168,7 +159,7 @@ void calculate_newton_iteration()
         ykyk = kronecker(yb_k, yb_k.transpose());
 
         // ykyk kronecker I
-        H11 = H11 + kronecker(ykyk, Matrix3d::Identity());
+        H11 = H11 + kronecker(ykyk, Matrix3d::Identity(3,3));
     }
     H11 = 2*H11;
 
@@ -183,7 +174,7 @@ void calculate_newton_iteration()
     {
         
         yb_k = yb.col(k); //yb_k
-        H12 = H12 + kronecker(yb_k, Matrix3d::Identity()); // yb_k kronecker I
+        H12 = H12 + kronecker(yb_k, Matrix3d::Identity(3,3)); // yb_k kronecker I
     }
     H12 = 2*N*H12;
 
@@ -198,7 +189,7 @@ void calculate_newton_iteration()
         ym_k = ym.col(k);
         d_k = ym_k - b_a;
         yb_k = yb.col(k); //yb_k
-        H13.block(k*3,0,3,3) = 2*kronecker(yb_k,Matrix3d::Identity())*T - kronecker(Matrix3d::Identity(), (d_k-T*yb_k));
+        H13.block(k*3,0,3,3) = 2*kronecker(yb_k,Matrix3d::Identity(3,3))*T - kronecker(Matrix3d::Identity(3,3), (d_k-T*yb_k));
     }
 
     // H31 3Nx9
@@ -213,7 +204,7 @@ void calculate_newton_iteration()
 
 
     // H22 2x2
-    Matrix3d H22 = {1,0,0, 0,1,0, 0,0,1} ;
+    Matrix3d H22 = Matrix3d::Identity(3,3);
     H22 = H22*2*N;
 
 
@@ -231,7 +222,7 @@ void calculate_newton_iteration()
     Matrix<double,3,N> H24;
     H24.setZero();
     // H42 kx3
-    Matrix<double,1,3*N> H42 = H24.transpose(); 
+    Matrix<double,N,3> H42 = H24.transpose(); 
 
 
     // H33 k3x3
@@ -239,7 +230,7 @@ void calculate_newton_iteration()
     for (k=0;k<N;k++)
     {
         lambda_k = lambda(k);
-        H33.block(k*3,0,3,3) = 2*T.transpose() * T + 2*lambda_k*MatrixX3d::Identity();
+        H33.block(k*3,0,3,3) = 2*T.transpose() * T + 2*MatrixX3d::Identity(3,3)*lambda_k;
     }
 
 
@@ -283,5 +274,5 @@ void calculate_newton_iteration()
 
 
     // Multiply Jacobian by inverse of hessian
-    theta = theta - 
+
 }

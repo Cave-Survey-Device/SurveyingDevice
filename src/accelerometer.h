@@ -20,14 +20,15 @@ using std::cout;
 
 static const double CALIB_VAR_LIM = 0.025;
 static const int ACCEL_CALIBRATION_N = 23;
+const int N_ACC_SAMPLES = 10;
 
 // Computes kronecker product of two 3 vectors
-Vector<double, 9> kronecker3(Vector3d a, Vector3d b);
+MatrixXd kronecker(MatrixXd a, MatrixXd b);
 
 class Accelerometer  {
 public:
     // Default constructor
-    Accelerometer(struct bno055_gravity *myGravityData);
+    Accelerometer();
 
     // Reads data from the sensor and processes it
     void update();
@@ -52,9 +53,8 @@ private:
     Matrix3d correction_transformation; // Tranformation used to correct the gravity data
 
     // Acceleration calibration data
-    Matrix<double,3,10> samples_mat; // Accelerometer sensor calibration data
+    Matrix<double,3,N_ACC_SAMPLES> samples_mat; // Accelerometer sensor calibration data
     Matrix<double,3,ACCEL_CALIBRATION_N> calib_data; // Accelerometer sensor calibration data
-    Vector3d mean_acceleration;
     int sample_num, calibration_num;
     bool calibrated;
 };

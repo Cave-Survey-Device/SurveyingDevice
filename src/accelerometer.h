@@ -55,6 +55,10 @@ private:
     // Acceleration calibration data
     Matrix<double,3,N_ACC_SAMPLES> samples_mat; // Accelerometer sensor calibration data
     Matrix<double,3,ACCEL_CALIBRATION_N> calib_data; // Accelerometer sensor calibration data
+
+    RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<double,12+4*ACCEL_CALIBRATION_N> theta);
+    void run_newton(Matrix<double,3,ACCEL_CALIBRATION_N> ym);
+
     int sample_num, calibration_num;
     bool calibrated;
 };

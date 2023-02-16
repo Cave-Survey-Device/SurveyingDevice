@@ -1,23 +1,4 @@
 #include "accelerometer.h"
-
-Accelerometer::Accelerometer()
-{
-    correction_transformation << 1, 0, 0,
-                                 0, 1, 0,
-                                 0, 0, 1;
-};
-
-void Accelerometer::update(){
-    get_raw_data();
-    corrected_gravity_data = correction_transformation*raw_gravity_data;
-}
-
-Vector3d Accelerometer::get_grav_vec()
-{
-    return corrected_gravity_data;
-};
-
-
 MatrixXd kronecker(MatrixXd a, MatrixXd b)
 {
     int row;
@@ -41,6 +22,26 @@ MatrixXd kronecker(MatrixXd a, MatrixXd b)
 }
 
 
+Accelerometer::Accelerometer()
+{
+    correction_transformation << 1, 0, 0,
+                                 0, 1, 0,
+                                 0, 0, 1;
+};
+
+void Accelerometer::update(){
+    get_raw_data();
+    corrected_gravity_data = correction_transformation*raw_gravity_data;
+}
+
+Vector3d Accelerometer::get_grav_vec()
+{
+    return corrected_gravity_data;
+};
+
+
+
+
 
 bool Accelerometer::calibrate()
 {
@@ -61,7 +62,7 @@ bool Accelerometer::calibrate()
     }
 
     // if all data collected
-    if (calibration_num == 23)
+    if (calibration_num >= ACCEL_CALIBRATION_N)
     {
 
         // RUN NEWTON SCHEME A LOAD OF TIMES
@@ -76,7 +77,67 @@ bool Accelerometer::calibrate()
 
 
 
-RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<double,12+4*ACCEL_CALIBRATION_N> theta)
+void Accelerometer::run_newton(Matrix<double,3,ACCEL_CALIBRATION_N> ym)
+{
+    // Initial estimate
+    Matrix3d R_a;
+    Matrix3d b_a;
+    int i;
+    Matrix<double,3,ACCEL_CALIBRATION_N> ym;
+    Vector3d ym_i;
+
+    // Construct Ax = b
+    Matrix<double,ACCEL_CALIBRATION_N,10> A; 
+    Vector<double,10> x;
+    Vector<double,10> b;
+    b.setZero();
+
+    for (i=0;i<ACCEL_CALIBRATION_N;i++)
+    {
+        ym_i = ym.col(i);
+        A.row(i) <<
+        ym_i(0)*ym_i(0), ym_i(1)*ym_i(1), ym_i(2)*ym_i(2), // Squares
+        2*ym_i(0)*ym_i(1), 2*ym_i(0)*ym_i(2), 2*ym_i(1)*ym_i(2), // Combinations
+        2*ym_i(0), 2*ym_i(1), 2*ym_i(2), // Individuals
+        1; // Constant
+    }
+
+    // Solve Ax = b
+    x = A.template bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
+
+    // Assign E, F, and G
+    Matrix3d E;
+    Vector3d F;
+    double G;
+
+    E << x(0), x(3), x(4),
+         x(3), x(1), x(5),
+         x(4), x(5), x(2);
+
+    F << x(6), x(7), x(8);
+
+    G = x(9);
+
+    // Compute R0_a and b0_a
+    Matrix3d R0_a = E.llt();
+    Vector3d b0_a = E.inverse() * F;
+
+    // Run newton scheme
+    Vector<double,12+4*ACCEL_CALIBRATION_N> theta;
+
+    Matrix3d T_a = R0_a.transpose();
+    Matrix<double, 3,  ACCEL_CALIBRATION_N> yb;
+    RowVector<double, ACCEL_CALIBRATION_N> lambda;
+    theta << T_a, b_a, yb, lambda;
+
+    int N_ITERS = 10;
+    for (i=0;i<N_ITERS;i++)
+    {
+        theta = calculate_newton_iteration(theta);
+    }
+}
+
+RowVector<double,12+4*ACCEL_CALIBRATION_N> Accelerometer::calculate_newton_iteration(Vector<double,12+4*ACCEL_CALIBRATION_N> theta)
 {
     /********************************************************************************************************************
      * The goal here is to run the newton interation method described in https://doi.org/10.1155/2020/4617365.
@@ -85,24 +146,39 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
      * When using Eigen, Matrix<double,3,1> produces Vector3d and Matrix<double,1,3> produces Rowector3d
     *********************************************************************************************************************/
     const int N =  ACCEL_CALIBRATION_N;
-    Matrix<double,3,N> yb;
-    Matrix<double,3,N> ym;
-    Matrix<double,3,N> d;
-    Vector<double,N> lambda;
 
+    // Init theta-based variables
+    Matrix3d T_a;
+    T_a << theta.segment(0,9);
     Vector3d b_a;
+    b_a << theta.segment(9,3);
+    Matrix<double,3,N> yb;
+    yb << theta.segment(12,N);
+    Vector<double,N> lambda;
+    lambda << theta.segment(12+N,N);
+    Matrix<double,3,N> ym;
+    ym << theta.segment(12+N,N);
+
+    Matrix<double,3,N> d;
+    d << ym.colwise()  - b_a;
     
+    // -----------------------------------------------------------------------------------------
+    // This needs checking!
+    Matrix<double,3,N> ym;
+    yb << T_a.inverse() * (ym.colwise() - b_a);
+    // -----------------------------------------------------------------------------------------
+
+
+    // Declare iterator variables
     Vector3d ym_k;
     Vector3d yb_k;
     Vector3d d_k;
-
-    Matrix3d T;
-    Matrix3d T_a;
-    
     double lambda_k;
 
+    // Declare jacobian and hessian variables
     RowVector<double, 12+4*N> jacobian;
     Matrix<double, 12+4*N, 12+4*N> hessian;
+    
     
 
     /*********************************************************************
@@ -116,19 +192,19 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
     for (k=0; k<N;k++)
     {
         yb_k = yb.col(k);
-        J_1 = J_1 + kronecker(yb_k,(d_k - T*yb_k));
+        J_1 = J_1 + kronecker(yb_k,(d_k - T_a*yb_k));
     }
     J_1 = -2*J_1;
 
     // df/db_a 3x1
-    Vector3d J_2 = 2 * (T*yb - d).rowwise().sum();
+    Vector3d J_2 = 2 * (T_a*yb - d).rowwise().sum();
 
     // df/dyb_k 3kx1
     Matrix<double,3,N> J_3_mat;
     for (k=0; k<N;k++)
     {
         yb_k = yb.col(k);
-        J_3_mat.col(k) = -2 * T_a.transpose() * (d_k - T*yb_k) + 2*lambda_k*yb_k;
+        J_3_mat.col(k) = -2 * T_a.transpose() * (d_k - T_a*yb_k) + 2*lambda_k*yb_k;
     }
     // Convert to Vector << col1(0), col1(1), col1(2), col2(0), col2(1), col2(2), ... , coln(0), coln(1), coln(2)
     RowVector<double,3*N> J_3 = J_3_mat.reshaped();
@@ -145,7 +221,7 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
     **********************************************************************************************/
     Vector<double,9> tempV;
 
-    // H11 9x9
+    // ---------------------------------------- H11 9x9  ----------------------------------------
     Matrix<double,9,9> H11;
     H11.setZero();
 
@@ -164,9 +240,7 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
     H11 = 2*H11;
 
 
-
-
-    // H12 9x3
+    //  ---------------------------------------- H12 9x3 ----------------------------------------
     Matrix<double,9,3> H12;
     H12.setZero();
 
@@ -177,55 +251,53 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
         H12 = H12 + kronecker(yb_k, Matrix3d::Identity(3,3)); // yb_k kronecker I
     }
     H12 = 2*N*H12;
-
-    // H21 3x9
+    // ---------------------------------------- H21 3x9 ----------------------------------------
     Matrix<double,3,9> H21 = H12.transpose();
 
 
-    // H13 9x3N
+    // ---------------------------------------- H13 9x3N ----------------------------------------
     Matrix<double,9,3*N> H13;
     for (k=0;k<N;k++)
     {
         ym_k = ym.col(k);
         d_k = ym_k - b_a;
         yb_k = yb.col(k); //yb_k
-        H13.block(k*3,0,3,3) = 2*kronecker(yb_k,Matrix3d::Identity(3,3))*T - kronecker(Matrix3d::Identity(3,3), (d_k-T*yb_k));
+        H13.block(k*3,0,3,3) = 2*kronecker(yb_k,Matrix3d::Identity(3,3))*T_a - kronecker(Matrix3d::Identity(3,3), (d_k-T_a*yb_k));
     }
-
-    // H31 3Nx9
+    // ---------------------------------------- H31 3Nx9 ----------------------------------------
     Matrix<double,3*N,9> H31 = H13.transpose(); 
 
 
-    // H14 9xk
+    // ---------------------------------------- H14 9xk ----------------------------------------
     Matrix<double,9,N> H14;
     H14.setZero();
-    // H41 kx9
+    // ---------------------------------------- H41 kx9 ----------------------------------------
     Matrix<double,N,9> H41 = H14.transpose(); 
 
 
-    // H22 2x2
+    // ---------------------------------------- H22 2x2 ----------------------------------------
     Matrix3d H22 = Matrix3d::Identity(3,3);
     H22 = H22*2*N;
 
 
-    // H23 3x3k
+    // ---------------------------------------- H23 3x3k ----------------------------------------
     Matrix<double,3,3*N> H23;
     for (k=0;k<N;k++)
     {
-        H23.block(k*3,0,3,3) = 2*T;
+        H23.block(k*3,0,3,3) = 2*T_a;
     }
-    // H32 3kx3
+    // ---------------------------------------- H32 3kx3  ----------------------------------------
     Matrix<double,3*N,3> H32 = H23.transpose(); 
 
 
-    // H24 3xk
+    // ---------------------------------------- H24 3xk ----------------------------------------
     Matrix<double,3,N> H24;
     H24.setZero();
-    // H42 kx3
+    // ---------------------------------------- H42 kx3 ----------------------------------------
     Matrix<double,N,3> H42 = H24.transpose(); 
 
 
-    // H33 3kx3k
+    // ---------------------------------------- H33 3kx3k ----------------------------------------
     // All non-diagonal elements of H33' are zero(3,3) where H33' is a NxN matrix of 3x3 matrices
     Matrix<double,3*N,3*N> H33;
     int row, col;
@@ -237,13 +309,13 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
             if(row==col)
             {
                 lambda_k = lambda(k);
-                H33.block(row*3,col*3,3,3) = 2*T.transpose() * T + 2*MatrixX3d::Identity(3,3)*lambda_k;
+                H33.block(row*3,col*3,3,3) = 2*T_a.transpose() * T_a + 2*MatrixX3d::Identity(3,3)*lambda_k;
             }
         }
     }
 
 
-    // H34 3kxk 
+    // ---------------------------------------- H34 3kxk ----------------------------------------
     // All non-diagonal elements of H32' are 0 where H32' is a NxN matrix of 3vectors
     Matrix<double, 3*N, N> H34;
     H32.setZero();
@@ -259,16 +331,16 @@ RowVector<double,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<dou
             
         }
     }
-    // H43 1x3k
+    // ---------------------------------------- H43 1x3k ----------------------------------------
     Matrix<double, N, 3*N> H43 = H34.transpose();
 
 
-    // H44 kxk
+    // ---------------------------------------- H44 kxk ----------------------------------------
     Matrix<double,N,N> H44;
     H44.setZero();
 
 
-    // Hessian
+    // ---------------------------------------- Hessian ----------------------------------------
     hessian.setZero();
     hessian.block(0,0,      9,9)    = H11;
     hessian.block(0,9,      9,3)    = H12;

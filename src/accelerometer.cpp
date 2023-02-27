@@ -196,7 +196,7 @@ void Accelerometer::run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym)
     }
 
     // Solve Ax = b
-    x = A.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
+    x << A.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
 
     // Assign E, F, and G
     Matrix3f E;

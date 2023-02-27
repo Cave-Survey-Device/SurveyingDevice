@@ -11,17 +11,17 @@ using namespace Eigen;
 struct node
 {
     int id;
-    double inclination;
-    double heading;
-    double distance;
+    float inclination;
+    float heading;
+    float distance;
 };
 
 // Generate vector from current node back to base
-Vector3d generate_vector(double distance, double heading, double inclination);
+Vector3f generate_vector(float distance, float heading, float inclination);
 
 void debug(unsigned int mode, const char* str);
 
-Vector2d get_inclination_heading(Vector3d true_vec);
+Vector2d get_inclination_heading(Vector3f true_vec);
 
 
 #endif

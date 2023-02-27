@@ -1,10 +1,10 @@
 #include "utility.h"
 
-Vector3d generate_vector(double distance, double heading, double inclination)
+Vector3f generate_vector(float distance, float heading, float inclination)
 {
-    Vector3d vector;
-    Matrix3d heading_transformation;
-    Matrix3d inclination_transformation;
+    Vector3f vector;
+    Matrix3f heading_transformation;
+    Matrix3f inclination_transformation;
 
     vector << 1, 0, 0;
 
@@ -41,12 +41,12 @@ void debug(unsigned int mode, const char* str)
 }
 
 // Returns inclination and heading in a vector2d
-Vector2d get_inclination_heading(Vector3d true_vec)
+Vector2d get_inclination_heading(Vector3f true_vec)
 {
-    Vector3d z_axis;
+    Vector3f z_axis;
     Vector2d out;
-    double dot_prod;
-    double scaling;
+    float dot_prod;
+    float scaling;
 
     z_axis << 0,1,0;
     dot_prod = true_vec.dot(z_axis);

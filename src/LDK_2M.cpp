@@ -59,9 +59,9 @@ void LDK_2M::erase_buffer()
     }
 }
 
-double LDK_2M::to_distance(char* data)
+float LDK_2M::to_distance(char* data)
 {
-    double d;
+    float d;
     sscanf(data, "%lf", &d);
     d = d/1000.0;
     return d;
@@ -272,10 +272,10 @@ void LDK_2M::parse_response(char raw_message[], lidar_received_msg* msg)
     }
 }
 
-double LDK_2M::get_measurement()
+float LDK_2M::get_measurement()
 {
     
-    double distance = 0.0; // Distance returned by LIDAR
+    float distance = 0.0; // Distance returned by LIDAR
     char generated_command[LIDAR_SEND_COMMAND_SIZE]; // Command to send to LIDAR
     lidar_received_msg received_msg;
 

@@ -4,18 +4,18 @@
  * General purpose functions...
 *************************************/
 
-Matrix3d getXRotation(double theta)
+Matrix3f getXRotation(float theta)
 {
-    Matrix3d T;
+    Matrix3f T;
     T << 1,0,0,
          0,cos(theta),-sin(theta),
          0,sin(theta),cos(theta);
     return T;
 }
 
-Vector3d toCartesian(Vector3d spherical)
+Vector3f toCartesian(Vector3f spherical)
 {
-    Vector3d cartesian;
+    Vector3f cartesian;
     // Serial.printf("Heading: %f   Inclination: %f\n", spherical(0), spherical(1));
     cartesian << spherical(2)*(sin(spherical(1))*cos(spherical(0))),
                  spherical(2)*(sin(spherical(1))*sin(spherical(0))),
@@ -23,25 +23,25 @@ Vector3d toCartesian(Vector3d spherical)
     return cartesian;
 }
 
-Vector3d toSpherical(Vector3d cartesian){
-    Vector3d spherical;
+Vector3f toSpherical(Vector3f cartesian){
+    Vector3f spherical;
     spherical << atan2(cartesian(1), cartesian(0)),
                  atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
                  cartesian.norm();
     return spherical;
 }
 
-Vector3d calc_normal_vec(MatrixXd point_vec, bool debug /*= false*/){
+Vector3f calc_normal_vec(MatrixXf point_vec, bool debug /*= false*/){
   char buffer[150];
-  Vector3d normal;
-  MatrixXd left_singular_mat;
+  Vector3f normal;
+  MatrixXf left_singular_mat;
   int U_cols;
 
   // Subtract mean from each point otherwise its wrong XD
   // https://www.ltu.se/cms_fs/1.51590!/svd-fitting.pdf
   point_vec = point_vec.colwise()-point_vec.rowwise().mean();
 
-  JacobiSVD<MatrixXd> svd(point_vec, ComputeThinU | ComputeThinV);
+  JacobiSVD<MatrixXf> svd(point_vec, ComputeThinU | ComputeThinV);
   left_singular_mat = svd.matrixU();
   U_cols = left_singular_mat.cols();
   // 3rd col of U contains normal vec
@@ -65,8 +65,8 @@ Vector3d calc_normal_vec(MatrixXd point_vec, bool debug /*= false*/){
 
 void SensorHandler::update()
 {
-    Matrix<double,3,SAMPLING_SIZE> accel_samples;
-    Matrix<double,3,SAMPLING_SIZE> mag_samples;
+    Matrix<float,3,SAMPLING_SIZE> accel_samples;
+    Matrix<float,3,SAMPLING_SIZE> mag_samples;
     int sample_num;
 
     /***************************************************************
@@ -145,7 +145,7 @@ void SensorHandler::get_orientation()
     roll = atan2(grav_data(1),pow(pow(grav_data(0),2) + pow(grav_data(2),2),0.5));
 
     // Project magnetic vector onto horizontal plane
-    Vector3d vector_north = mag_data - ((mag_data.dot(grav_data) / grav_data.dot(grav_data)) * grav_data);
+    Vector3f vector_north = mag_data - ((mag_data.dot(grav_data) / grav_data.dot(grav_data)) * grav_data);
 
     heading =  atan2(vector_north(1), vector_north(0));
     if (grav_data(2) < 0)
@@ -155,13 +155,13 @@ void SensorHandler::get_orientation()
 }
 
 // Outputs data in degrees
-Vector3d SensorHandler::get_shot_data()
+Vector3f SensorHandler::get_shot_data()
 {
-    Vector3d out;
-    double x;
-    double y;
-    double roll_correct_heading_correction = 0;
-    double roll_correct_inclination_correction = 0;
+    Vector3f out;
+    float x;
+    float y;
+    float roll_correct_heading_correction = 0;
+    float roll_correct_inclination_correction = 0;
 
     if (roll > 180)
     {
@@ -236,26 +236,26 @@ void SensorHandler::align_laser()
 {
     int calib_num;
     // Heading, Inclination, roll, distance
-    Vector4d mean_calibration_data;
+    Vector4f mean_calibration_data;
     // Mean misalignement vector
-    Vector3d misalignement_mean;
+    Vector3f misalignement_mean;
     // Dummy variable for cartesian <=> spherical conversions
-    Vector3d conversion_dummy;
+    Vector3f conversion_dummy;
     // Vector direction to target
-    Vector3d target_vector;
+    Vector3f target_vector;
     // Matrix to hold each calculated misalignement vector
-    Matrix<double,3,LASER_CALIBRATION_SIZE> misalignement_mat;
+    Matrix<float,3,LASER_CALIBRATION_SIZE> misalignement_mat;
     // Matrix to hold cartesian versions of calibration data
-    Matrix<double,3,LASER_CALIBRATION_SIZE> cartesian_calibration_data;
+    Matrix<float,3,LASER_CALIBRATION_SIZE> cartesian_calibration_data;
     // Rotation matrix for reversing the effect of tilt
-    Matrix3d rotation_matrix;
+    Matrix3f rotation_matrix;
 
     // Distance of target from origin
-    double target_distance;
+    float target_distance;
     // Cartesian coordinates for target
-    double x, y, z;
+    float x, y, z;
     // Cartesian coordinated for tip of disto
-    double xi, yi, zi;
+    float xi, yi, zi;
 
     // Mean of all calibration data collected
     mean_calibration_data = laser_calibration_data.rowwise().mean();
@@ -360,15 +360,15 @@ void SensorHandler::sensor_test()
     Serial.println(this->heading);
 }
 
-double SensorHandler::get_inclination()
+float SensorHandler::get_inclination()
 {
     return inclination + inclination_correction;
 }
-double SensorHandler::get_heading()
+float SensorHandler::get_heading()
 {
     return heading; // + heading_correction;
 }
-double SensorHandler::get_distance()
+float SensorHandler::get_distance()
 {
     return distance;
 }

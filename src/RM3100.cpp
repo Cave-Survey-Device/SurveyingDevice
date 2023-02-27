@@ -119,9 +119,9 @@ void RM3100::get_raw_data() {
   z = (z * 256 * 256 * 256) | (int32_t)(z2) * 256 * 256 | (uint16_t)(z1) * 256 | z0;
 
   //calculate magnitude of results
-  double uT = sqrt(pow(((float)(x)/gain),2) + pow(((float)(y)/gain),2)+ pow(((float)(z)/gain),2));
+  float uT = sqrt(pow(((float)(x)/gain),2) + pow(((float)(y)/gain),2)+ pow(((float)(z)/gain),2));
 
-  raw_mag_data << (double)x, (double)y, (double)z;
+  raw_mag_data << (float)x, (float)y, (float)z;
 
   //display results
   Serial.print("Data in counts:");

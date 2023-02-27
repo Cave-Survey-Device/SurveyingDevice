@@ -36,7 +36,7 @@ class Magnetometer  {
         int check_calibration_progress();
 
         // Returns the current heading (corrected)
-        Vector3d get_mag_vec();
+        Vector3f get_mag_vec();
         
         void reset_calibration_data();
 
@@ -45,15 +45,15 @@ class Magnetometer  {
     protected:
         // Reads data from the sensor and processes it
         virtual void get_raw_data()=0;
-        Vector3d raw_mag_data; // Raw magnetic data - un-corrected
+        Vector3f raw_mag_data; // Raw magnetic data - un-corrected
 
     private:
         // Given an x,y, and z value, return the index where the data should be stored in the calibration array
-        int get_magnetometer_index(double x, double y,double z);
+        int get_magnetometer_index(float x, float y,float z);
         
-        Matrix<double,3,MAGNETOMETER_ARR_LEN> magnetometer_arr; // Magnetometer calibration array
-        Vector3d corrected_mag_data; //Corrected magnetometer data
-        Matrix3d correction_transformation; // Tranformation used to correct the magnetometer data
+        Matrix<float,3,MAGNETOMETER_ARR_LEN> magnetometer_arr; // Magnetometer calibration array
+        Vector3f corrected_mag_data; //Corrected magnetometer data
+        Matrix3f correction_transformation; // Tranformation used to correct the magnetometer data
 };
 
 #endif

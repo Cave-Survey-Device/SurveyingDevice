@@ -9,15 +9,6 @@ void write_to_file(const char* fname, const char* name, const float data){
   preferences.end();
 }
 
-void write_to_file(const char* fname, const char* name, const double data){
-  preferences.begin(fname, false);
-  char str_buf[60];
-  sprintf(str_buf,"Saving at name: %s\n", name);
-  debug(DEBUG_FILE,str_buf);
-  preferences.putDouble(name,data);
-  preferences.end();
-}
-
 void write_to_file(const char* fname, const char* name, const int data){
   preferences.begin(fname, false);
   char str_buf[60];

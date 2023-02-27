@@ -43,23 +43,23 @@ bool Magnetometer::calibrate(){
   if (check_calibration_progress() >= 90)
   {
     
-    MatrixXd centered = magnetometer_arr.colwise() - magnetometer_arr.rowwise().mean();
-    Matrix3d cov = (centered.transpose() * centered) / double(magnetometer_arr.cols() - 1);
-    EigenSolver<Matrix3d> eig;
+    MatrixXf centered = magnetometer_arr.colwise() - magnetometer_arr.rowwise().mean();
+    Matrix3f cov = (centered.transpose() * centered) / float(magnetometer_arr.cols() - 1);
+    EigenSolver<Matrix3f> eig;
     eig.compute(cov);
     cout << eig.eigenvalues() << "\n";
-    Vector3cd vec = eig.eigenvalues();
-    Vector3cd eigenvalues_sqrt = vec.array().pow(0.5);
-    DiagonalMatrix<std::complex<double>, 3> diag_sqrt_eig(eigenvalues_sqrt);
-    Matrix3cd T = eig.eigenvectors() * diag_sqrt_eig;
-    Matrix3cd inv_T = T.inverse();
+    Vector3cf vec = eig.eigenvalues();
+    Vector3cf eigenvalues_sqrt = vec.array().pow(0.5);
+    DiagonalMatrix<std::complex<float>, 3> diag_sqrt_eig(eigenvalues_sqrt);
+    Matrix3cf T = eig.eigenvectors() * diag_sqrt_eig;
+    Matrix3cf inv_T = T.inverse();
     correction_transformation = inv_T.real();
     return true;
   }
   return false;
 }
 
-int Magnetometer::get_magnetometer_index(double x, double y,double z){
+int Magnetometer::get_magnetometer_index(float x, float y,float z){
   // -pi to pi
   float azimuth = 0;
   //-pi/2 to pi/2
@@ -102,7 +102,7 @@ void Magnetometer::add_calibration_data(){
    * overwritten when new data at the same location is provided.
   ***************************************************************************************/
   int index;
-  double x,y,z;
+  float x,y,z;
   x = raw_mag_data(0);
   y = raw_mag_data(1);
   z = raw_mag_data(2);
@@ -129,6 +129,6 @@ int Magnetometer::check_calibration_progress(){
   return int(progress*100.0/643.0);
 }
 
-Vector3d Magnetometer::get_mag_vec(){
+Vector3f Magnetometer::get_mag_vec(){
     return corrected_mag_data;
 };

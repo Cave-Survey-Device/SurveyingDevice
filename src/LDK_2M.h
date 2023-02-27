@@ -55,7 +55,7 @@ class LDK_2M: public Lidar {
         void init();
 
         // Get lidar mesaurement
-        double get_measurement();
+        float get_measurement();
 
         // Toggle laser
         void toggle_laser();
@@ -82,8 +82,8 @@ class LDK_2M: public Lidar {
         // Reads a message from the UART into buffer
         bool read_msg_from_uart(char* buffer);
 
-        // Converts a string containing the distance to a double
-        double to_distance(char* data);
+        // Converts a string containing the distance to a float
+        float to_distance(char* data);
 
         // Flush rx
         void flush_serial1();

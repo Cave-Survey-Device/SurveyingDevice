@@ -8,7 +8,7 @@ class Lidar {
         virtual void init()=0;
 
         // Get lidar mesaurement
-        virtual double get_measurement()=0;
+        virtual float get_measurement()=0;
 
         // Toggle laser
         virtual void toggle_laser()=0;

@@ -26,8 +26,8 @@ MatrixXf kronecker(MatrixXf a, MatrixXf b)
     int col;
     int m = a.rows();
     int n = a.cols();
-    int p = b.cols();
-    int q = b.rows();
+    int p = b.rows();
+    int q = b.cols();
 
     MatrixXf out (p*m,q*n);
     
@@ -36,7 +36,7 @@ MatrixXf kronecker(MatrixXf a, MatrixXf b)
         for (col=0;col<n;col++)
         {
             // Block size pxq starting at (row*p, col*q)
-            out.block(p,q,row*p,col*q) = a(row,col) * b;
+            out.block(row*p,col*q,p,q) = a(row,col) * b;
         }
     }
     return out;
@@ -182,6 +182,7 @@ void Accelerometer::run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym)
     // Initial estimate
     Matrix3f R_a;
     Matrix3f b_a;
+    Matrix3f T_a;
     int i;
     Vector3f ym_i;
 
@@ -212,6 +213,24 @@ void Accelerometer::run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym)
     VectorXf x = A.fullPivHouseholderQr().solve(b);
     Serial.println("Calculated x vector:");
     print_mtxf(x);
+
+    // Testing for better guess, doesnt seem tom improve anything
+    // For each value in x, if |x| > 0
+    //      remove term from A
+    // for (i=0;i<10;i++)
+    // {
+    //     if (abs(x(i)) > 0.001)
+    //     {
+    //         A.col(i) = VectorXf::Zero(ACCEL_CALIBRATION_N);
+    //     }
+    // }
+
+    // generate new b taking into account new values
+    // b << (A * x).array() - 1;
+
+    // VectorXf x2 = A.bdcSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+    // Serial.println("Calculated x2 vector:");
+    // print_mtxf(x2);
 
     // VectorXf x = (A.transpose()*A).ldlt().solve(A.transpose() * b);
     // Serial.println("Calculated x vector:");
@@ -256,28 +275,29 @@ void Accelerometer::run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym)
     Serial.println("Initial guess for b_a:");
     print_mtxf(b0_a);
 
-    // theta.segment(0,9) = T0_a.array();
-    // theta.segment(9,3) = b0_a.array();
-    // theta.segment(12,3*ACCEL_CALIBRATION_N) = yb.array();
-    // theta.segment(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N) = lambda.array();
+    theta.segment(0,9) << T0_a.reshaped();
+    theta.segment(9,3) << b0_a.reshaped();
+    theta.segment(12,3*ACCEL_CALIBRATION_N) << yb.reshaped();
+    theta.segment(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N) << lambda.reshaped();
 
-    // Serial.println("Beginning newton scheme...");
-    // int N_ITERS = 10;
-    // for (i=0;i<N_ITERS;i++)
-    // {
-    //     theta = calculate_newton_iteration(theta);
-    // }
+    Serial.println("Beginning newton scheme...");
+    int N_ITERS = 10;
+    for (i=0;i<N_ITERS;i++)
+    {
+        Serial.printf("Current iteration: %i\n", i);
+        theta = calculate_newton_iteration(theta);
+    }
 
-    // T_a << theta.segment(0,9);
-    // b_a << theta.segment(9,3);
-    // yb << theta.segment(12,3*ACCEL_CALIBRATION_N);
-    // lambda << theta.segment(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N);
+    T_a << theta.segment(0,9);
+    b_a << theta.segment(9,3);
+    yb << theta.segment(12,3*ACCEL_CALIBRATION_N);
+    lambda << theta.segment(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N);
 
-    // Serial.println("Calculated T_a:");
-    // print_mtxf(T_a);
+    Serial.println("Calculated T_a:");
+    print_mtxf(T_a);
 
-    // Serial.println("Calculated b_a:");
-    // print_mtxf(b_a);
+    Serial.println("Calculated b_a:");
+    print_mtxf(b_a);
 }
 
 RowVector<float,12+4*ACCEL_CALIBRATION_N> Accelerometer::calculate_newton_iteration(Vector<float,12+4*ACCEL_CALIBRATION_N> theta)
@@ -292,16 +312,16 @@ RowVector<float,12+4*ACCEL_CALIBRATION_N> Accelerometer::calculate_newton_iterat
 
     // Init theta-based variables
     Matrix3f T_a;
-    T_a << theta.segment(0,9);
+    T_a << theta.segment(0,9).reshaped(3,3);
     Vector3f b_a;
-    b_a << theta.segment(9,3);
+    b_a << theta.segment(9,3).reshaped(3,1);
     Matrix<float,3,N> ym;
-    ym << theta.segment(12,N);
+    ym << theta.segment(12,3*N).reshaped(3,N);
     Vector<float,N> lambda;
-    lambda << theta.segment(12+N,N);
+    lambda << theta.segment(12+3*N,N).reshaped(N,1);
 
     Matrix<float,3,N> d;
-    d << ym.colwise()  - b_a;
+    d = ym.colwise()  - b_a;
     
     // -----------------------------------------------------------------------------------------
     // This needs checking!
@@ -403,7 +423,8 @@ RowVector<float,12+4*ACCEL_CALIBRATION_N> Accelerometer::calculate_newton_iterat
         ym_k = ym.col(k);
         d_k = ym_k - b_a;
         yb_k = yb.col(k); //yb_k
-        H13.block(k*3,0,3,3) = 2*kronecker(yb_k,Matrix3f::Identity(3,3))*T_a - kronecker(Matrix3f::Identity(3,3), (d_k-T_a*yb_k));
+        // k sets of 9x3
+        H13.block(0,k*3,9,3) = 2*kronecker(yb_k,Matrix3f::Identity(3,3))*T_a - kronecker(Matrix3f::Identity(3,3), (d_k-T_a*yb_k));
     }
     // ---------------------------------------- H31 3Nx9 ----------------------------------------
     Matrix<float,3*N,9> H31 = H13.transpose(); 
@@ -425,7 +446,7 @@ RowVector<float,12+4*ACCEL_CALIBRATION_N> Accelerometer::calculate_newton_iterat
     Matrix<float,3,3*N> H23;
     for (k=0;k<N;k++)
     {
-        H23.block(k*3,0,3,3) = 2*T_a;
+        H23.block(0,k*3,3,3) = 2*T_a;
     }
     // ---------------------------------------- H32 3kx3  ----------------------------------------
     Matrix<float,3*N,3> H32 = H23.transpose(); 
@@ -449,7 +470,7 @@ RowVector<float,12+4*ACCEL_CALIBRATION_N> Accelerometer::calculate_newton_iterat
         {
             if(row==col)
             {
-                lambda_k = lambda(k);
+                lambda_k = lambda(row);
                 H33.block(row*3,col*3,3,3) = 2*T_a.transpose() * T_a + 2*MatrixX3f::Identity(3,3)*lambda_k;
             }
         }

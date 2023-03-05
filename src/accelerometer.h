@@ -59,8 +59,60 @@ private:
     Matrix<float,3,N_ACC_SAMPLES> samples_mat; // Accelerometer sensor calibration data
     Matrix<float,3,ACCEL_CALIBRATION_N> calib_data; // Accelerometer sensor calibration data
 
-    RowVector<float,12+4*ACCEL_CALIBRATION_N> calculate_newton_iteration(Vector<float,12+4*ACCEL_CALIBRATION_N> theta);
+    void calculate_newton_iteration();
     void run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym);
+
+    
+
+    // Calibration variables
+    Vector<float,9> J_1;
+    Vector3f J_2;
+    RowVector<float,3*ACCEL_CALIBRATION_N> J_3;
+    RowVector<float,ACCEL_CALIBRATION_N> J_4;
+    Matrix<float,9,9> H11;
+    Matrix<float,9,3> H12;
+    Matrix<float,3,9> H21;
+    Matrix<float,9,3*ACCEL_CALIBRATION_N> H13;
+    Matrix<float,3*ACCEL_CALIBRATION_N,9> H31;
+    Matrix<float,9,ACCEL_CALIBRATION_N> H14;
+    Matrix<float,ACCEL_CALIBRATION_N,9> H41;
+    Matrix3f H22;
+    Matrix<float,3,3*ACCEL_CALIBRATION_N> H23;
+    Matrix<float,3*ACCEL_CALIBRATION_N,3> H32;
+    Matrix<float,3,ACCEL_CALIBRATION_N> H24;
+    Matrix<float,ACCEL_CALIBRATION_N,3> H42;
+    Matrix<float,3*ACCEL_CALIBRATION_N,3*ACCEL_CALIBRATION_N> H33;
+    Matrix<float,3*ACCEL_CALIBRATION_N, ACCEL_CALIBRATION_N> H34;
+    Matrix<float,ACCEL_CALIBRATION_N, 3*ACCEL_CALIBRATION_N> H43;
+    Matrix<float,ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N> H44;
+
+    // Composite variables
+    RowVector<float, 12+4*ACCEL_CALIBRATION_N> jacobian;
+    Matrix<float, 12+4*ACCEL_CALIBRATION_N, 12+4*ACCEL_CALIBRATION_N> hessian;
+    Vector<float,12+4*ACCEL_CALIBRATION_N> theta;
+    Vector<float,12+4*ACCEL_CALIBRATION_N> theta2;
+
+    // Component variables
+    Matrix3f T_a;
+    Vector3f b_a;
+    Matrix<float,3,ACCEL_CALIBRATION_N> yb; // Body frame
+    Matrix<float,3,ACCEL_CALIBRATION_N> ym; // Actual readings
+    Vector<float,ACCEL_CALIBRATION_N> lambda;
+    Matrix<float,3,ACCEL_CALIBRATION_N> d;
+
+    // Iterator variables
+    Vector3f ym_k;
+    Vector3f yb_k;
+    Vector3f d_k;
+    float lambda_k;
+
+    // Temp vars
+    Matrix<float,3,ACCEL_CALIBRATION_N> J_3_mat;
+    Vector<float,9> tempV;
+    Matrix3f ykyk;
+
+    // Other
+    Eigen::FullPivLU<Matrix<float,12+4*ACCEL_CALIBRATION_N,12+4*ACCEL_CALIBRATION_N>> fplu;
 
     int sample_num, calibration_num;
     bool calibrated;

@@ -5,6 +5,8 @@
     ],
     "idf.portWin": "COM17",
     "files.associations": {
-        "core": "cpp"
-    }
+        "core": "cpp",
+        "lu": "cpp"
+    },
+    "cmake.configureOnOpen": false
 }

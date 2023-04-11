@@ -8,7 +8,7 @@ def calibrate_mag(m_samples: np.ndarray):
 
     :param m_samples: (3,k) ndarray of magnetometer samples
     :type m_samples: np.ndarray
-    :return: R0, h0
+    :return: T0, h0
     :rtype: `(np.ndarray, np.ndarray)`
     """
     y = m_samples
@@ -48,26 +48,26 @@ def calibrate_mag(m_samples: np.ndarray):
 
         
     # Solve least squares
-    eigen_vals, eigen_vecs = np.linalg.eig(Y.T@Y)
-    ze = eigen_vecs[:,-1]
+    eigen_vals, eigen_vecs = np.linalg.eigh(Y.T@Y)
+    ze = eigen_vecs[:,0]
 
     # Find alpha
-    Ae = np.block([[ze[0],ze[1],ze[2]],
-                     [ze[1],ze[3],ze[4]],
-                     [ze[2],ze[4],ze[5]]])
+    Ae = np.block([[ze[0],ze[1]/2,ze[2]/2],
+                     [ze[1]/2,ze[3],ze[4]/2],
+                     [ze[2]/2,ze[4]/2,ze[5]]])
     be = ze[5:8]
     ce = ze[9]
     alpha = 4/(be.T@inv(Ae)@be-4*ce)
 
     # Calculate solution
     z = alpha * ze
-    A = np.block([[z[0],z[1],z[2]],
-                  [z[1],z[3],z[4]],
-                  [z[2],z[4],z[5]]])
+    A = np.block([[z[0],z[1]/2,z[2]/2],
+                  [z[1]/2,z[3],z[4]/2],
+                  [z[2]/2,z[4]/2,z[5]]])
     b = z[5:8]
     c = z[9]
 
     h0 = -inv(A) @ b * 0.5
-    R0 = cholesky(A)
+    T0 = inv(cholesky(A).T)
 
-    return R0, h0
+    return T0, h0

@@ -1,5 +1,6 @@
 #include <iostream>
-#include "fit_ellipse.h"
+#include "mag_cal.h"
+#include "data_generation.h"
 #include "include/gnuplot-iostream.h"
 #include <format>
 
@@ -14,8 +15,11 @@ void writeToCSVfile(std::string name, MatrixXf matrix)
     file << matrix.format(CSVFormat);
 }
 
+
+
 int main() {
 
+    // Define error parameters
     Matrix3f Tm;
     Tm <<  0.7, -0.8, 0.4,
             1.1, 0.3, -0.1,
@@ -24,25 +28,38 @@ int main() {
     Vector3f hm;
     hm << 0.5,1.7,2.6;
 
-    MatrixXf true_vec = generate_true_data();
-    //std:: cout << "True vec: " << true_vec.rows() << "x" << true_vec.cols() << "\n" << true_vec << "\n\n";
-    MatrixXf samples = generate_samples(true_vec, Tm, hm);
+    Matrix3f Ta;
+    Ta <<  0.7, -0.8, 0.4,
+            1.1, 0.3, -0.1,
+            -0.3, 0.6, 0.7;
 
-    writeToCSVfile("data.txt",samples.transpose());
+    Vector3f ha;
+    ha << 0.5,1.7,2.6;
 
+    // Generate sensor data
+    Vector3f mag_vec = {1.,0.,0.};
+    Vector3f accel_vec = {0.,0.,1.};
+
+    MatrixXf mag_true_data = generate_true_data(mag_vec);
+    MatrixXf true_accel_data = generate_true_data(accel_vec);
+
+    MatrixXf mag_samples = generate_samples(mag_true_data, Tm, hm);
+    MatrixXf accel_samples = generate_samples(true_accel_data, Ta, ha);
+
+    // Save sensor data
+    writeToCSVfile("mag_samples.txt", mag_samples.transpose());
+    writeToCSVfile("accel_samples.txt", accel_samples.transpose());
+
+
+    // Create initial guess for magnetometer calibration
     Matrix<float, 3, 3> M;
     Vector<float, 3> n;
     float d;
 
-    Vector<float, 10> U = fit_ellipsoid(samples);
+    Vector<float, 10> U = fit_ellipsoid(mag_samples);
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
-
-//    std::cout << "\n\n";
-//    std::cout << "M: \n" << M << "\n\n";
-//    std::cout << "n: \n" << n << "\n\n";
-//    std::cout << "d: \n" << d << "\n\n";
 
     Vector<float, 12> out = calculate_transformation(M, n, d);
 
@@ -53,16 +70,20 @@ int main() {
     Vector<float, 3> b;
     b << out[9], out[10], out[11];
 
-    MatrixXf corrections = R * (samples.colwise() - b);
+    MatrixXf mag_corrections = R * (mag_samples.colwise() - b);
 
-    // GNU PLOTTING
+    // MAG GNU PLOTTING
     Gnuplot gp;
 
     auto plots = gp.splotGroup();
-    plots.add_plot1d_colmajor(true_vec, "with points title 'True Vector'");
-    plots.add_plot1d_colmajor(samples, "with points title 'Samples'");
-    plots.add_plot1d_colmajor(corrections, "with points title 'Corrected data'");
+    plots.add_plot1d_colmajor(mag_true_data, "with points title 'True Vector'");
+    plots.add_plot1d_colmajor(mag_samples, "with points title 'Samples'");
+    plots.add_plot1d_colmajor(mag_corrections, "with points title 'Corrected data'");
     gp << plots;
+
+
+    // Run joint accelerometer and magnetometer calibration and alignment
+
 
 #ifdef _WIN32
     // For Windows, prompt for a keystroke before the Gnuplot object goes out of scope so that

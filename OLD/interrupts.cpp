@@ -44,8 +44,6 @@ void IRAM_ATTR ISR_GET_SHOT()
   interrupt_get_shot = true;
 }
 
-
-
 void init_shot_timer()
 {
     shot_timer = timerBegin(2, 80, true);

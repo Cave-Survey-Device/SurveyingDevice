@@ -4,7 +4,7 @@ from numpy import pi
 import utils
 import matplotlib.pyplot as plt
 import jcaa_funcs as jcaa
-import mag_funcs2 as mag
+import mag_funcs3 as mag
 
 # using "Accelerometer and Magnetometer Joint Calibration and Axes Alignment"
 
@@ -43,9 +43,15 @@ if __name__ == "__main__":
     #     [0.0427,-0.0336,0.4369]])
     # hm = np.array([[-0.1760],[0.2214],[0.0398]])
 
+    Tm = np.array([
+        [0.7,-0.8,-0.4],
+        [1.1,0.3,-0.1],
+        [0.3,-0.6,0.7]])
+    hm = np.array([[0.5],[1.7],[2.6]])
+
     g_true, m_true = utils.generate_true_data()
-    g_samples= utils.generate_sample_data(g_true,Ta,ha,0,0.000001)
-    m_samples= utils.generate_sample_data(m_true,Tm,hm,0,0.000001)
+    g_samples= utils.generate_sample_data(g_true,Ta,ha,0,0.05)
+    m_samples= utils.generate_sample_data(m_true,Tm,hm,0,0.05)
 
 
 
@@ -81,12 +87,14 @@ if __name__ == "__main__":
     va0 = np.zeros((3,1))
 
     # Magnetometer calibration matrix
-    Hm0, h0 = jcaa.claibrate_magnetometer(ym)
-    #R0, h0 = mag.calibrate_mag(m_samples) # R = T^-1 = H, 
+    #Hm0, h0 = jcaa.claibrate_magnetometer(ym)
+    Hm0, h0 = mag.calibrate_mag(m_samples) # R = T^-1 = H, 
     vm0 = Hm0 @ h0
 
-    print(inv(Tm))
-    print(Hm0)
+    print(Tm)
+    print(inv(Hm0))
+    print(hm)
+    print(h0)
 
     """---------------------------------------------------"""
 

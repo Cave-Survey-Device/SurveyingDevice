@@ -14,15 +14,15 @@ def calibrate_mag(m_samples: np.ndarray):
     y = m_samples
     K = y.shape[1]
 
-    # Formulate Y vector
-    k = 0
-    Y = np.block([kron(y[:,k].T,y[:,k].T).T, y[:,k].T, 1])
-    Y = Y[:, np.newaxis]
+    # # Formulate Y vector
+    # k = 0
+    # Y = np.block([kron(y[:,k].T,y[:,k].T).T, y[:,k].T, 1])
+    # Y = Y[:, np.newaxis]
 
-    for k in range(1,K):
-        concat = np.block([kron(y[:,k].T,y[:,k].T).T, y[:,k].T, 1])
-        Y = np.block([Y,concat[:,np.newaxis]])
-    Y = Y.T
+    # for k in range(1,K):
+    #     concat = np.block([kron(y[:,k].T,y[:,k].T).T, y[:,k].T, 1])
+    #     Y = np.block([Y,concat[:,np.newaxis]])
+    # Y = Y.T
 
     k = 0
     Y = np.block([  y[0,k]*y[0,k].T,
@@ -46,7 +46,7 @@ def calibrate_mag(m_samples: np.ndarray):
         Y = np.block([Y,concat[:,np.newaxis]])
     Y = Y.T
 
-        
+
     # Solve least squares
     eigen_vals, eigen_vecs = np.linalg.eigh(Y.T@Y)
     ze = eigen_vecs[:,0]
@@ -59,6 +59,7 @@ def calibrate_mag(m_samples: np.ndarray):
     ce = ze[9]
     alpha = 4/(be.T@inv(Ae)@be-4*ce)
 
+
     # Calculate solution
     z = alpha * ze
     A = np.block([[z[0],z[1]/2,z[2]/2],
@@ -66,6 +67,7 @@ def calibrate_mag(m_samples: np.ndarray):
                   [z[2]/2,z[4]/2,z[5]]])
     b = z[5:8]
     c = z[9]
+
 
     h0 = -inv(A) @ b * 0.5
     T0 = inv(cholesky(A).T)

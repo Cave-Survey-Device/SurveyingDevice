@@ -13,13 +13,20 @@
 #include <iostream>
 #include "config.h"
 #include "utility.h"
+#include <random>
 
 
 using namespace Eigen;
 using std::cout;
 
 static const float CALIB_VAR_LIM = 0.025;
-static const int ACCEL_CALIBRATION_N = 6;
+
+static const int yrots = 4;
+static const int xrots = 2;
+static const int N_samples = 10;
+static const int ym_size = yrots*xrots*N_samples;
+
+static const int ACCEL_CALIBRATION_N = ym_size;
 const int N_ACC_SAMPLES = 10;
 
 // Computes kronecker product of two 3 vectors
@@ -63,32 +70,7 @@ private:
     void run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym);
 
     
-
-    // Calibration variables
-    Vector<float,9> J_1;
-    Vector3f J_2;
-    RowVector<float,3*ACCEL_CALIBRATION_N> J_3;
-    RowVector<float,ACCEL_CALIBRATION_N> J_4;
-    Matrix<float,9,9> H11;
-    Matrix<float,9,3> H12;
-    Matrix<float,3,9> H21;
-    Matrix<float,9,3*ACCEL_CALIBRATION_N> H13;
-    Matrix<float,3*ACCEL_CALIBRATION_N,9> H31;
-    Matrix<float,9,ACCEL_CALIBRATION_N> H14;
-    Matrix<float,ACCEL_CALIBRATION_N,9> H41;
-    Matrix3f H22;
-    Matrix<float,3,3*ACCEL_CALIBRATION_N> H23;
-    Matrix<float,3*ACCEL_CALIBRATION_N,3> H32;
-    Matrix<float,3,ACCEL_CALIBRATION_N> H24;
-    Matrix<float,ACCEL_CALIBRATION_N,3> H42;
-    Matrix<float,3*ACCEL_CALIBRATION_N,3*ACCEL_CALIBRATION_N> H33;
-    Matrix<float,3*ACCEL_CALIBRATION_N, ACCEL_CALIBRATION_N> H34;
-    Matrix<float,ACCEL_CALIBRATION_N, 3*ACCEL_CALIBRATION_N> H43;
-    Matrix<float,ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N> H44;
-
     // Composite variables
-    RowVector<float, 12+4*ACCEL_CALIBRATION_N> jacobian;
-    Matrix<float, 12+4*ACCEL_CALIBRATION_N, 12+4*ACCEL_CALIBRATION_N> hessian;
     Vector<float,12+4*ACCEL_CALIBRATION_N> theta;
     Vector<float,12+4*ACCEL_CALIBRATION_N> theta2;
 
@@ -110,6 +92,16 @@ private:
     Matrix<float,3,ACCEL_CALIBRATION_N> J_3_mat;
     Vector<float,9> tempV;
     Matrix3f ykyk;
+
+    int x,y,i;
+    float x_ang, y_ang;
+    Vector3f g_vec = {0, 0, 1};
+    Matrix3f xrotation_mat;
+    Matrix3f yrotation_mat;
+    Vector3f noise;
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::normal_distribution<> norm_dist{0, 0.05};
 
     // Other
     Eigen::FullPivLU<Matrix<float,12+4*ACCEL_CALIBRATION_N,12+4*ACCEL_CALIBRATION_N>> fplu;

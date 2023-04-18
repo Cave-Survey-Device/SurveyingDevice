@@ -3,7 +3,7 @@ from numpy import kron
 from numpy.linalg import inv, cholesky, norm
 import utils
 import matplotlib.pyplot as plt
-import mag_funcs2 as mag
+import mag_funcs_hull as mag
 
 def generate_data(Tm: np.ndarray, hm: np.ndarray):
     m_true = np.array([[1],[0],[0]])
@@ -17,7 +17,7 @@ def generate_data(Tm: np.ndarray, hm: np.ndarray):
         for z_ang in range(0,360,int(360/n_z)):
             T = utils.y_rotation(np.deg2rad(y_ang)) @ utils.z_rotation(np.deg2rad(z_ang))
             true[:,n] = T @ m_true[:,0]
-            samples[:,n] = (Tm @ true[:,n] + hm.T).T[:,0]
+            samples[:,n] = (Tm @ true[:,n] + hm.T).T[:,0] + np.random.normal(0,0.03,(3))
             n+=1
 
     return true, samples
@@ -57,7 +57,9 @@ if __name__ == "__main__":
         [1.1,0.3,-0.1],
         [-0.3,0.6,0.7]
     ])
-    h = np.array([[0.1],[0.2],[-0.3]])
+    h = np.array([[0.4],[0.7],[0.9]])
+    #h = np.array([[0.5],[1.7],[2.6]])
+    #h = np.array([[0.1],[0.2],[0.3]])
     m_true, m_samples = generate_data(S,h)
 
     # Show generated data
@@ -74,9 +76,14 @@ if __name__ == "__main__":
     ax.scatter(xs2, ys2, zs2, color="r")
     plt.show()
 
+
+    mean = np.mean(m_samples,axis=1)
+    #m_samples = (m_samples.T - mean).T
     T, b = mag.calibrate_mag(m_samples)
+    b = b
+    print(mean)
     print(T)
-    print(h)
+    print(b)
 
     m_corrected = inv(T) @ (m_samples.T - h.T).T
 

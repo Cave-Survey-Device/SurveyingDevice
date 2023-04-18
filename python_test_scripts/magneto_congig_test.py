@@ -49,40 +49,9 @@ del(theta)
 del(phi)
 
 cov_mat = np.cov(H_CORRECTED_ARR)
-print("Covariance Matrix:", cov_mat)
-#covar_mat = np.matmul(H_CORRECTED_ARR,np.transpose(H_CORRECTED_ARR))
 eigen_vals, eigen_vecs = np.linalg.eig(cov_mat)
-print("Eigenvalues:",eigen_vals)
-print("Eigenvectors:",eigen_vecs)
-print("Suare-root of eigenvalues:",np.sqrt(eigen_vals))
-print("Diag of sqrt of eigenvalues:",np.diag(np.sqrt(eigen_vals)))
 t_mat = np.matmul(eigen_vecs,np.diag(np.sqrt(eigen_vals)))
-print("Transformation matrix:", t_mat)
-print("")
 
 HS_CORRECTED_ARR = np.matmul(np.linalg.inv(t_mat),H_CORRECTED_ARR)
-
-
-#print(correct_hard(HS_TRANSLATED_ARR))
-#print(correct_hard(H_CORRECTED_ARR))
-#print(correct_hard(HS_CORRECTED_ARR))
-#print(correct_hard(PERFECT_ARR))
-
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-
-# x_arr,y_arr,z_arr,NA = np.vsplit(HS_TRANSLATED_ARR,np.shape(HS_TRANSLATED_ARR)[0])
-# ax.scatter(x_arr,y_arr,z_arr,s=2,color='red')
-
-# x_arr,y_arr,z_arr,NA = np.vsplit(H_CORRECTED_ARR,np.shape(H_CORRECTED_ARR)[0])
-# ax.scatter(x_arr,y_arr,z_arr,s=2,color='orange')
-
-x_arr,y_arr,z_arr,NA = np.vsplit(HS_CORRECTED_ARR,np.shape(HS_CORRECTED_ARR)[0])
-ax.scatter(x_arr,y_arr,z_arr,s=2,color='blue')
-
-x_arr,y_arr,z_arr,NA = np.vsplit(PERFECT_ARR,np.shape(PERFECT_ARR)[0])
-ax.scatter(x_arr,y_arr,z_arr,s=2,color='green')
-
-plt.show() 
 
 

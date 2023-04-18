@@ -1,5 +1,6 @@
 #include "accelerometer.h"
 
+
 // PRINT MATRIX (float type)
 // By: randomvibe
 //-----------------------------
@@ -42,7 +43,6 @@ MatrixXf kronecker(MatrixXf a, MatrixXf b)
     return out;
 }
 
-
 Accelerometer::Accelerometer()
 {
     correction_transformation << 1, 0, 0,
@@ -59,9 +59,6 @@ Vector3f Accelerometer::get_grav_vec()
 {
     return corrected_gravity_data;
 };
-
-
-
 
 
 bool Accelerometer::calibrate()
@@ -102,7 +99,7 @@ bool Accelerometer::test_calibration()
     // Define test parameters:
 
     Vector3f b_a; // Zero-bias error
-    b_a << 0,0,0;//0.1,0.15,0.2;
+    b_a << 0.1,0.15,0.2;
 
     Matrix3f Cb_n; // Transformation from body frame to navigation frame 
     Cb_n << 1,0,0,
@@ -127,36 +124,33 @@ bool Accelerometer::test_calibration()
             0, cos(a), sin(c)*cos(b),
             0, 0, cos(c)*cos(b);
 
-    Matrix3f T_a;
     T_a << C_s*C_n;
     T_a << 1.15,0.0602,-0.401,0,1.0985,0.0575,0,0,1.0978;
 
     Vector3f epsilon = {0,0,0}; // Gaussian white noise
 
-    int x,y;
-    Vector3f g_vec = {0, 0, 1};
-    float x_ang, y_ang;
-    Matrix3f rotation_mat;
-    for (x=0;x<4;x++)
-    {
-        
-        x_ang = x*PI/2;
-        rotation_mat <<   1, 0, 0,
-                        0, cos(x_ang), -sin(x_ang),
-                        0, sin(x_ang), cos(x_ang);
-        ym.col(x) << T_a*Cb_n*rotation_mat*g_vec + b_a + epsilon;
-        // ym.col(x) = ym.col(x)/ym.col(x).norm();
 
-    }
-    for (y=0;y<2;y++)
-    {
-        y_ang = y*PI+PI/2;
-        rotation_mat << cos(y_ang), 0, sin(y_ang),
-                        0, 1 ,0,
-                        -sin(y_ang), 0, cos(y_ang);
-        ym.col(4+y) << T_a*Cb_n*rotation_mat*g_vec + b_a + epsilon;
-        // ym.col(4+y) = ym.col(4+y)/ym.col(4+y).norm();
-    }
+    ym.setZero();
+    // for(x=0;x<xrots;x++)
+    // {
+    //     x_ang = x*M_PI/xrots;
+    //     xrotation_mat <<    1, 0, 0,
+    //                         0, cos(x_ang), -sin(x_ang),
+    //                         0, sin(x_ang), cos(x_ang);
+    //     for(y=0;y<yrots;y++)
+    //     {
+    //     y_ang = y*2*M_PI/yrots;
+    //     yrotation_mat <<    cos(x_ang), 0, sin(x_ang),
+    //                         0, 1, 0,
+    //                         -sin(x_ang), 0, cos(x_ang);
+    //         for(i=0;i<N_samples;i++)
+    //         {
+    //             noise << norm_dist(gen), norm_dist(gen), norm_dist(gen);
+    //             ym.col(x*yrots*N_samples+y*N_samples+i)= T_a * xrotation_mat * yrotation_mat * g_vec + b_a + noise;
+    //         }
+    //     }
+    // }
+
 
     Serial.println("T_a:");
     print_mtxf(T_a);
@@ -167,110 +161,117 @@ bool Accelerometer::test_calibration()
     Serial.println("Initial data:");
     print_mtxf(ym);
 
-    run_newton(ym);
+    // run_newton(ym);
 
     return true;
 }
 
-void Accelerometer::run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym)
-{
-    /**********************************************
-     * Newton scheme so requires an initial guess,
-     * guess calculated below...   
-    **********************************************/
-    // Initial estimate
-    Matrix3f R_a;
-    int i;
-    Vector3f ym_i;
+// void Accelerometer::run_newton(Matrix<float,3,ACCEL_CALIBRATION_N> ym)
+// {
+//     /**********************************************
+//      * Newton scheme so requires an initial guess,
+//      * guess calculated below...   
+//     **********************************************/
+//     // Initial estimate
+//     Matrix3f R_a;
+//     int i;
+//     Vector3f ym_i;
 
-    // Construct Ax = b (equation has 10 parameters see Eq. 17)
-    Serial.println("Calculating least squares...");
+//     // Construct Ax = b (equation has 10 parameters see Eq. 17)
+//     Serial.println("Calculating least squares...");
 
-    MatrixXf A = MatrixXf::Ones(ACCEL_CALIBRATION_N,10); 
-    for (i=0;i<ACCEL_CALIBRATION_N;i++)
-    {
-        ym_i = ym.col(i);
-        A.row(i) <<
-        ym_i(0)*ym_i(0), ym_i(1)*ym_i(1), ym_i(2)*ym_i(2), // Squares
-        2*ym_i(0)*ym_i(1), 2*ym_i(0)*ym_i(2), 2*ym_i(1)*ym_i(2), // Combinations
-        2*ym_i(0), 2*ym_i(1), 2*ym_i(2), // Individuals
-        1; // Constant
-    }
+//     MatrixXf A = MatrixXf::Ones(ACCEL_CALIBRATION_N,10); 
+//     for (i=0;i<ACCEL_CALIBRATION_N;i++)
+//     {
+//         ym_i = ym.col(i);
+//         A.row(i) <<
+//         ym_i(0)*ym_i(0), ym_i(1)*ym_i(1), ym_i(2)*ym_i(2), // Squares
+//         2*ym_i(0)*ym_i(1), 2*ym_i(0)*ym_i(2), 2*ym_i(1)*ym_i(2), // Combinations
+//         2*ym_i(0), 2*ym_i(1), 2*ym_i(2), // Individuals
+//         1; // Constant
+//     }
 
-    Serial.println("Calculated A matrix:");
-    print_mtxf(A);
 
-    VectorXf b = VectorXf::Ones(ACCEL_CALIBRATION_N);
+//     Serial.println("Calculated A matrix:");
+//     print_mtxf(A);
 
-    VectorXf x = A.fullPivHouseholderQr().solve(b);
-    Serial.println("Calculated x vector:");
-    print_mtxf(x);
+//     VectorXf b = VectorXf::Ones(ACCEL_CALIBRATION_N);
 
-    // Assign E, F, and G
-    Serial.println("Calculating parameters...");
-    Matrix3f E;
-    Vector3f F;
-    float G;
+//     // VectorXf x = A.fullPivHouseholderQr().solve(b);
+//     // Serial.println("Calculated x vector:");
+//     // print_mtxf(x);
+//     VectorXf x = A.bdcSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
+//     Serial.println("Calculated x vector:");
+//     print_mtxf(x);
 
-    E << x(0), x(3), x(4),
-         x(3), x(1), x(5),
-         x(4), x(5), x(2);
+//     // Assign E, F, and G
+//     Serial.println("Calculating parameters...");
+//     Matrix3f E;
+//     Vector3f F;
+//     float G;
 
-    F << x(6), x(7), x(8);
+//     E << x(0), x(3), x(4),
+//          x(3), x(1), x(5),
+//          x(4), x(5), x(2);
 
-    G = x(9)-1;
+//     F << x(6), x(7), x(8);
 
-    Serial.println("Calculated E matrix:");
-    print_mtxf(E);
-    // Compute R0_a and b0_a
-    Serial.println("Computing LLT...");
-    Matrix3f R0_a = E.llt().matrixL().transpose();
-    Serial.println("Computing inverse...");
-    Vector3f b0_a = -E.inverse() * F;
+//     G = x(9)-1;
 
-    /**********************************************
-     * Run the newton iteration scheme...   
-    **********************************************/
-    Serial.println("Computing initial guess...");
+//     Serial.println("Calculated E matrix:");
+//     print_mtxf(E);
+//     // Compute R0_a and b0_a
+//     Serial.println("Computing LLT...");
+//     Matrix3f R0_a = E.llt().matrixL().transpose();
+//     Serial.println("Computing inverse...");
+//     Vector3f b0_a = -E.inverse() * F;
 
-    Matrix3f T0_a = R0_a.inverse();
+//     /**********************************************
+//      * Run the newton iteration scheme...   
+//     **********************************************/
+//     Serial.println("Computing initial guess...");
 
-    Serial.println("Initial guess for R_a:");
-    print_mtxf(R0_a);
-    Serial.println("Initial guess for T_a:");
-    print_mtxf(T0_a);
-    Serial.println("Initial guess for b_a:");
-    print_mtxf(b0_a);
+//     Matrix3f T0_a = R0_a.inverse();
 
-    Serial.println("ym data:");
-    print_mtxf(ym);
+//     Serial.println("Initial guess for R_a:");
+//     print_mtxf(R0_a);
+//     Serial.println("Initial guess for T_a:");
+//     print_mtxf(T0_a);
+//     Serial.println("Initial guess for b_a:");
+//     print_mtxf(b0_a);
 
-    theta.segment(0,9) = T0_a.reshaped();
-    theta.segment(9,3) = b0_a.reshaped();
-    theta.segment(12,3*ACCEL_CALIBRATION_N) = ym.reshaped();
-    theta.segment(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N) = lambda.reshaped();
+//     Serial.println("ym data:");
+//     print_mtxf(ym);
 
-    Serial.println("Beginning newton scheme...");
-    int N_ITERS = 10;
-    for (i=0;i<N_ITERS;i++)
-    {
-        Serial.printf("Current iteration: %i\n", i);
-        calculate_newton_iteration();
-    }
+//     T0_a << 1.0673, 0.0668, -0.0305, 0, 1.1283, 0.0410, 0, 0, 1.1990;
+//     b0_a << 0.0869, 0.1562, 0.1790;
 
-    Serial.println("Finished iterating");
-    T_a = theta(seqN(0,9)).reshaped(3,3);
-    b_a = theta(seqN(9,3)).reshaped(3,1);
-    lambda =  theta(seqN(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N)).reshaped(ACCEL_CALIBRATION_N,1);
+//     theta.segment(0,9) = T0_a.reshaped();
+//     theta.segment(9,3) = b0_a.reshaped();
+//     theta.segment(12,3*ACCEL_CALIBRATION_N) = ym.reshaped();
+//     theta.segment(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N) = lambda.reshaped();
 
-    Serial.println("Calculated T_a:");
-    print_mtxf(T_a);
+//     Serial.println("Beginning newton scheme...");
+//     int N_ITERS = 10;
+//     for (i=0;i<N_ITERS;i++)
+//     {
+//         Serial.printf("Current iteration: %i\n", i);
+//         calculate_newton_iteration();
+//     }
 
-    Serial.println("Calculated b_a:");
-    print_mtxf(b_a);
-}
+//     Serial.println("Finished iterating");
+//     T_a = theta(seqN(0,9)).reshaped(3,3);
+//     b_a = theta(seqN(9,3)).reshaped(3,1);
+//     lambda =  theta(seqN(12+3*ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N)).reshaped(ACCEL_CALIBRATION_N,1);
 
-void Accelerometer::calculate_newton_iteration()
+//     Serial.println("Calculated T_a:");
+//     print_mtxf(T_a);
+
+//     Serial.println("Calculated b_a:");
+//     print_mtxf(b_a);
+// }
+
+ void Accelerometer::calculate_newton_iteration()
 {
     /********************************************************************************************************************
      * The goal here is to run the newton interation method described in https://doi.org/10.1155/2020/4617365.
@@ -279,6 +280,29 @@ void Accelerometer::calculate_newton_iteration()
      * When using Eigen, Matrix<float,3,1> produces Vector3f and Matrix<float,1,3> produces Rowector3f
     *********************************************************************************************************************/
     const int N =  ACCEL_CALIBRATION_N;
+        // Calibration variables
+    Vector<float,9> J_1;
+    Vector3f J_2;
+    RowVector<float,3*ACCEL_CALIBRATION_N> J_3;
+    RowVector<float,ACCEL_CALIBRATION_N> J_4;
+    Matrix<float,9,9> H11;
+    Matrix<float,9,3> H12;
+    Matrix<float,3,9> H21;
+    Matrix<float,9,3*ACCEL_CALIBRATION_N> H13;
+    Matrix<float,3*ACCEL_CALIBRATION_N,9> H31;
+    Matrix<float,9,ACCEL_CALIBRATION_N> H14;
+    Matrix<float,ACCEL_CALIBRATION_N,9> H41;
+    Matrix3f H22;
+    Matrix<float,3,3*ACCEL_CALIBRATION_N> H23;
+    Matrix<float,3*ACCEL_CALIBRATION_N,3> H32;
+    Matrix<float,3,ACCEL_CALIBRATION_N> H24;
+    Matrix<float,ACCEL_CALIBRATION_N,3> H42;
+    Matrix<float,3*ACCEL_CALIBRATION_N,3*ACCEL_CALIBRATION_N> H33;
+    Matrix<float,3*ACCEL_CALIBRATION_N, ACCEL_CALIBRATION_N> H34;
+    Matrix<float,ACCEL_CALIBRATION_N, 3*ACCEL_CALIBRATION_N> H43;
+    Matrix<float,ACCEL_CALIBRATION_N,ACCEL_CALIBRATION_N> H44;
+    RowVector<float, 12+4*ACCEL_CALIBRATION_N> jacobian;
+    Matrix<float, 12+4*ACCEL_CALIBRATION_N, 12+4*ACCEL_CALIBRATION_N> hessian;
 
     // Init theta-based variables
     T_a = theta(seqN(0,9)).reshaped(3,3);
@@ -297,13 +321,13 @@ void Accelerometer::calculate_newton_iteration()
     Serial.println("lambda:");
     print_mtxf(lambda);
 
-    d = ym.colwise()  - b_a;
+    d = ym.colwise() - b_a;
     Serial.println("d:");
     print_mtxf(d);
     
     // -----------------------------------------------------------------------------------------
     // This needs checking!
-    yb << T_a.inverse() * (ym.colwise() - b_a);
+    yb = T_a.inverse() * d;
     // -----------------------------------------------------------------------------------------
 
 
@@ -315,28 +339,40 @@ void Accelerometer::calculate_newton_iteration()
     int k;
 
     J_1.setZero();
-
     for (k=0; k<N;k++)
     {
         yb_k = yb.col(k);
+        d_k = d.col(k);
         J_1 = J_1 + kronecker(yb_k,(d_k - T_a*yb_k));
     }
     J_1 = -2*J_1;
 
     // df/db_a 3x1
-    J_2 = 2 * (T_a*yb - d).rowwise().sum();
+    J_2.setZero();
+    for (k=0; k<N;k++)
+    {
+        yb_k = yb.col(k);
+        d_k = d.col(k);
+        J_2 = J_2 + d_k - T_a*yb_k;
+    }
 
     // df/dyb_k 3kx1
     for (k=0; k<N;k++)
     {
         yb_k = yb.col(k);
+        d_k = d.col(k);
         J_3_mat.col(k) = -2 * T_a.transpose() * (d_k - T_a*yb_k) + 2*lambda_k*yb_k;
     }
     // Convert to Vector << col1(0), col1(1), col1(2), col2(0), col2(1), col2(2), ... , coln(0), coln(1), coln(2)
     J_3 = J_3_mat.reshaped();
 
+
     // df/dlambda_k kx1
-    J_4 = (yb.colwise().norm().array().pow(2)) - 1;
+    for (k=0; k<N;k++)
+    {
+        yb_k = yb.col(k);
+        J_4(k) = yb_k.norm() * yb_k.norm() - 1;
+    }
 
     // Jacobian
     Serial.println("Generating jacobian");
@@ -380,7 +416,7 @@ void Accelerometer::calculate_newton_iteration()
         yb_k = yb.col(k); //yb_k
         H12 = H12 + kronecker(yb_k, Matrix3f::Identity(3,3)); // yb_k kronecker I
     }
-    H12 = 2*N*H12;
+    H12 = 2*H12;
     // ---------------------------------------- H21 3x9 ----------------------------------------
     H21 = H12.transpose();
 
@@ -389,10 +425,10 @@ void Accelerometer::calculate_newton_iteration()
     for (k=0;k<N;k++)
     {
         ym_k = ym.col(k);
-        d_k = ym_k - b_a;
+        d_k = d.col(k);
         yb_k = yb.col(k); //yb_k
         // k sets of 9x3
-        H13.block(0,k*3,9,3) = 2*kronecker(yb_k,Matrix3f::Identity(3,3))*T_a - kronecker(Matrix3f::Identity(3,3), (d_k-T_a*yb_k));
+        H13.block(0,k*3,9,3) = 2*(kronecker(yb_k,Matrix3f::Identity(3,3))*T_a - kronecker(Matrix3f::Identity(3,3), (d_k-T_a*yb_k)));
     }
     // ---------------------------------------- H31 3Nx9 ----------------------------------------
     H31 = H13.transpose(); 
@@ -406,11 +442,10 @@ void Accelerometer::calculate_newton_iteration()
 
     // ---------------------------------------- H22 2x2 ----------------------------------------
     H22 = Matrix3f::Identity(3,3);
-    H22 = H22*2*N;
+    H22 = 2*N*H22;
 
 
     // ---------------------------------------- H23 3x3k ----------------------------------------
-
     for (k=0;k<N;k++)
     {
         H23.block(0,k*3,3,3) = 2*T_a;
@@ -437,7 +472,7 @@ void Accelerometer::calculate_newton_iteration()
             if(row==col)
             {
                 lambda_k = lambda(row);
-                H33.block(row*3,col*3,3,3) = 2*T_a.transpose() * T_a + 2*MatrixX3f::Identity(3,3)*lambda_k;
+                H33.block(row*3,col*3,3,3) = 2*T_a.transpose() * T_a + 2*lambda_k*MatrixX3f::Identity(3,3);
             }
         }
     }
@@ -502,6 +537,7 @@ void Accelerometer::calculate_newton_iteration()
         hessian = fplu.inverse();
     } else {
         Serial.print("  NO\n");
+        print_mtxf(jacobian);
         print_mtxf(hessian);
     }
 

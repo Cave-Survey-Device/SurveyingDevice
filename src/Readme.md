@@ -18,4 +18,4 @@
 - Displaying shot data
 - Walkthough for calibration
 - Walkthrough for alignment
-    - Maybe alignment?
+    - Maybe animation?

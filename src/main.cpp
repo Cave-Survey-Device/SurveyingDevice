@@ -30,8 +30,11 @@ float long_hold_time = 5;
 
 state_enum previous_state = STATE_IDLE;
 state_enum current_state = STATE_IDLE;
-state_enum next_state = current_state;
-mode_enum mode = MODE_IDLE;
+state_enum next_state = STATE_IDLE;
+
+mode_enum current_mode = MODE_IDLE;
+mode_enum next_mode = MODE_IDLE;
+mode_enum previous_mode = MODE_IDLE;
 
 
 float current_time;
@@ -124,28 +127,36 @@ void StateB1ShortHold(){
   switch(mode)
   {
     case(MODE_IDLE):
-    mode = MODE_LASER_ENA;
+    next_mode = MODE_LASER_ENA;
     EnableLaser();
     break;
 
     case(MODE_LASER_ENA):
-    mode = MODE_IDLE;
+    next_mode = MODE_IDLE;
     TakeShot();
     break;
 
     case(MODE_CALIBRATE):
+    if (previous_mode != MODE_CALIBRATE)
+    {
+      sh.ResetCalibration();
+    }
     if (sh.CollectCalibrationData())
     {
       sh.CalibrateInertial();
-      mode = MODE_IDLE;
+      next_mode = MODE_IDLE;
     }
     break;
 
     case(MODE_ALIGN):
+    if (previous_mode != MODE_ALIGN)
+    {
+      sh.ResetAlignment();
+    }
     if (sh.CollectAlignmentData())
     {
       sh.AlignLaser();
-      mode = MODE_IDLE;
+      next_mode = MODE_IDLE;
     }
     break;
     
@@ -157,7 +168,7 @@ void StateB1ShortHold(){
 
 // Select in menu
 void StateB1LongHold(){
-  switch(mode)
+  switch(current_mode)
   {
     case(MODE_MENU):
 
@@ -167,7 +178,7 @@ void StateB1LongHold(){
 
 // Back in menu
 void StateB2ShortHold(){
-  switch(mode)
+  switch(current_mode)
   {
     case(MODE_MENU):
 
@@ -180,12 +191,12 @@ void StateB2LongHold(){
 
 // Enter menu
 void StateB1B2ShortHold(){
-  mode = MODE_MENU;
+  next_mode = MODE_MENU;
 }
 
 // Reset
 void StateB1B2LongHold(){
-  mode = MODE_IDLE;
+  next_mode = MODE_IDLE;
   next_state = STATE_IDLE;
   // RESET
 }
@@ -194,7 +205,10 @@ void StateB1B2LongHold(){
 void loop()
 {
   current_time = millis();
+  previous_state = current_state;
   current_state = next_state;
+  previous_mode = current_mode;
+  current_mode = next_mode;
 }
 
 #endif

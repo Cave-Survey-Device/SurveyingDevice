@@ -3,31 +3,50 @@
 #include <ArduinoEigenDense.h>
 
 #include "sensors/Sensors.h"
+#include "utils/utility.h"
+
 #include <random>
 #include <math.h>
 #define _USE_MATH_DEFINES
-#include "utils/utility.h"
+
+
 using namespace Eigen;  
 
-#define USING
-
-#include <Arduino.h>
-#undef max
-#undef min
-#include <stdio.h>
-#include <iostream>
-
-using namespace std;
-
-extern "C" {
-int _write(int fd, char *ptr, int len) {
-  (void) fd;
-  return Serial.write(ptr, len);
+template<class T> inline Print &operator <<(Print &obj, T arg)  // no-cost stream operator as described at http://arduiniana.org/libraries/streaming/
+{
+    obj.print(arg);
+    return obj;
 }
+
+void displayMat(MatrixXf m)
+{
+    int rows = m.rows();
+    int cols = m.cols();
+    for(int i=0; i<rows;i++)
+    {
+        Serial << "[    ";
+        for(int j=0; j<cols;j++)
+        {
+            Serial << m(i,j) << "   ";
+        }
+        Serial << "    \n";
+    }
+    Serial << "    \n";
 }
+
+void displayVec(VectorXf v)
+{
+    int n = v.size();
+    for(int i=0; i<n;i++)
+    {
+        Serial << "[" << v(n) << "]\n";
+    }
+    Serial << "\n";
+}
+
 
 float Deg2Rad(float degrees) {
-    return degrees * (M_PI / 180.0);
+    return degrees * (3.14159265359 / 180.0);
 }
 
 Matrix3f x_rotation(float deg)
@@ -176,15 +195,32 @@ int test_main()
     sh.AlignInertial();
 
 
-    cout << "Initial Ta:\n" << Ta << "\n\n";
-    cout << "Initial ha:\n" << ha << "\n\n";
-    cout << "Calculated Ta:\n" << sh.accelerometer->GetT() << "\n\n";
-    cout << "Calculated ha:\n" << sh.accelerometer->Geth() << "\n\n";
-    cout << "---------------------------------------------------\n\n";
-    cout << "Initial Tm:\n" << Tm << "\n\n";
-    cout << "Initial hm:\n" << hm << "\n\n";
-    cout << "Calculated Tm:\n" << sh.magnetometer->GetT() << "\n\n";
-    cout << "Calculated hm:\n" << sh.magnetometer->Geth() << "\n\n";
+    Serial << "Initial Ta:\n";
+    displayMat(Ta);
+
+    Serial << "Initial ha:\n";
+    displayVec(ha);
+
+    Serial << "Calculated Ta:\n";
+    displayMat(sh.accelerometer->GetT());
+
+    Serial << "Calculated ha:\n";
+    displayVec(sh.accelerometer->Geth());
+
+    Serial << "---------------------------------------------------\n\n";
+
+    Serial << "Initial Tm:\n";
+    displayMat(Tm);
+
+    Serial << "Initial hm:\n";
+    displayVec(hm);
+
+    Serial << "Calculated Tm:\n";
+    displayMat(sh.magnetometer->GetT());
+
+    Serial << "Calculated hm:\n";
+    displayVec(sh.magnetometer->Geth());
+    // Serial.print(buffer.out);
     return 0;
     // sh.CollectAlignmentData();
     // sh.AlignLaser();

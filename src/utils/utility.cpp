@@ -53,25 +53,6 @@ void debugf(unsigned int mode, const char *format, ...)
     }
 }
 
-// Returns inclination and heading in a vector2d
-Vector2d get_inclination_heading(Vector3f true_vec)
-{
-    Vector3f z_axis;
-    Vector2d out;
-    float dot_prod;
-    float scaling;
-
-    z_axis << 0,1,0;
-    dot_prod = true_vec.dot(z_axis);
-    scaling = z_axis.norm() * true_vec.norm();
-
-
-    out[0] = RAD_TO_DEG * acos(scaling);
-
-	out[1] = RAD_TO_DEG * atan2(true_vec(1), true_vec(0));
-
-	return out;
-}
 
 Vector3f Cartesian(Vector3f spherical)
 {

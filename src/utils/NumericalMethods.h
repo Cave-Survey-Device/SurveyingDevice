@@ -8,6 +8,7 @@
 
 using namespace Eigen;
 
+// Given a point cloud, calculate the best fit ellipsoid, returning the quadratic ellipsoid parameters
 RowVector<float,10> fit_ellipsoid(MatrixXf samples)
 {
     int N = samples.cols();
@@ -127,10 +128,11 @@ Vector<float,12> calculate_ellipsoid_transformation(Matrix3f M, Vector3f n, floa
     return V;
 }
 
+// Given a point cloud, find a plane of best fit and return the vector normal to this plane
 Vector3f NormalVec(MatrixXf point_cloud){
   Vector3f normal;
   MatrixXf left_singular_mat;
-  int U_cols;
+  // int U_cols;
 
   // Subtract mean from each point otherwise its wrong XD
   // https://www.ltu.se/cms_fs/1.51590!/svd-fitting.pdf
@@ -138,13 +140,14 @@ Vector3f NormalVec(MatrixXf point_cloud){
 
   JacobiSVD<MatrixXf> svd(point_vec, ComputeThinU | ComputeThinV);
   left_singular_mat = svd.matrixU();
-  U_cols = left_singular_mat.cols();
+  // U_cols = left_singular_mat.cols();
   // 3rd col of U contains normal vec
   normal << left_singular_mat(0,2), left_singular_mat(1,2), left_singular_mat(2,2);
 
   return normal;
 };
 
+// Calculates a 3x3 matrix representing a rotation of "rads" about the x axis
 Matrix3f XRotation(float rads)
 {
     Matrix3f T;

@@ -1,15 +1,13 @@
-#define TEST_MODE
+//#define TEST_MODE
 #ifdef TEST_MODE
 #include "test.h"
 
-float BLE_Enabled = true;
-float laser_timeout = 10.0; 
-float screen_timeout = 5;
-float device_poweroff_timeout = 300;
-float long_hold_time = 5;
+
 
 void setup()
 {
+  Serial.begin(9600);
+  Serial.print("STARTING BAYBEE");
   test_main();
 }
 
@@ -19,17 +17,22 @@ void loop(){}
 #include <Arduino.h>
 #include "sensors/Sensors.h"
 #include "utils/interrupts.h"
-enum state {STATE_IDLE, STATE_B1_WAITING, STATE_B2_WAITING, STATE_B1_SHORT, STATE_B2_SHORT, STATE_B1_LONG, STATE_B2_LONG, STATE_B1B2_SHORT, STATE_B1B2_LONG, STATE_B1B2_WAITING};
 
-enum b1_enum {B1_ENABLE_LASER, B1_TAKE_SHOT, B1_GET_ALIGN};
+enum state_enum {STATE_IDLE, STATE_B1_WAITING, STATE_B2_WAITING, STATE_B1_SHORT, STATE_B2_SHORT, STATE_B1_LONG, STATE_B2_LONG, STATE_B1B2_SHORT, STATE_B1B2_LONG, STATE_B1B2_WAITING};
+enum mode_enum {MODE_MENU, MODE_IDLE, MODE_LASER_ENA, MODE_ALIGN, MODE_CALIBRATE};
+enum menu_enum {MENU_CALIBRATE, MENU_ALIGN};
 
-enum b1b2_enum
-enum menu_enum {}
+float BLE_Enabled = true;
+float laser_timeout = 10.0; 
+float screen_timeout = 5;
+float device_poweroff_timeout = 300;
+float long_hold_time = 5;
 
-state previous_state = STATE_IDLE;
-state current_state = STATE_IDLE;
-state next_state = current_state;
-b1_enum b1_mode = B1_ENABLE_LASER;
+state_enum previous_state = STATE_IDLE;
+state_enum current_state = STATE_IDLE;
+state_enum next_state = current_state;
+mode_enum mode = MODE_IDLE;
+
 
 float current_time;
 float b1_start_time;
@@ -116,34 +119,76 @@ void StateIdle(){
   next_state = STATE_IDLE;
 }
 
+// Enable laser, take shot, align shot, forwards in menu
 void StateB1ShortHold(){
-  switch(b1_mode)
+  switch(mode)
   {
-    case(B1_ENABLE_LASER):
-    b1_mode = B1_TAKE_SHOT;
+    case(MODE_IDLE):
+    mode = MODE_LASER_ENA;
     EnableLaser();
     break;
 
-    case(B1_TAKE_SHOT):
-    b1_mode = B1_ENABLE_LASER;
+    case(MODE_LASER_ENA):
+    mode = MODE_IDLE;
     TakeShot();
     break;
 
-    case(B1_GET_ALIGN):
+    case(MODE_CALIBRATE):
+    if (sh.CollectCalibrationData())
+    {
+      sh.CalibrateInertial();
+      mode = MODE_IDLE;
+    }
+    break;
+
+    case(MODE_ALIGN):
     if (sh.CollectAlignmentData())
     {
       sh.AlignLaser();
-      b1_mode = B1_ENABLE_LASER;
+      mode = MODE_IDLE;
     }
+    break;
+    
+    case(MODE_MENU):
+
     break;
   }
 }
 
-void StateB1LongHold(){}
-void StateB2ShortHold(){}
-void StateB2LongHold(){}
-void StateB1B2ShortHold(){}
-void StateB1B2LongHold(){}
+// Select in menu
+void StateB1LongHold(){
+  switch(mode)
+  {
+    case(MODE_MENU):
+
+    break;
+  }
+}
+
+// Back in menu
+void StateB2ShortHold(){
+  switch(mode)
+  {
+    case(MODE_MENU):
+
+    break;
+  }
+}
+void StateB2LongHold(){
+  // Return
+}
+
+// Enter menu
+void StateB1B2ShortHold(){
+  mode = MODE_MENU;
+}
+
+// Reset
+void StateB1B2LongHold(){
+  mode = MODE_IDLE;
+  next_state = STATE_IDLE;
+  // RESET
+}
 
 
 void loop()

@@ -22,7 +22,6 @@ Vector3f generate_vector(float distance, float heading, float inclination);
 void debug(unsigned int mode, const char* str);
 void debugf(unsigned int mode, const char *format, ...);
 
-Vector2d get_inclination_heading(Vector3f true_vec);
 
 Vector3f Cartesian(Vector3f spherical);
 

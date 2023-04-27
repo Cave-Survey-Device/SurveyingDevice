@@ -36,6 +36,7 @@ mode_enum current_mode = MODE_IDLE;
 mode_enum next_mode = MODE_IDLE;
 mode_enum previous_mode = MODE_IDLE;
 
+menu_enum menu_selection = MENU_CALIBRATE;
 
 float current_time;
 float b1_start_time;
@@ -48,6 +49,45 @@ void setup() {
   // put your setup code here, to run once:
 }
 
+void MenuForward()
+{
+  switch(menu_selection)
+  {
+    case(MENU_CALIBRATE):
+    menu_selection = MENU_ALIGN;
+    break;
+
+    case(MENU_ALIGN):
+    menu_selection = MENU_CALIBRATE;
+    break;
+  }
+}
+void MenuBackward()
+{
+  switch(menu_selection)
+  {
+    case(MENU_CALIBRATE):
+    menu_selection = MENU_ALIGN;
+    break;
+
+    case(MENU_ALIGN):
+    menu_selection = MENU_CALIBRATE;
+    break;
+  }
+}
+void MenuSelect()
+{
+  switch(menu_selection)
+  {
+    case(MENU_CALIBRATE):
+    next_mode = MODE_CALIBRATE;
+    break;
+
+    case(MENU_ALIGN):
+    next_mode = MODE_ALIGN;
+    break;
+  }
+}
 
 void TakeShot(){
   Vector3f shot_data;
@@ -79,7 +119,6 @@ void StateB1Waiting(){
     next_state = STATE_B1B2_WAITING;
   }
 }
-
 void StateB2Waiting(){
   next_state = STATE_B2_WAITING;
   if (previous_state != STATE_B2_WAITING)
@@ -99,7 +138,6 @@ void StateB2Waiting(){
     next_state = STATE_B1B2_WAITING;
   }
 }
-
 void StateB1B2Waiting()
 {
   current_time = millis();
@@ -118,7 +156,6 @@ void StateB1B2Waiting()
 }
 
 void StateIdle(){
-  previous_state = current_state;
   next_state = STATE_IDLE;
 }
 
@@ -161,7 +198,7 @@ void StateB1ShortHold(){
     break;
     
     case(MODE_MENU):
-
+    MenuForward();
     break;
   }
 }
@@ -171,7 +208,7 @@ void StateB1LongHold(){
   switch(current_mode)
   {
     case(MODE_MENU):
-
+    MenuSelect();
     break;
   }
 }
@@ -181,7 +218,7 @@ void StateB2ShortHold(){
   switch(current_mode)
   {
     case(MODE_MENU):
-
+    MenuBackward();
     break;
   }
 }

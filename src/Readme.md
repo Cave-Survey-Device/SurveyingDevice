@@ -6,9 +6,9 @@
 - Test calibration
 ## Test alignment
 - Test alignment
-## Add timeout if none exists for collecting calibration data
+## ~Add timeout if none exists for collecting calibration data~
 ## ~Add reset calibration wen entering calibration state~
-## ~Work on file functions~
+## Work on file functions
 - Saving shots
 - Loading shots
 - Saving calibration & alignment

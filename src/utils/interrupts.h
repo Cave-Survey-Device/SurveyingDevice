@@ -4,31 +4,42 @@
 #include <Arduino.h>
 #include "utils/config.h"
 
-// Internal button 1
-bool internal_button1_interrupt_flag = false;
-void IRAM_ATTR ISR_internal_button1()
+bool button1_pressed_flag = false;
+bool button2_pressed_flag = false;
+bool button1_released_flag = false;
+bool button2_released_flag = false;
+
+void IRAM_ATTR ISR_button1_pressed()
 {
-    internal_button1_interrupt_flag = true;
+    button1_released_flag = false;
+    button1_pressed_flag = true;
 }
 
-// // Internal button 2
-bool internal_button2_interrupt_flag = false;
-void IRAM_ATTR ISR_internal_button2()
+void IRAM_ATTR ISR_button1_released()
 {
-    internal_button2_interrupt_flag = true;
+    button1_pressed_flag = false;
+    button1_released_flag = true;
 }
 
-// External button
-bool external_button_interrupt_flag = false;
-void IRAM_ATTR ISR_external_button()
+void IRAM_ATTR ISR_button2_pressed()
 {
-    external_button_interrupt_flag = true;
+    button2_released_flag = false;
+    button2_pressed_flag = true;
+}
+
+void IRAM_ATTR ISR_button2_released()
+{
+    button2_pressed_flag = false;
+    button2_released_flag = true;
 }
 
 void init_interrupts()
 {
-    attachInterrupt(PIN_EXTERNAL_BUTTON,ISR_external_button,FALLING);
-    attachInterrupt(PIN_INTERNAL_BUTTON1,ISR_internal_button1,FALLING);
+    attachInterrupt(PIN_EXTERNAL_BUTTON,ISR_button1_pressed,FALLING);
+    attachInterrupt(PIN_EXTERNAL_BUTTON,ISR_button1_released,RISING);
+
+    attachInterrupt(PIN_INTERNAL_BUTTON1,ISR_button2_pressed,FALLING);
+    attachInterrupt(PIN_INTERNAL_BUTTON1,ISR_button2_released,RISING);
     //attachInterrupt(PIN_INTERNAL_BUTTON2,ISR_internal_button2,FALLING);
 }
 

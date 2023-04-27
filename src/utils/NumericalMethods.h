@@ -1,6 +1,10 @@
-#include <ArduinoEigen.h>
+#ifndef HEADER_NUMERICAL_METHODS
+#define HEADER_NUMERICAL_METHODS
+
+
 #include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
+
+#include <queue>
 
 using namespace Eigen;
 
@@ -69,7 +73,7 @@ RowVector<float,10> fit_ellipsoid(MatrixXf samples)
             u1 = evec.col(i);
             break;
         } else if (i == 5) {
-            throw std::runtime_error("No positive eigenvalues found!");
+            // No eigenvalues found
         }
     }
 
@@ -148,14 +152,14 @@ Matrix3f XRotation(float rads)
          0,cos(rads),-sin(rads),
          0,sin(rads),cos(rads);
     return T;
-}
+};
 
-// Standard deviation of matrix (cols = x,y,z,...)
-float StdDev(MatrixXf m)
-{
-    VectorXf mean = m.rowwise().mean();
-    return (m.rowwise() - mean).colwise().norm().array().sum();
-}
+// // Standard deviation of matrix (cols = x,y,z,...)
+// float StdDev(MatrixXf m)
+// {
+//     VectorXf mean = m.rowwise().mean();
+//     return (m.rowwise() - mean).colwise().norm().array().sum();
+// }
 
 float StdDev(std::queue<Vector3f> q)
 {
@@ -168,5 +172,8 @@ float StdDev(std::queue<Vector3f> q)
     }
 
     VectorXf mean = m.rowwise().mean();
-    return (m.rowwise() - mean).colwise().norm().array().sum();
+    return (m.colwise() - mean).colwise().norm().array().sum();
 }
+
+
+#endif

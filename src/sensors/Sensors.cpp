@@ -64,14 +64,16 @@ SensorHandler::SensorHandler(InertialSensor* acc, InertialSensor* mag)
     accelerometer = acc;
 }
 
+SensorHandler::SensorHandler(){}
+
 Vector3f SensorHandler::GetReading()
 {
-    Vector4f reading;
+    Vector3f reading;
     Vector3f mag_data = magnetometer->GetReading();
     Vector3f accel_data = accelerometer->GetReading();
     float laser_data = laser->GetMeasurement();    
 
-    reading << Orientation(accel_data, mag_data), laser_data;
+    reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
     reading(0) += heading_alignment;
     reading(1) += inclination_alignment;
     return reading;
@@ -96,7 +98,7 @@ void SensorHandler::AlignLaser()
 {
     int calib_num;
     // Heading, Inclination, roll, distance
-    Vector4f mean_calibration_data;
+    Vector3f mean_calibration_data;
     // Mean misalignement vector
     Vector3f misalignement_mean;
     // Dummy variable for cartesian <=> spherical conversions

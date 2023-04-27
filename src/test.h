@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include <ArduinoEigen.h>
+
 #include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
+
 #include "sensors/Sensors.h"
 #include <random>
 #include <math.h>

@@ -3,9 +3,9 @@
 
 #include "Arduino.h"
 // Board config
-#define PIN_LASER_ENA PIN_A3
-#define PIN_EXTERNAL_BUTTON PIN_A1
-#define PIN_INTERNAL_BUTTON1 PIN_A2
+#define PIN_LASER_ENA PIN_A1
+#define PIN_EXTERNAL_BUTTON PIN_A2
+#define PIN_INTERNAL_BUTTON1 PIN_A3
 
 const static bool DEBUG = false;
 const static bool DEBUG_LASER_CAL = true;

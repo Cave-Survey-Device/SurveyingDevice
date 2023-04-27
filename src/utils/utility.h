@@ -1,9 +1,9 @@
 #ifndef HEADER_UTILITY
 #define HEADER_UTILITY
 
-#include <ArduinoEigen.h>
+
 #include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
+
 #include "config.h"
 
 using namespace Eigen;

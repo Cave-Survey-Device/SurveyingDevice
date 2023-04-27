@@ -1,53 +1,25 @@
 #include "LDK_2M.h"
+#include "utils/config.h"
 
 // Global laser status flag
 bool laser_on = true;
-bool interrupt_uart_timeout = false;
-
-
-// UART interrup functions
-void init_uart_read_timer()
-{
-    uart_read_timer = timerBegin(1, 80, true);
-    timerAttachInterrupt(uart_read_timer, &ISR_UART_TIMEOUT, false);
-    timerAlarmWrite(uart_read_timer, 500000, false);
-}
-
-void start_uart_read_timer()
-{
-    interrupt_uart_timeout = false;
-    timerRestart(uart_read_timer);
-    timerAlarmEnable(uart_read_timer);
-    timerStart(uart_read_timer);
-}
-
-void stop_uart_read_timer()
-{
-    timerStop(uart_read_timer);
-    timerAlarmDisable(uart_read_timer);
-}
-
-void IRAM_ATTR ISR_UART_TIMEOUT()
-{
-    interrupt_uart_timeout = true;
-}
+bool uart_timeout = false;
+unsigned long SERIAL1_TIMEOUT_MS = 1000;
 
 // Utility functions
 void LDK_2M::flush_serial1()
 {
-    
-    char a[RX_BUFFER_SIZE];
-    Serial1.readBytes(a,RX_BUFFER_SIZE);
+    while (Serial1.read() > 0) {delay(10);}
 }
 
 void LDK_2M::disable()
 {
-    digitalWrite(GPIO_NUM_14,LOW);
+    digitalWrite(PIN_LASER_ENA,LOW);
 }
 
 void LDK_2M::enable()
 {
-    digitalWrite(GPIO_NUM_14,HIGH);
+    digitalWrite(PIN_LASER_ENA,HIGH);
 }
 
 void LDK_2M::erase_buffer()
@@ -62,7 +34,7 @@ void LDK_2M::erase_buffer()
 float LDK_2M::to_distance(char* data)
 {
     float d;
-    sscanf(data, "%lf", &d);
+    sscanf(data, "%f", &d);
     d = d/1000.0;
     return d;
 }
@@ -71,7 +43,7 @@ float LDK_2M::to_distance(char* data)
 LDK_2M::LDK_2M()
 {   
     // Using UART1
-    Serial1.setRxBufferSize(RX_BUFFER_SIZE);
+    Serial1.setTimeout(SERIAL1_TIMEOUT_MS);
     Serial1.begin(9600);
     single_char_buffer = { 0x00 };
     *buffer = { 0x00 };
@@ -80,9 +52,7 @@ LDK_2M::LDK_2M()
 
 void LDK_2M::init()
 {
-    init_uart_read_timer();
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
-    lidar_received_msg received_msg;
     
     Serial1.flush();
     debug(DEBUG_LIDAR,"(Init 1/3) Get software version");
@@ -101,34 +71,19 @@ void LDK_2M::init()
 
 bool LDK_2M::read_msg_from_uart(char* buffer)
 {
-    char b[10];
-    int count = 0;
     debug(DEBUG_LIDAR,"(Read from UART 1/3) Starting timer");
-    start_uart_read_timer();
 
-    // Reset single_char_buffer to prevent erroneous message success
-    single_char_buffer = 0;
-    while ((int)single_char_buffer != (int)LIDAR_START_BYTE)
+    if ( Serial1.readBytesUntil(LIDAR_START_BYTE,&single_char_buffer,1) == 0)
     {
-        debug(DEBUG_LIDAR_EXTENDED,&single_char_buffer);
-        Serial1.read(&single_char_buffer,1);
-        if (interrupt_uart_timeout)
-        {
-            stop_uart_read_timer();
-            interrupt_uart_timeout = false;
-            debug(DEBUG_LIDAR,"(Read from UART 2/3) timer expired, read failed");
-            // Throw broken due to threads in ESP32
-            // throw ("LIDAR UART READ ERROR: No message received!");
-            // Instead changed to return bool, maybe return to trow later...
-            return 0;
-        }
-        count++;
+        debug(DEBUG_LIDAR,"(Read from UART 2/3) timer expired, read failed");
+        return 0;
     }
     // Erase buffer
     erase_buffer();
 
     // Reads bytes until terminator into buffer (not including terminator)
     debug(DEBUG_LIDAR,"(Read from UART 2/3) Reading data");
+    // TODO: check 99 length, it this necessary?
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
     debug(DEBUG_LIDAR,"(Read from UART 3/3) Succesfully read data");
     return 1;
@@ -139,7 +94,7 @@ void LDK_2M::generate_command(int type, char command_packet[LIDAR_SEND_COMMAND_S
     char address = 0x01;
     char command = 0;
     char data = 0xFF;
-    char checksum;
+    char checksum = 0;
     
     switch (type){
         case LIDAR_READ_SOFTWARE_VERSION:
@@ -267,12 +222,11 @@ void LDK_2M::parse_response(char raw_message[], lidar_received_msg* msg)
     // validate checksum
     if ((unsigned int)calculated_checksum != (unsigned int)checksum)
     {
-        Serial.printf("Checksum Invaid! %X != %X\n",calculated_checksum,(unsigned int)checksum);
-        throw ("Checksum invalid!");
+        debugf(DEBUG_LIDAR, "Checksum Invaid! %X != %X\n",calculated_checksum,(unsigned int)checksum);
     }
 }
 
-float LDK_2M::get_measurement()
+float LDK_2M::GetMeasurement()
 {
     
     float distance = 0.0; // Distance returned by LIDAR
@@ -300,27 +254,17 @@ float LDK_2M::get_measurement()
 
     // Attempt to parse the message received over UART
     debug(DEBUG_LIDAR,"(Get measurement 3/4) Parse read response");
-    try {
-        parse_response(buffer,&received_msg);
-        distance = to_distance(received_msg.data);
-        laser_on = false;
-    }
-    catch(const char* e ) {
-        Serial.print("ERROR: ");
-        Serial.println(e);
-        return 0;
-    }
-    catch (...)
-    {
-        return 0;
-    }
+
+    parse_response(buffer,&received_msg);
+    distance = to_distance(received_msg.data);
+    laser_on = false;
 
     // Return result
     debug(DEBUG_LIDAR,"(Get measurement 4/4) Return response");
     return distance;
 }
 
-void LDK_2M::toggle_laser()
+void LDK_2M::ToggleLaser()
 {
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
 

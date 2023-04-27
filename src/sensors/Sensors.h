@@ -1,9 +1,10 @@
 
 #ifndef HEADER_BEAN_BOI_SENSORS
+#define HEADER_BEAN_BOI_SENSORS
 
-#include <ArduinoEigen.h>
+
 #include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
+
 using namespace Eigen;
 
 #define SAMPLES_PER_ORIENTATION 25
@@ -51,6 +52,10 @@ public:
 
     // Toggle laser
     virtual void ToggleLaser()=0;
+
+    virtual void EnableLaser()=0;
+     
+    virtual void DisableLaser()=0;
 };
 
 class SensorHandler
@@ -60,7 +65,7 @@ protected:
     InertialSensor* accelerometer; // Connection to accelerometer sensor
     InertialSensor* magnetometer; // Connection to magnetometer sensor
     LaserSensor* laser; // Connection to LIDAR sensor
-    Matrix<float,3,N_ALIGNMENT> alignment_data; // Alignment data, heading, inclination, distance
+    Matrix<float,3,N_ALIGNMENT> alignment_data; // Alignment data, heading, inclination, roll, distance
     float inclination_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
     float heading_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
     float alignment_progress;
@@ -87,8 +92,19 @@ public:
 
     // Collect 1 sample of data for inertial sensors as part of the calibration procedure
     bool CollectCalibrationData(); 
+    
 
     void ResetCalibration();
+
+    void LoadCalibration();
+
+    void ResetAlignment();
+
+    void LoadAlignment();
+
+    void EnableLaser();
+
+    void DisableLaser();
 
 
     Vector3f GetReading();

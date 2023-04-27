@@ -3,11 +3,11 @@
 
 #include <Wire.h>
 #include <Arduino.h>
-#include <ArduinoEigen.h>
-#include <ArduinoEigenDense.h>
-#include <ArduinoEigenSparse.h>
-#include "magnetometer.h"
 
+#include <ArduinoEigenDense.h>
+
+#include "sensors/Sensors.h"
+#include "utils/config.h"
 using namespace Eigen;
 
 //internal register values without the R/W bit
@@ -20,18 +20,18 @@ using namespace Eigen;
 
 // I'd rather this be protected but cant get it to work
 
-class RM3100: public Magnetometer
+class RM3100: public InertialSensor
 {
 public:
     RM3100();
     void init();
 
 protected:
-    void get_raw_data();
+    Vector3f get_raw_data();
 
 private:
     // options
-    const int pin_drdy = GPIO_NUM_27; // CHANGE THIS
+    const int pin_drdy = PIN_LASER_ENA; // CHANGE THIS
     const int RM3100Address = 0x20;
     const int initialCC = 200;
     const bool singleMode = false;

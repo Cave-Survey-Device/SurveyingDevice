@@ -219,8 +219,10 @@ bool SensorHandler::CollectCalibrationData()
     * 3. Keep taking readings until stdeviation is small enough
     * 4. Take a set of readings per the SAMPLES_PER_ORIENTATION definition
     ************************************************************/
-    // Wait for 100ms to allow button-press distrubance to go
-    delay(100);
+    // Wait for 250ms to allow button-press distrubance to go
+    delay(250);
+    float start_time = millis();
+    float calibration_timeout = 2500; //2500ms
 
     // Collect a set of N_CALIB_STDEV samples
     std::queue<Vector3f> samples;
@@ -231,7 +233,11 @@ bool SensorHandler::CollectCalibrationData()
 
     // Keep collecting samples until the device is deemed to be still enough
     while (StdDev(samples) > CALIBRATION_STDEV_MIN)
-    {
+    {   
+        if (millis() > start_time + calibration_timeout)
+        {
+            return -1;
+        }
         samples.push(accelerometer->GetReading());
         samples.pop();
     }

@@ -124,7 +124,7 @@ void StateIdle(){
 
 // Enable laser, take shot, align shot, forwards in menu
 void StateB1ShortHold(){
-  switch(mode)
+  switch(current_mode)
   {
     case(MODE_IDLE):
     next_mode = MODE_LASER_ENA;

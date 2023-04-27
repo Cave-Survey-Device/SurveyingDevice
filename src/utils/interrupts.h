@@ -9,25 +9,25 @@ bool button2_pressed_flag = false;
 bool button1_released_flag = false;
 bool button2_released_flag = false;
 
-void IRAM_ATTR ISR_button1_pressed()
+void ISR_button1_pressed()
 {
     button1_released_flag = false;
     button1_pressed_flag = true;
 }
 
-void IRAM_ATTR ISR_button1_released()
+void ISR_button1_released()
 {
     button1_pressed_flag = false;
     button1_released_flag = true;
 }
 
-void IRAM_ATTR ISR_button2_pressed()
+void ISR_button2_pressed()
 {
     button2_released_flag = false;
     button2_pressed_flag = true;
 }
 
-void IRAM_ATTR ISR_button2_released()
+void ISR_button2_released()
 {
     button2_pressed_flag = false;
     button2_released_flag = true;

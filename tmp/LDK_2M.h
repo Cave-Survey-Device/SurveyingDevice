@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <HardwareSerial.h>
-#include "Sensors.h"
+#include "sensors/Sensors.h"
 #include "utils/utility.h"
 // Const vars for lidar
 
@@ -50,7 +50,7 @@ class LDK_2M: public LaserSensor {
         float GetMeasurement();
 
         // Toggle laser
-        void ToggleLaser();
+        void ToggleLaser(bool state);
 
     private:
         // Enable lidar via GPIO pin

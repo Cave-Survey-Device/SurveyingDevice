@@ -71,7 +71,7 @@ void LDK_2M::init()
 
 bool LDK_2M::read_msg_from_uart(char* buffer)
 {
-    debug(DEBUG_LIDAR,"(Read from UART 1/3) Starting timer");
+    debug(DEBUG_LIDAR,"(Read from UART 1/3) Read until start byte (1s timeout)");
 
     if ( Serial1.readBytesUntil(LIDAR_START_BYTE,&single_char_buffer,1) == 0)
     {
@@ -82,9 +82,14 @@ bool LDK_2M::read_msg_from_uart(char* buffer)
     erase_buffer();
 
     // Reads bytes until terminator into buffer (not including terminator)
-    debug(DEBUG_LIDAR,"(Read from UART 2/3) Reading data");
+    debug(DEBUG_LIDAR,"(Read from UART 2/3) Reading data (1s timeout)");
     // TODO: check 99 length, it this necessary?
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
+    if (msg_len == 0)
+    {
+        debug(DEBUG_LIDAR,"(Read from UART 3/3) timer expired, read failed");
+        return 0;
+    }
     debug(DEBUG_LIDAR,"(Read from UART 3/3) Succesfully read data");
     return 1;
 }
@@ -264,14 +269,14 @@ float LDK_2M::GetMeasurement()
     return distance;
 }
 
-void LDK_2M::ToggleLaser()
+void LDK_2M::ToggleLaser(bool state)
 {
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
 
     // Generate lidar LASER ON command and send
     // TODO: check whether receive response before changing laser status
     debug(DEBUG_LIDAR,"(Toggle laser 1/1) Toggle laser");
-    if (laser_on)
+    if (state)
     {
         generate_command(LIDAR_LASER_OFF,generated_command);
         laser_on = false;

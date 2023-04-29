@@ -265,3 +265,12 @@ void SensorHandler::AlignInertial()
 {
 
 }
+
+void SensorHandler::EnableLaser()
+{
+    laser->ToggleLaser(true);
+}
+void SensorHandler::DisableLaser()
+{
+    laser->ToggleLaser(false);
+}

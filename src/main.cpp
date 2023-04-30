@@ -1,17 +1,23 @@
 //#define TEST_MODE
 #ifdef TEST_MODE
-#include "test.h"
-
-
+//#include "test.h"
+#include "Arduino.h"
+//#include "test.h"
 
 void setup()
 {
   Serial.begin(9600);
-  Serial.print("STARTING BAYBEE");
-  test_main();
+  delay(1000);  
+  Serial.print("STARTING BAYBEE\n\n");
 }
 
-void loop(){}
+void loop(){
+  delay(1000);  
+  Serial.print("FINISHED BAYBEE\n\n");
+  Serial.print("FUCK EMBEDDED SOFTWARE 2\n\n");
+  //test_main();
+}
+
 
 #else
 #include <Arduino.h>
@@ -87,6 +93,9 @@ void MenuSelect()
     next_mode = MODE_ALIGN;
     break;
   }
+}
+void MenuExit(){
+  next_mode = MODE_IDLE;
 }
 
 void TakeShot(){
@@ -224,6 +233,13 @@ void StateB2ShortHold(){
 }
 void StateB2LongHold(){
   // Return
+  switch(current_mode)
+  {
+    case(MODE_MENU):
+    MenuExit();
+    break;
+  }
+  
 }
 
 // Enter menu

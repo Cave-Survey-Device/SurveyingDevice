@@ -10,12 +10,17 @@ void InertialSensor::CalibrateLinear()
     Vector3f n;
     float d;
 
+    // Find quadratic ellipsoid fitting parameters
     U = fit_ellipsoid(calibration_data);
+
+    // Find least squares approximation of transformation from ellipsoid to unit sohere
+    // Using https://teslabs.com/articles/magnetometer-calibration/
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
     Vector<float, 12> mag_transformation = calculate_ellipsoid_transformation(M, n, d);
 
+    // Assign calibration data
     calibration_matrix << mag_transformation[0], mag_transformation[1], mag_transformation[2], mag_transformation[3], mag_transformation[4], mag_transformation[5], mag_transformation[6], mag_transformation[7], mag_transformation[8];
     calibration_offset << mag_transformation[9], mag_transformation[10], mag_transformation[11];
 }

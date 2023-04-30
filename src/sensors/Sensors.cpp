@@ -76,6 +76,7 @@ Vector3f SensorHandler::GetReading()
     reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
     reading(0) += heading_alignment;
     reading(1) += inclination_alignment;
+    reading(2) = laser_data;
     return reading;
 }
 

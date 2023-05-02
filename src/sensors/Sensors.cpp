@@ -298,3 +298,16 @@ void SensorHandler::DisableLaser()
 {
     this->laser->ToggleLaser(false);
 }
+
+InertialSensor* SensorHandler::GetAccelPtr()
+{
+    return this->accelerometer;
+}
+InertialSensor* SensorHandler::GetMagPtr()
+{
+    return this->magnetometer;
+}
+LaserSensor* SensorHandler::GetLaserPtr()
+{
+    return this->laser;
+}

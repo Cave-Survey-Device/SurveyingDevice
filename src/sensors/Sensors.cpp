@@ -3,6 +3,8 @@
 #include "utils/utility.h"
 #include <queue>
 
+
+
 void InertialSensor::CalibrateLinear()
 {
     RowVector<float,10> U;
@@ -30,14 +32,15 @@ Vector3f InertialSensor::GetReading()
     }
     reading = reading/SAMPLES_PER_READING;
     
-    return calibration_matrix * (reading - calibration_offset);
+    return this->calibration_matrix * (reading - this->calibration_offset);
 }
 
 bool InertialSensor::ColectCalibrationSample()
 {
-    calibration_data.col(calib_num) = GetRawData();
-    calib_num++;
-    if (calib_num == N_CALIB)
+    Vector3f data = this->GetRawData();
+    this->calibration_data.col(this->calib_num) << data;
+    this->calib_num++;
+    if (this->calib_num == N_CALIB)
     {
         return 1;
     }
@@ -46,22 +49,43 @@ bool InertialSensor::ColectCalibrationSample()
 
 void InertialSensor::ResetCalibration()
 {
-    calib_num = 0;
-    calibrated_data = VectorXf::Zero(3,N_CALIB);
+    this->calib_num = 0;
+    this->calibration_data.setZero(3,N_CALIB);
+}
+
+Vector3f InertialSensor::GetRawData()
+{
+    Vector3f data = this->sensor->GetRawData();
+    return data;
+}
+
+InertialSensor::InertialSensor(InertialSensorConnection* sc)
+{
+    this->sensor = sc;
+}
+
+Matrix3f InertialSensor::GetT()
+{
+    return this->calibration_matrix;
+}
+
+Vector3f InertialSensor::Geth()
+{
+    return this->calibration_offset;
 }
 
 
 SensorHandler::SensorHandler(InertialSensor* acc, InertialSensor* mag, LaserSensor* las)
 {
-    magnetometer = mag;
-    accelerometer = acc;
-    laser = las;
+    this->magnetometer = mag;
+    this->accelerometer = acc;
+    this->laser = las;
 }
 
 SensorHandler::SensorHandler(InertialSensor* acc, InertialSensor* mag)
 {
-    magnetometer = mag;
-    accelerometer = acc;
+    this->magnetometer = mag;
+    this->accelerometer = acc;
 }
 
 SensorHandler::SensorHandler(){}
@@ -69,27 +93,26 @@ SensorHandler::SensorHandler(){}
 Vector3f SensorHandler::GetReading()
 {
     Vector3f reading;
-    Vector3f mag_data = magnetometer->GetReading();
-    Vector3f accel_data = accelerometer->GetReading();
-    float laser_data = laser->GetMeasurement();    
+    Vector3f mag_data = this->magnetometer->GetReading();
+    Vector3f accel_data = this->accelerometer->GetReading();
+    float laser_data = this->laser->GetMeasurement();    
 
     reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
-    reading(0) += heading_alignment;
-    reading(1) += inclination_alignment;
-    reading(2) = laser_data;
+    reading(0) += this->heading_alignment;
+    reading(1) += this->inclination_alignment;
     return reading;
 }
 
 bool SensorHandler::CollectAlignmentData()
 {
-    alignment_data.col(alignment_progress) = GetReading();
-    alignment_progress++;
-    if (alignment_progress == N_ALIGNMENT)
+    this->alignment_data.col(this->alignment_progress) = this->GetReading();
+    this->alignment_progress++;
+    if (this->alignment_progress == N_ALIGNMENT)
     {
         // TODO
         // Execute alignment maths
         // Make some kind of warning if alignment appears to be low quality. Could be checked by checking angle between each of the spays for angle to te normal. Other method would be to do a test splay between the same two points and checking whether each shot is the inverse of the other
-        AlignLaser();
+        this->AlignLaser();
         return 1;
     }
     return 0;
@@ -121,7 +144,7 @@ void SensorHandler::AlignLaser()
     float xi, yi, zi;
 
     // Mean of all calibration data collected
-    mean_calibration_data = alignment_data.rowwise().mean();
+    mean_calibration_data = this->alignment_data.rowwise().mean();
 
 
     /*************************************************************
@@ -171,7 +194,7 @@ void SensorHandler::AlignLaser()
         debugf(DEBUG_SENSOR,"Disto tip coordinates X: %f, Y: %f, Z: %f\n",xi,yi,zi);
 
         // Rotation matrix about x depending on device roll
-        roll = alignment_data(2,calib_num);
+        roll = this->alignment_data(2,calib_num);
         rotation_matrix = XRotation(-roll);
 
         // Calculalate vector between tip of disto and actual target
@@ -199,17 +222,17 @@ void SensorHandler::AlignLaser()
 
 
     // Get heading and inclination corrections by converting back to polar coordinates
-    inclination_alignment = atan2(y,x);
-    heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
-    debugf(DEBUG_SENSOR,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",inclination_alignment,heading_alignment);
+    this->inclination_alignment = atan2(y,x);
+    this->heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
+    debugf(DEBUG_SENSOR,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->inclination_alignment,this->heading_alignment);
 
 }
 
 void SensorHandler::ResetCalibration()
 {
-    magnetometer->ResetCalibration();
-    accelerometer->ResetCalibration();
-    alignment_progress = 0;
+    this->magnetometer->ResetCalibration();
+    this->accelerometer->ResetCalibration();
+    this->alignment_progress = 0;
 }
 
 bool SensorHandler::CollectCalibrationData()
@@ -246,7 +269,7 @@ bool SensorHandler::CollectCalibrationData()
     // Collect SAMPLES_PER_ORIENTATION samples
     for(int i=0; i<SAMPLES_PER_ORIENTATION;i++)
     {
-        if (magnetometer->ColectCalibrationSample() && accelerometer->ColectCalibrationSample())
+        if (this->magnetometer->ColectCalibrationSample() && this->accelerometer->ColectCalibrationSample())
         {
             return 1;
         }
@@ -256,8 +279,8 @@ bool SensorHandler::CollectCalibrationData()
 
 void SensorHandler::CalibrateInertial()
 {
-    magnetometer->CalibrateLinear();
-    accelerometer->CalibrateLinear();
+    this->magnetometer->CalibrateLinear();
+    this->accelerometer->CalibrateLinear();
     // TODO
     // Test and work on non-linear fitting with RBFs. Then add function void CalibrateNonLinear()
 }
@@ -269,9 +292,9 @@ void SensorHandler::AlignInertial()
 
 void SensorHandler::EnableLaser()
 {
-    laser->ToggleLaser(true);
+    this->laser->ToggleLaser(true);
 }
 void SensorHandler::DisableLaser()
 {
-    laser->ToggleLaser(false);
+    this->laser->ToggleLaser(false);
 }

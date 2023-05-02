@@ -1,21 +1,27 @@
-//#define TEST_MODE
+#define TEST_MODE
 #ifdef TEST_MODE
 //#include "test.h"
 #include "Arduino.h"
-//#include "test.h"
+#include "test.h"
 
 void setup()
 {
   Serial.begin(9600);
   delay(1000);  
   Serial.print("STARTING BAYBEE\n\n");
+
+  TaskHandle_t hardware_handle;
+  xTaskCreatePinnedToCore(
+      test_main, /* Function to implement the task */
+      "test_main", /* Name of the task */
+      15000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      2,  /* Priority of the task */
+      &hardware_handle,  /* Task handle. */
+      0); /* Core where the task should run */
 }
 
 void loop(){
-  delay(1000);  
-  Serial.print("FINISHED BAYBEE\n\n");
-  Serial.print("FUCK EMBEDDED SOFTWARE 2\n\n");
-  //test_main();
 }
 
 

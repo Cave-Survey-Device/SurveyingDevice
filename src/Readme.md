@@ -20,3 +20,4 @@
 - Walkthough for calibration
 - Walkthrough for alignment
     - Maybe animation?
+# Replace ALL funcs which take EigenObj as parameters with EigenObj &

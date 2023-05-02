@@ -1,7 +1,6 @@
 #ifndef HEADER_UTILITY
 #define HEADER_UTILITY
 
-
 #include <ArduinoEigenDense.h>
 
 #include "config.h"
@@ -16,12 +15,17 @@ struct node
     float distance;
 };
 
+template<class T> inline Print &operator <<(Print &obj, T arg)  // no-cost stream operator as described at http://arduiniana.org/libraries/streaming/
+{
+    obj.print(arg);
+    return obj;
+}
+
 // Generate vector from current node back to base
 Vector3f generate_vector(float distance, float heading, float inclination);
 
 void debug(unsigned int mode, const char* str);
 void debugf(unsigned int mode, const char *format, ...);
-
 
 Vector3f Cartesian(Vector3f spherical);
 

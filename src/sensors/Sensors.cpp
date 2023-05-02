@@ -12,14 +12,17 @@ void InertialSensor::CalibrateLinear()
     Vector3f n;
     float d;
 
-    U = fit_ellipsoid(calibration_data);
+    Serial << "Begin ellipsoid fitting...\n";
+    U = fit_ellipsoid(this->calibration_data);
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
-    Vector<float, 12> mag_transformation = calculate_ellipsoid_transformation(M, n, d);
 
-    calibration_matrix << mag_transformation[0], mag_transformation[1], mag_transformation[2], mag_transformation[3], mag_transformation[4], mag_transformation[5], mag_transformation[6], mag_transformation[7], mag_transformation[8];
-    calibration_offset << mag_transformation[9], mag_transformation[10], mag_transformation[11];
+    Serial << "Begin ellipsoid transformation calculations\n";
+    Vector<float, 12> transformation = calculate_ellipsoid_transformation(M, n, d);
+
+    this->calibration_matrix << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
+    this->calibration_offset << transformation[9], transformation[10], transformation[11];
 }
 
 Vector3f InertialSensor::GetReading()
@@ -72,6 +75,11 @@ Matrix3f InertialSensor::GetT()
 Vector3f InertialSensor::Geth()
 {
     return this->calibration_offset;
+}
+
+Matrix<float,3,N_CALIB>* InertialSensor::GetCalibData()
+{
+    return &(this->calibration_data);
 }
 
 
@@ -307,6 +315,7 @@ InertialSensor* SensorHandler::GetMagPtr()
 {
     return this->magnetometer;
 }
+
 LaserSensor* SensorHandler::GetLaserPtr()
 {
     return this->laser;

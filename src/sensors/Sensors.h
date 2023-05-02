@@ -7,7 +7,7 @@
 
 using namespace Eigen;
 
-#define SAMPLES_PER_ORIENTATION 25
+#define SAMPLES_PER_ORIENTATION 5
 #define ORIENTATIONS 12
 #define N_CALIB ORIENTATIONS*SAMPLES_PER_ORIENTATION
 #define N_ALIGNMENT 8
@@ -33,7 +33,6 @@ protected:
     int calib_num;
 
     InertialSensorConnection* sensor;
-    
 
 public:
     InertialSensor(InertialSensorConnection* sc);
@@ -50,6 +49,8 @@ public:
 
     Matrix3f GetT();
     Vector3f Geth();
+    Matrix<float,3,N_CALIB>* GetCalibData();
+
 };
 
 class LaserSensor

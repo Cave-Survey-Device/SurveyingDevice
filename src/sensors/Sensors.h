@@ -49,7 +49,7 @@ public:
 
     Matrix3f GetT();
     Vector3f Geth();
-    Matrix<float,3,N_CALIB>* GetCalibData();
+    Matrix<float,3,N_CALIB> GetCalibData();
 
 };
 

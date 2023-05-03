@@ -67,17 +67,30 @@ Matrix3f z_rotation(float deg)
 RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
 {
     // Design matrix
-    static Vector<float,N_CALIB> x = samples.row(0);
-    static Vector<float,N_CALIB> y = samples.row(1);
-    static Vector<float,N_CALIB> z = samples.row(2);
+    static Vector<float,N_CALIB> x;
+    static Vector<float,N_CALIB> y;
+    static Vector<float,N_CALIB> z;
+    static Matrix<float,N_CALIB,10> D_T;
+    static Matrix<float,10,N_CALIB> D;
+    static Matrix<float,6,6> C;
+    static Matrix<float,10,10> S;
+    static Matrix<float,6,6> S11;
+    static Matrix<float,6,4> S12;
+    static Matrix<float,4,6> S21;
+    static Matrix<float,4,4> S22;
+    static Vector<float,6> eval;
+    static Matrix<float,6,6> evec;
+    static Vector<std::complex<float>,6> eigenvalues;
+    static Matrix<std::complex<float>,6,6> eigenvectors;
+
+    
+    x = samples.row(0);
+    y = samples.row(1);
+    z = samples.row(2);
 
     // Create design matrix
-    static Matrix<float,N_CALIB,10> D_T;
     D_T.setZero();
-    static Matrix<float,10,N_CALIB> D;
     D.setZero();
-
-
     D_T << x.array().pow(2), y.array().pow(2), z.array().pow(2), 2*y.array()*z.array(), 2*x.array()*z.array(), 2*x.array()*y.array(), 2*x.array(), 2*y.array(), 2*z.array(), VectorXf::Ones(N_CALIB);
     D = D_T.transpose();
 
@@ -90,7 +103,6 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     int k = 4;
 
     // Create constrain matrix C - Eq(7)
-    static Matrix<float,6,6> C;
     C <<   -1, 0.5*k-1, 0.5*k-1, 0, 0, 0,
             0.5*k-1, -1, 0.5*k-1, 0, 0, 0,
             0.5*k-1, 0.5*k-1, -1, 0, 0, 0,
@@ -99,11 +111,11 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
             0, 0, 0, 0, 0, -k;
 
     // Create S matrix from D.T*D - Eqn(11)
-    static Matrix<float,10,10> S = D * D_T;
-    static Matrix<float,6,6> S11 = S.block<6,6>(0,0);
-    static Matrix<float,6,4> S12 = S.block<6,4>(0,6);
-    static Matrix<float,4,6> S21 = S.block<4,6>(6,0);
-    static Matrix<float,4,4> S22 = S.block<4,4>(6,6);
+    S = D * D_T;
+    S11 = S.block<6,6>(0,0);
+    S12 = S.block<6,4>(0,6);
+    S21 = S.block<4,6>(6,0);
+    S22 = S.block<4,4>(6,6);
 
 //    std::cout << "\n\n";
 //    std::cout << "S11: \n" << S11 << "\n\n";
@@ -115,11 +127,11 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     // Solve least squares - Eqn(14) and Eqn(15)
     MatrixXf M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
     EigenSolver<MatrixXf> es(M);
-    Vector<std::complex<float>,6> eigenvalues = es.eigenvalues();
-    Matrix<std::complex<float>,6,6> eigenvectors = es.eigenvectors();
+    eigenvalues = es.eigenvalues();
+    eigenvectors = es.eigenvectors();
 
-    Vector<float,6> eval = eigenvalues.array().real();
-    Matrix<float,6,6> evec = eigenvectors.array().real();
+    eval = eigenvalues.array().real();
+    evec = eigenvectors.array().real();
 //    std::cout << "Matrix to decompose: \n" << M << "\n";
 //    std::cout << "Eigenvalues: \n" << eval << "\n";
 //    std::cout << "Eigenvectors: \n" << evec << "\n\n";

@@ -77,9 +77,9 @@ Vector3f InertialSensor::Geth()
     return this->calibration_offset;
 }
 
-Matrix<float,3,N_CALIB>* InertialSensor::GetCalibData()
+Matrix<float,3,N_CALIB> InertialSensor::GetCalibData()
 {
-    return &(this->calibration_data);
+    return this->calibration_data;
 }
 
 

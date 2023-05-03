@@ -10,7 +10,8 @@ void displayMat(const MatrixXf &m)
         Serial << "[\t";
         for(int j=0; j<cols;j++)
         {
-            Serial << m(i,j) << "\t";
+            Serial.print(m(i,j),8);
+            Serial.print("\t");
         }
         Serial << "\t]\n";
     }
@@ -22,7 +23,10 @@ void displayVec(const VectorXf &v)
     int n = v.size();
     for(int i=0; i<n;i++)
     {
-        Serial << "[\t" << v(i) << "\t]\n";
+        Serial.print("[\t");
+        Serial.print(v(i),8);
+        Serial.print("\t");
+        Serial.print("\t]\n");
     }
     Serial << "\n";
 }
@@ -78,6 +82,8 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     static Matrix<float,6,4> S12;
     static Matrix<float,4,6> S21;
     static Matrix<float,4,4> S22;
+    static Matrix<float,6,6> M;
+    static EigenSolver<Matrix<float,6,6>> es;
     static Vector<float,6> eval;
     static Matrix<float,6,6> evec;
     static Vector<std::complex<float>,6> eigenvalues;
@@ -91,6 +97,8 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     // Create design matrix
     D_T.setZero();
     D.setZero();
+    C.setZero();
+
     D_T << x.array().pow(2), y.array().pow(2), z.array().pow(2), 2*y.array()*z.array(), 2*x.array()*z.array(), 2*x.array()*y.array(), 2*x.array(), 2*y.array(), 2*z.array(), VectorXf::Ones(N_CALIB);
     D = D_T.transpose();
 
@@ -125,24 +133,31 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
 
 
     // Solve least squares - Eqn(14) and Eqn(15)
-    MatrixXf M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
-    EigenSolver<MatrixXf> es(M);
+    M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
+    es.compute(M);
     eigenvalues = es.eigenvalues();
     eigenvectors = es.eigenvectors();
 
     eval = eigenvalues.array().real();
     evec = eigenvectors.array().real();
+    Serial << "evals: \n";
+    displayVec(eval);
+    Serial << "\n";
+    Serial << "evecs: \n";
+    displayMat(evec);
+    Serial << "\n";
 //    std::cout << "Matrix to decompose: \n" << M << "\n";
 //    std::cout << "Eigenvalues: \n" << eval << "\n";
 //    std::cout << "Eigenvectors: \n" << evec << "\n\n";
 
     // Find eigenvector corresponding to largest eigenvalue
     Vector<float,6> u1;
+    float max_eval = eval[0];
     for (int i=0;i<6;i++)
     {
-        if(eval[i] > 0.0) {
+        if(eval[i] > max_eval) {
+            max_eval = eval[i];
             u1 = evec.col(i);
-            break;
         } else if (i == 5) {
             // No eigenvalues found
         }

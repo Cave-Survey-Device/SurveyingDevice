@@ -57,7 +57,7 @@ public:
         R = Rx * Ry * Rz;
 
         noise << distribution(generator), distribution(generator), distribution(generator);
-        sample = this->T_align * (T * R * this->true_vec + h + noise);
+        sample = (T * R * this->true_vec + h); //+ noise);
 
         sample_n++;
         return sample;
@@ -106,12 +106,12 @@ void test_main(void * parameter)
     Ta = Ta * 0.1;
     ha << -0.01472,-0.0011,-0.01274;
 
-    TMmisalign << 1,0,0 ,0,1,0, 0,0,1;
-    TAmisalign << 1,0,0 ,0,1,0, 0,0,1;
+    TMmisalign << 1.,0.,0. ,0.,1.,0., 0.,0.,1.;
+    TAmisalign << 1.,0.,0. ,0.,1.,0., 0.,0.,1.;
 
     Vector3f mag_true_vec, acc_true_vec;
-    mag_true_vec << 1,0,0;
-    acc_true_vec << 0,0,1;
+    mag_true_vec << 1.0,0.0,0.0;
+    acc_true_vec << 0.0,0.0,1.0;
 
     static TestInertialSensorConnection mag_sc(mag_true_vec, Tm, hm, TMmisalign);
     static TestInertialSensorConnection acc_sc(acc_true_vec, Ta, ha, TAmisalign);
@@ -167,6 +167,13 @@ void test_main(void * parameter)
 
     Serial << "Mag correction data: \n";
     displayMat(     (sh.GetMagPtr()->GetT() * (mag.GetCalibData().colwise() - sh.GetMagPtr()->Geth())).transpose()    );
+
+
+    Serial << "Accel calib data: \n";
+    displayMat(acc.GetCalibData().transpose());
+
+    Serial << "Accel correction data: \n";
+    displayMat(     (sh.GetAccelPtr()->GetT() * (acc.GetCalibData().colwise() - sh.GetAccelPtr()->Geth())).transpose()    );
 
     delay(10000);
     }

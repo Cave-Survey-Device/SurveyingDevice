@@ -89,7 +89,8 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     static Vector<std::complex<float>,6> eigenvalues;
     static Matrix<std::complex<float>,6,6> eigenvectors;
 
-    
+    Serial << "assigning data\n";
+
     x = samples.row(0);
     y = samples.row(1);
     z = samples.row(2);
@@ -99,15 +100,10 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     D.setZero();
     C.setZero();
 
+    Serial << "Getting transpose\n";
     D_T << x.array().pow(2), y.array().pow(2), z.array().pow(2), 2*y.array()*z.array(), 2*x.array()*z.array(), 2*x.array()*y.array(), 2*x.array(), 2*y.array(), 2*z.array(), VectorXf::Ones(N_CALIB);
     D = D_T.transpose();
 
-    // D seems correct
-    //std::cout << "D: \n" << D << "\n\n";
-
-
-    // Apply constraint kJ > I^2
-    // The quadratic surface is an ellipse if k = 4
     int k = 4;
 
     // Create constrain matrix C - Eq(7)
@@ -125,13 +121,7 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     S21 = S.block<4,6>(6,0);
     S22 = S.block<4,4>(6,6);
 
-//    std::cout << "\n\n";
-//    std::cout << "S11: \n" << S11 << "\n\n";
-//    std::cout << "S12: \n" << S12 << "\n\n";
-//    std::cout << "S21: \n" << S21 << "\n\n";
-//    std::cout << "S22: \n" << S22 << "\n\n";
-
-
+    Serial << "Solving...\n";
     // Solve least squares - Eqn(14) and Eqn(15)
     M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
     es.compute(M);
@@ -141,10 +131,10 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     eval = eigenvalues.array().real();
     evec = eigenvectors.array().real();
     Serial << "evals: \n";
-    displayVec(eval);
+    // displayVec(eval);
     Serial << "\n";
     Serial << "evecs: \n";
-    displayMat(evec);
+    // displayMat(evec);
     Serial << "\n";
 //    std::cout << "Matrix to decompose: \n" << M << "\n";
 //    std::cout << "Eigenvalues: \n" << eval << "\n";
@@ -163,9 +153,17 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
         }
     }
 
-    Vector<float,4> u2 = (-(S22.inverse() * S21) * u1);
+    Vector<float,4> u2;
+    if (S22.determinant() < 0.05)
+    {
+        u2 = -(pseudoInverse(S22) * S21) * u1;
+    } else {
+        u2 = (-(S22.inverse() * S21) * u1);
+    }
+
     Vector<float,10> U;
     U << u1, u2;
+
     Serial << "Output coefficients:\n";
     displayVec(U);
     return U;

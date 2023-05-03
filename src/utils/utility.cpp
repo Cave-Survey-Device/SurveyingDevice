@@ -2,6 +2,7 @@
 #include <stdarg.h>
 
 
+
 Vector3f generate_vector(float distance, float heading, float inclination)
 {
     Vector3f vector;

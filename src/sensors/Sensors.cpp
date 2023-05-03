@@ -287,8 +287,11 @@ bool SensorHandler::CollectCalibrationData()
 
 void SensorHandler::CalibrateInertial()
 {
-    this->magnetometer->CalibrateLinear();
+    Serial << "Calibrating accelerometer...\n";
     this->accelerometer->CalibrateLinear();
+    Serial << "Calibrating magnetometer...\n";
+    this->magnetometer->CalibrateLinear();
+    
     // TODO
     // Test and work on non-linear fitting with RBFs. Then add function void CalibrateNonLinear()
 }

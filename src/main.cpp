@@ -32,7 +32,7 @@ void loop(){
 
 enum state_enum {STATE_IDLE, STATE_B1_WAITING, STATE_B2_WAITING, STATE_B1_SHORT, STATE_B2_SHORT, STATE_B1_LONG, STATE_B2_LONG, STATE_B1B2_SHORT, STATE_B1B2_LONG, STATE_B1B2_WAITING};
 enum mode_enum {MODE_MENU, MODE_IDLE, MODE_LASER_ENA, MODE_ALIGN, MODE_CALIBRATE};
-enum menu_enum {MENU_CALIBRATE, MENU_ALIGN};
+enum menu_enum {MENU_CALIBRATE, MENU_ALIGN, MENU_LOG};
 
 float BLE_Enabled = true;
 float laser_timeout = 10.0; 
@@ -174,7 +174,7 @@ void StateIdle(){
   next_state = STATE_IDLE;
 }
 
-// Enable laser, take shot, align shot, forwards in menu
+// Enable laser, take shot, align shot, forwards in menu, forwards in log
 void StateB1ShortHold(){
   switch(current_mode)
   {
@@ -228,7 +228,7 @@ void StateB1LongHold(){
   }
 }
 
-// Back in menu
+// Back in menu, back in log
 void StateB2ShortHold(){
   switch(current_mode)
   {
@@ -237,6 +237,8 @@ void StateB2ShortHold(){
     break;
   }
 }
+
+// Exit menu
 void StateB2LongHold(){
   // Return
   switch(current_mode)

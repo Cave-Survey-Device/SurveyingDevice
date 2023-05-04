@@ -14,7 +14,7 @@ void setup()
   xTaskCreatePinnedToCore(
       test_main, /* Function to implement the task */
       "test_main", /* Name of the task */
-      15000,  /* Stack size in words */
+      20000,  /* Stack size in words */
       NULL,  /* Task input parameter */
       2,  /* Priority of the task */
       &hardware_handle,  /* Task handle. */

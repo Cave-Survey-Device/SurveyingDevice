@@ -3,9 +3,18 @@
 
 #include "Arduino.h"
 // Board config
+#define ESP32
+#ifdef ESP32
+#define PIN_LASER_ENA (uint8_t)13U
+#define PIN_EXTERNAL_BUTTON (uint8_t)12U
+#define PIN_INTERNAL_BUTTON1 (uint8_t)27U
+#else
+#ifdef SEEED_XIAO_SENSE
 #define PIN_LASER_ENA PIN_A1
 #define PIN_EXTERNAL_BUTTON PIN_A2
 #define PIN_INTERNAL_BUTTON1 PIN_A3
+#endif
+#endif
 
 const static bool DEBUG = false;
 const static bool DEBUG_LASER_CAL = true;

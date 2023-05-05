@@ -32,7 +32,7 @@ Vector3f InertialSensor::GetReading()
     reading.setZero();
     for (int i=0;i<SAMPLES_PER_READING;i++)
     {
-        reading += GetRawData();
+        reading += this->sensor->GetRawData();
     }
     reading = reading/SAMPLES_PER_READING;
     
@@ -41,7 +41,7 @@ Vector3f InertialSensor::GetReading()
 
 bool InertialSensor::ColectCalibrationSample()
 {
-    Vector3f data = this->GetRawData();
+    Vector3f data = this->GetReading();
     this->calibration_data.col(this->calib_num) << data;
     this->calib_num++;
     if (this->calib_num == N_CALIB)
@@ -59,11 +59,6 @@ void InertialSensor::ResetCalibration()
     this->calibration_offset.setZero();
 }
 
-Vector3f InertialSensor::GetRawData()
-{
-    Vector3f data = this->sensor->GetRawData();
-    return data;
-}
 
 InertialSensor::InertialSensor(InertialSensorConnection* sc)
 {

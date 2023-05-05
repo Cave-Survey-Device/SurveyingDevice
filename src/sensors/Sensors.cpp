@@ -54,6 +54,8 @@ void InertialSensor::ResetCalibration()
 {
     this->calib_num = 0;
     this->calibration_data.setZero(3,N_CALIB);
+    this-> calibration_matrix = Matrix3f::Identity();
+    this->calibration_offset.setZero();
 }
 
 Vector3f InertialSensor::GetRawData()
@@ -65,6 +67,7 @@ Vector3f InertialSensor::GetRawData()
 InertialSensor::InertialSensor(InertialSensorConnection* sc)
 {
     this->sensor = sc;
+    this->ResetCalibration();
 }
 
 Matrix3f InertialSensor::GetT()

@@ -60,7 +60,7 @@ public:
         R = Rx * Ry * Rz;
 
         noise << distribution(generator), distribution(generator), distribution(generator);
-        sample = (T * R * this->true_vec + h); //+ noise);
+        sample = (T * R * this->true_vec + h + noise);
 
         sample_n++;
         return sample;

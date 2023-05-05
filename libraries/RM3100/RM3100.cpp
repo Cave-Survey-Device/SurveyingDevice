@@ -42,7 +42,8 @@ void RM3100::changeCycleCount(uint16_t newCC){
   Wire.endTransmission();  
 }
 
-void RM3100::init(){
+
+void RM3100::begin(){
   Wire.begin();
   pinMode(pin_drdy, INPUT);
   revid = readReg(RM3100_REVID_REG);
@@ -65,11 +66,23 @@ void RM3100::init(){
   }
 }
 
-Vector3f RM3100::GetRawData() {
+void RM3100::begin(uint8_t pin)
+{
+  this->pin_drdy = pin;
+  this->begin();
+}
+
+void RM3100::begin(bool usedrdy)
+{
+  this->useDRDYPin = usedrdy;
+  this->begin();
+}
+
+
+void RM3100::update() {
   long x = 0;
   long y = 0;
   long z = 0;
-  Vector3f raw_data;
   uint8_t x2,x1,x0,y2,y1,y0,z2,z1,z0;
 
   //wait until data is ready using 1 of two methods (chosen in options at top of code)
@@ -119,7 +132,9 @@ Vector3f RM3100::GetRawData() {
   //calculate magnitude of results
   float uT = sqrt(pow(((float)(x)/gain),2) + pow(((float)(y)/gain),2)+ pow(((float)(z)/gain),2));
 
-  raw_data << (float)x, (float)y, (float)z;
+  this->mag_data.x = (float)x;
+  this->mag_data.y = (float)y;
+  this->mag_data.z = (float)z;
 
   // //display results
   // Serial.print("Data in counts:");
@@ -143,8 +158,20 @@ Vector3f RM3100::GetRawData() {
   // Serial.println(uT);
   // Serial.println();  
 
-  return raw_data;    
 }
 
 RM3100::RM3100()
 {}
+
+float RM3100::getX()
+{
+  return this->mag_data.x;
+}
+float RM3100::getY()
+{
+  return this->mag_data.y;
+}
+float RM3100::getZ()
+{
+  return this->mag_data.z;
+}

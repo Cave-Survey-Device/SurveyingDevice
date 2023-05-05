@@ -3,10 +3,7 @@
 
 #include <Wire.h>
 #include <Arduino.h>
-#include <ArduinoEigenDense.h>
-#include <sensors_csd.h>
 
-using namespace Eigen;
 
 //internal register values without the R/W bit
 #define RM3100_REVID_REG 0x36 // Hexadecimal address for the Revid internal register
@@ -15,23 +12,33 @@ using namespace Eigen;
 #define RM3100_STATUS_REG 0x34 // Hexadecimal address for the Status internal register
 #define RM3100_CCX1_REG 0x04 // Hexadecimal address for Cycle Count X1 internal register
 #define RM3100_CCX0_REG 0x05 // Hexadecimal address for the Cycle Count X0 internal register
-#define PIN_DRDY GPIO_PIN_REG_36
 // I'd rather this be protected but cant get it to work
+struct RM3100data {
+  public:
+    int16_t x;
+    int16_t y;
+    int16_t z;
+};
 
-class RM3100: public InertialSensorConnection
-{
+class RM3100 {
 public:
     RM3100();
-    void init();
-    Vector3f GetRawData();
+    void begin();
+    void begin(bool useDRDYPin);
+    void begin(uint8_t pin);
+    void update();
+    float getX();
+    float getY();
+    float getZ();
 
 private:
     // options
-    const int pin_drdy = PIN_DRDY;
     const int RM3100Address = 0x20;
     const int initialCC = 200;
     const bool singleMode = false;
-    const bool useDRDYPin = true;
+    bool useDRDYPin = true;
+    uint8_t pin_drdy = 4;
+    RM3100data mag_data;
 
     uint8_t revid;
     uint16_t cycleCount;
@@ -46,7 +53,6 @@ private:
     
     // Reads from a register
     uint8_t readReg(uint8_t addr);
-
 };
 
 

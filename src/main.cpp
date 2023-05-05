@@ -1,5 +1,5 @@
-#define TEST_MODE
-#ifdef TEST_MODE
+#define TEST_SENSORS_MODE
+#ifdef TEST_CALIB_MODE
 //#include "test.h"
 #include "Arduino.h"
 #include "test.h"
@@ -24,6 +24,30 @@ void setup()
 void loop(){
 }
 
+#else
+#ifdef TEST_SENSORS_MODE
+#include "Arduino.h"
+#include "test.h"
+
+void setup()
+{
+  Serial.begin(9600);
+  delay(1000);  
+  Serial.print("STARTING BAYBEE - TEST_SENSORS_MODE\n\n");
+
+  TaskHandle_t hardware_handle;
+  xTaskCreatePinnedToCore(
+      test_sensors, /* Function to implement the task */
+      "test_sensors", /* Name of the task */
+      20000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      tskIDLE_PRIORITY,  /* Priority of the task */
+      &hardware_handle,  /* Task handle. */
+      0); /* Core where the task should run */
+}
+
+void loop(){
+}
 
 #else
 #include <Arduino.h>
@@ -270,4 +294,5 @@ void loop()
   current_mode = next_mode;
 }
 
+#endif
 #endif

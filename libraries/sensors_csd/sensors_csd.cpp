@@ -42,9 +42,9 @@ Vector3f InertialSensor::GetReading()
 bool InertialSensor::ColectCalibrationSample()
 {
     Vector3f data = this->GetReading();
-    this->calibration_data.col(this->calib_num) << data;
+    this->calibration_data.col(this->calib_num % N_CALIB) << data;
     this->calib_num++;
-    if (this->calib_num == N_CALIB)
+    if (this->calib_num >= N_CALIB)
     {
         return 1;
     }

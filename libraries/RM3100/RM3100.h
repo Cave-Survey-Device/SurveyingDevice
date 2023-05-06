@@ -15,9 +15,12 @@
 // I'd rather this be protected but cant get it to work
 struct RM3100data {
   public:
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    float x_ut;
+    float y_ut;
+    float z_ut;
+    long x_counts;
+    long y_counts;
+    long z_counts;
 };
 
 class RM3100 {

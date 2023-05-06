@@ -132,9 +132,14 @@ void RM3100::update() {
   //calculate magnitude of results
   float uT = sqrt(pow(((float)(x)/gain),2) + pow(((float)(y)/gain),2)+ pow(((float)(z)/gain),2));
 
-  this->mag_data.x = (float)x;
-  this->mag_data.y = (float)y;
-  this->mag_data.z = (float)z;
+  this->mag_data.x_counts = x;
+  this->mag_data.y_counts = y;
+  this->mag_data.z_counts = z;
+
+  // Use 45uT as basis
+  this->mag_data.x_ut = ((float)(x)/gain);// / 45.;
+  this->mag_data.y_ut = ((float)(y)/gain);// / 45.;
+  this->mag_data.z_ut = ((float)(z)/gain);// / 45.;
 
   // //display results
   // Serial.print("Data in counts:");
@@ -165,13 +170,13 @@ RM3100::RM3100()
 
 float RM3100::getX()
 {
-  return this->mag_data.x;
+  return this->mag_data.x_ut;
 }
 float RM3100::getY()
 {
-  return this->mag_data.y;
+  return this->mag_data.y_ut;
 }
 float RM3100::getZ()
 {
-  return this->mag_data.z;
+  return this->mag_data.z_ut;
 }

@@ -20,13 +20,25 @@ static SCA3300SensorConnection acc_sc(&sca3300);
 static InertialSensor mag(&mag_sc);
 static InertialSensor acc(&acc_sc);
 
-// static SensorHandler sh(&acc, &mag);
+static SensorHandler sh(&acc, &mag);
 
 Vector3f data;
 
+bool available = false;
+bool btn_press = false;
+bool acc_calib = false;
+bool mag_calib = false;
 
+void int_btn_press()
+{
+  btn_press = true;
+}
 
 void setup() {
+  pinMode(T4, INPUT);
+  attachInterrupt(digitalPinToInterrupt(T4), int_btn_press, RISING);
+
+
   Serial.begin(115200);
 
   Serial << "Init Mag\n";
@@ -44,52 +56,55 @@ void setup() {
   Serial << "Init finished\n";
 }
 
-bool available = false;
+
+
+
 void loop() {
-  Serial << "Begin loop\n";
-  available = false;
+  if (btn_press)
+  {
+    Serial << "btn_press\n";
+    btn_press = false;
+    delay(100);
 
-  // if (sca3300.available()) { //Get next block of data from sensor
-  //     Serial.print("X Accelerometer: ");
-  //     Serial.print(sca3300.getCalculatedAccelerometerX());
-  //     Serial.print("\t");
-  //     Serial.print("Y Accelerometer: ");
-  //     Serial.print(sca3300.getCalculatedAccelerometerY());
-  //     Serial.print("\t");
-  //     Serial.print("Z Accelerometer: ");
-  //     Serial.println(sca3300.getCalculatedAccelerometerZ());
-  //     delay(250); //Allow a little time to see the output
-  //   } else sca3300.reset();
+    if (mag.ColectCalibrationSample())
+    {
+      mag_calib = true;
+      Serial.print("MAG: Data collected, calibrating...\n");
+      mag.CalibrateLinear();
+    }
 
-    // Serial << "Getting accel data\n";
+    if (acc.ColectCalibrationSample())
+    {
+      acc_calib = true;
+      Serial.print("ACC: Data collected, calibrating...\n");
+      acc.CalibrateLinear();
+    }
     
-    // while (!available)
-    // {
-    //     Serial << "avaliable()\n";
-    //     available = sca3300.available();
-    //     if (!available) {
-    //         sca3300.reset();
-    //     }
-    // }
-    //   Serial << "Raw accel data: " << sca3300.getCalculatedAccelerometerX() << " " << sca3300.getCalculatedAccelerometerY() << " " << sca3300.getCalculatedAccelerometerZ() << "\n";
-
-    //   displayVec(acc_sc.GetRawData());
-
-    //   rm3100.update();
-    //   Serial << "RM3100 raw mag data\n" << rm3100.getX() << "\t" << rm3100.getY() << "\t" << rm3100.getZ() << "\n\n";
-
-
-
-    //   Serial << "Getting sc raw mag data\n";
-    //   displayVec(mag_sc.GetRawData());
-
-      Serial << "\nGetting mag reading\n";
-      displayVec(mag.GetReading());
-
-      Serial << "\nGetting acc reading\n";
-      displayVec(acc.GetReading());
+    if (acc_calib && mag_calib)
+    {
+      Serial << "SCA3300 sample data\n";
+      displayMat(acc.GetCalibData());
+      Serial << "\nSCA3300 calibrated data\n";
+      displayMat(     (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  ).transpose()    );
 
       Serial << "\n\n";
 
-      delay(1000);
+      Serial << "RM3100 sample data\n";
+      displayMat(mag.GetCalibData());
+      Serial << "\nRM3100 calibrated data\n";
+      displayMat(     (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  ).transpose()    );
+    }
+
+    
+  }
+
+  Serial << "\nGetting mag reading\n";
+  displayVec(mag.GetReading());
+
+  Serial << "\nGetting acc reading\n";
+  displayVec(acc.GetReading());
+
+  Serial << "\n\n";
+
+  delay(1000);
 }

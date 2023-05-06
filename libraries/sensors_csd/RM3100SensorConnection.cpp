@@ -10,6 +10,7 @@ Vector3f RM3100SensorConnection::GetRawData()
 {
     rm3100_connection->update();
     Eigen::Vector3f data;
-    data << rm3100_connection->getX(), rm3100_connection->getY(), rm3100_connection->getZ();
+    // Div by 45 to come closer to normalised
+    data << rm3100_connection->getX()/45., rm3100_connection->getY()/45, rm3100_connection->getZ()/45;
     return data;
 }

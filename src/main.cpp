@@ -10,6 +10,10 @@
 #include <SCA3300SensorConnection.h>
 #include <RM3100SensorConnection.h>
 
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <OLED.h>
 
 static RM3100 rm3100;
 static SCA3300 sca3300;
@@ -30,20 +34,42 @@ bool acc_calib = false;
 bool mag_calib = false;
 
 
+static OLED oled; // create a OLED object
 
+float distance = 1.32;
+float compass = 234;
+float clino = -23;
+bool ble_status =  true;
 
+float batt_percentage = 25;
+static Vector3f orientation;
 
 bool calibrated = 0;
 int cmd = 0;
 
+void serialEvent()
+{
+  cmd = Serial.parseInt();
+}
+
 void test_main(void * parameter) {
   while(true){
-    while (Serial.available() == 0) {
+    if (cmd == 1) {
+      Serial << "Get calibration data...\n";
+      calibrated = sh.CollectCalibrationData();
+      if (calibrated = 0)
+      {
+        Serial << "Calibrating inertial sensors...\n";
+        sh.CalibrateInertial();
+        
+      } else if (calibrated == -1)
+      {
+        Serial << "Calibration sample failed! Please keep the device steady.\n";
+      } else {
+        Serial << "Calibration sample succesful.\n";
+      }
     }
-
-    cmd = Serial.parseInt();
-
-    if (cmd == 2)
+    else if (cmd == 2)
     {
       Serial << "RM3100 sample data\n";
       displayMat(mag.GetCalibData().transpose());
@@ -74,39 +100,22 @@ void test_main(void * parameter) {
     } else if (cmd == 3) {
       Serial << "Calibrating inertial sensors...\n";
       sh.CalibrateInertial();
-
-    } else if (cmd == 1) {
-      Serial << "Get calibration data...\n";
-      calibrated = sh.CollectCalibrationData();
-      if (calibrated = 0)
-      {
-        Serial << "Calibrating inertial sensors...\n";
-        sh.CalibrateInertial();
-        // Serial << "SCA3300 sample data\n";
-        // displayMat(acc.GetCalibData().transpose());
-        // Serial << "\nSCA3300 calibrated data\n";
-        // displayMat(     (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  )    );
-
-        // MatrixXf calibrated_acc_data = (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  );
-        // serialPlotVec(acc.GetCalibData().colwise().norm(), calibrated_acc_data.colwise().norm(), "AccSamples", "AccCorrections");
-
-        // Serial << "\n\n";
-
-        Serial << "RM3100 sample data\n";
-        displayMat(mag.GetCalibData().transpose());
-        Serial << "\nRM3100 calibrated data\n";
-        displayMat(     (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  )    );
-
-        MatrixXf calibrated_mag_data = (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  );
-        serialPlotVec(mag.GetCalibData().colwise().norm(), calibrated_mag_data.colwise().norm(), "MagSamples", "MagCorrections");
-      } else if (calibrated == -1)
-      {
-        Serial << "Calibration sample failed! Please keep the device steady.\n";
-      } else {
-        Serial << "Calibration sample succesful.\n";
-      }
+    
+    } else if (cmd == 4) {
+      Serial << "Aligning inertial sensors...\n";
+      sh.AlignInertial();
     }
     cmd = 0;
+
+    // delay(250);
+    orientation = Orientation(mag.GetReading(), acc.GetReading());
+
+    // oled.clearDisplay();
+    oled.Battery(batt_percentage);
+    oled.Distance(distance);
+    oled.Compass(orientation(0));
+    oled.Clino(orientation(1));
+    oled.Blutooth(ble_status);
   }
 }
 
@@ -124,6 +133,16 @@ void setup() {
   while (sca3300.begin() == false) {
       Serial.println("Murata SCL3300 inclinometer not connected.");;
   }
+
+  Serial << "Init OLED...\n";
+  oled.Initialise();
+  delay(250); // wait for the OLED to power up
+  oled.clearDisplay();
+  oled.Battery(batt_percentage);
+  oled.Distance(distance);
+  oled.Compass(compass);
+  oled.Clino(clino);
+  oled.Blutooth(ble_status);
 
   Serial << "Init finished\n";
 

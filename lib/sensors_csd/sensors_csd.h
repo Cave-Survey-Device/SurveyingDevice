@@ -74,11 +74,13 @@ public:
 class SensorHandler
 {
 protected:
-    Matrix3f alignment_matrix; // Alignment matrix to apply to magnetometer
-    Matrix<float,3,N_ALIGNMENT> alignment_data; // Alignment data, heading, inclination, roll, distance
-    float inclination_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
-    float heading_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
-    float alignment_progress;
+    Matrix<float,3,N_ALIGNMENT> laser_alignment_data; // Alignment data, heading, inclination, roll, distance
+    float laser_inclination_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
+    float laser_heading_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
+    float laser_alignment_progress;
+
+    Matrix3f inertial_alignment_mat;
+    float inclination_angle;
 
     InertialSensor* accelerometer; // Connection to accelerometer sensor
     InertialSensor* magnetometer; // Connection to magnetometer sensor

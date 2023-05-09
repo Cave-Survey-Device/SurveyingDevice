@@ -106,21 +106,21 @@ SensorHandler::SensorHandler(){}
 Vector3f SensorHandler::GetReading()
 {
     Vector3f reading;
-    Vector3f mag_data = this->magnetometer->GetReading();
+    Vector3f mag_data = inertial_alignment_mat * this->magnetometer->GetReading();
     Vector3f accel_data = this->accelerometer->GetReading();
     float laser_data = this->laser->GetMeasurement();    
 
     reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
-    reading(0) += this->heading_alignment;
-    reading(1) += this->inclination_alignment;
+    reading(0) += this->laser_heading_alignment;
+    reading(1) += this->laser_inclination_alignment;
     return reading;
 }
 
 bool SensorHandler::CollectAlignmentData()
 {
-    this->alignment_data.col(this->alignment_progress) = this->GetReading();
-    this->alignment_progress++;
-    if (this->alignment_progress == N_ALIGNMENT)
+    this->laser_alignment_data.col(this->laser_alignment_progress) = this->GetReading();
+    this->laser_alignment_progress++;
+    if (this->laser_alignment_progress == N_ALIGNMENT)
     {
         // TODO
         // Execute alignment maths
@@ -157,7 +157,7 @@ void SensorHandler::AlignLaser()
     float xi, yi, zi;
 
     // Mean of all calibration data collected
-    mean_calibration_data = this->alignment_data.rowwise().mean();
+    mean_calibration_data = this->laser_alignment_data.rowwise().mean();
 
 
     /*************************************************************
@@ -170,7 +170,7 @@ void SensorHandler::AlignLaser()
     // Calculate cartesian coordinates for disto tip in each calibration shot
     for (calib_num=0; calib_num<N_ALIGNMENT; calib_num++)
     {
-        conversion_dummy << alignment_data(0,calib_num), alignment_data(1,calib_num), DISTO_LEN;
+        conversion_dummy << laser_alignment_data(0,calib_num), laser_alignment_data(1,calib_num), DISTO_LEN;
         cartesian_calibration_data.col(calib_num) << Cartesian(conversion_dummy);
     }
 
@@ -207,8 +207,8 @@ void SensorHandler::AlignLaser()
         debugf(DEBUG_SENSOR,"Disto tip coordinates X: %f, Y: %f, Z: %f\n",xi,yi,zi);
 
         // Rotation matrix about x depending on device roll
-        roll = this->alignment_data(2,calib_num);
-        rotation_matrix = XRotation(-roll);
+        roll = this->laser_alignment_data(2,calib_num);
+        rotation_matrix = x_rotation(-RAD_TO_DEG * roll);
 
         // Calculalate vector between tip of disto and actual target
         misalignement_mat.col(calib_num) << x-xi, y-yi, z-zi;
@@ -235,9 +235,9 @@ void SensorHandler::AlignLaser()
 
 
     // Get heading and inclination corrections by converting back to polar coordinates
-    this->inclination_alignment = atan2(y,x);
-    this->heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
-    debugf(DEBUG_SENSOR,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->inclination_alignment,this->heading_alignment);
+    this->laser_inclination_alignment = atan2(y,x);
+    this->laser_heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
+    debugf(DEBUG_SENSOR,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->laser_inclination_alignment,this->laser_heading_alignment);
 
 }
 
@@ -245,7 +245,9 @@ void SensorHandler::ResetCalibration()
 {
     this->magnetometer->ResetCalibration();
     this->accelerometer->ResetCalibration();
-    this->alignment_progress = 0;
+    this->inertial_alignment_mat = Matrix3f::Identity();
+    this->inclination_angle = 0;
+    this->laser_alignment_progress = 0;
 }
 
 bool SensorHandler::CollectCalibrationData()
@@ -308,7 +310,10 @@ void SensorHandler::CalibrateInertial()
 
 void SensorHandler::AlignInertial()
 {
-
+    
+    Vector<float,10> X = Align((accelerometer->GetT() * (accelerometer->GetCalibData().colwise() - accelerometer->Geth())),(magnetometer->GetT() * (magnetometer->GetCalibData().colwise() - magnetometer->Geth())));
+    inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
+    Serial << "Magnetic inclination angle: " << RAD_TO_DEG * X(9) << "\n";
 }
 
 void SensorHandler::EnableLaser()

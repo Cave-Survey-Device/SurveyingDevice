@@ -5,15 +5,15 @@
 
 #include <ArduinoEigenDense.h>
 
-#include "sensors/Sensors.h"
-#include "utils/utility.h"
-#include "utils/NumericalMethods.h"
-#include "sensors/RM3100.h"
+#include <sensors_csd.h>
+#include <utility_csd.h>
+#include <NumericalMethods_csd.h>
+#include <RM3100.h>
 #include <random>
 #include <math.h>
 
 #include <SPI.h>
-#include <SCL3300.h>
+#include <SCA3300.h>
 #define _USE_MATH_DEFINES
 
 
@@ -21,7 +21,7 @@ using namespace Eigen;
 
 
 
-class TestInertialSensorConnection: public InertialSensorConnection
+class TestInertialSensor: public InertialSensor
 {
 public:
     Vector3f true_vec;
@@ -30,7 +30,7 @@ public:
     Matrix3f T_align;
     int sample_n;
 
-    TestInertialSensorConnection(Vector3f tv, Matrix3f T_set, Vector3f h_set, Matrix3f T_align_set)
+    TestInertialSensor(Vector3f tv, Matrix3f T_set, Vector3f h_set, Matrix3f T_align_set)
     {
         this->T = T_set;
         this->h = h_set;
@@ -39,8 +39,8 @@ public:
         this->sample_n = 0;
     }
 
-    Vector3f GetRawData()
-    {
+    Vector3f GetReading() override {
+        // Serial << "TestInertialSensor::GetReading()...\n";
         std::default_random_engine generator;
         std::normal_distribution<float> distribution(0,0.005);
         Vector3f sample;
@@ -78,8 +78,9 @@ public:
         {
             for(int j=0; j<SAMPLES_PER_ORIENTATION; j++)
             {
-                this->magnetometer->ColectCalibrationSample();
-                this->accelerometer->ColectCalibrationSample();
+                // Serial << "Getting data...\n";
+                this->magnetometer->CollectCalibrationSample();
+                this->accelerometer->CollectCalibrationSample();
             } 
         }
         return 1;
@@ -116,10 +117,8 @@ void test_main(void * parameter)
     mag_true_vec << 1.0,0.0,0.0;
     acc_true_vec << 0.0,0.0,1.0;
 
-    static TestInertialSensorConnection mag_sc(mag_true_vec, Tm, hm, TMmisalign);
-    static TestInertialSensorConnection acc_sc(acc_true_vec, Ta, ha, TAmisalign);
-    static InertialSensor mag(&mag_sc);
-    static InertialSensor acc(&acc_sc);
+    static TestInertialSensor mag(mag_true_vec, Tm, hm, TMmisalign);
+    static TestInertialSensor acc(acc_true_vec, Ta, ha, TAmisalign);
     static TestSensorHandler sh(&acc, &mag);
 
 
@@ -181,88 +180,4 @@ void test_main(void * parameter)
     delay(10000);
     }
 }
-
-void test_sensors(void * parameter)
-{
-    Serial << "Starting sensor test main\n";
-    static RM3100 mag_sc2;
-    mag_sc2.init();
-    Vector3f data;
-    // static InertialSensorConnection acc_sc(acc_true_vec, Ta, ha, TAmisalign);
-    static InertialSensor mag(&mag_sc2);
-    // static InertialSensor acc(&acc_sc);
-    // static SensorHandler sh(&acc, &mag);
-
-    Serial << "Init accel\n";
-    SCL3300 inclinometer;
-    //Default SPI chip/slave select pin is D10
-
-    // Need the following define for SAMD processors
-    #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
-    #define Serial SERIAL_PORT_USBVIRTUAL
-    #endif
-
-    while (inclinometer.begin() == false) {
-        Serial.println("Murata SCL3300 inclinometer not connected.");;
-    }
-
-    Serial << "Begin loop\n";
-
-    while (true)
-    {
-        Serial << "Getting accel data\n";
-        if (inclinometer.available()) { //Get next block of data from sensor
-            Serial.print("X Accelerometer: ");
-            Serial.print(inclinometer.getCalculatedAccelerometerX());
-            Serial.print("\t");
-            Serial.print("Y Accelerometer: ");
-            Serial.print(inclinometer.getCalculatedAccelerometerY());
-            Serial.print("\t");
-            Serial.print("Z Accelerometer: ");
-            Serial.println(inclinometer.getCalculatedAccelerometerZ());
-            delay(250); //Allow a little time to see the output
-        } else inclinometer.reset();
-
-        // data = mag_sc2.GetRawData();
-        Serial << "Getting mag data\n";
-        displayVec(mag.GetReading());
-
-        delay(1000);
-    }
-    
-    // while (true){
-    //     byte error, address;
-    //     int nDevices;
-    //     Serial.println("Scanning...");
-    //     nDevices = 0;
-    //     for(address = 1; address < 127; address++ ) {
-    //         Wire.beginTransmission(address);
-    //         error = Wire.endTransmission();
-    //         if (error == 0) {
-    //         Serial.print("I2C device found at address 0x");
-    //         if (address<16) {
-    //             Serial.print("0");
-    //         }
-    //         Serial.println(address,HEX);
-    //         nDevices++;
-    //         }
-    //         else if (error==4) {
-    //         Serial.print("Unknow error at address 0x");
-    //         if (address<16) {
-    //             Serial.print("0");
-    //         }
-    //         Serial.println(address,HEX);
-    //         }    
-    //     }
-    //     if (nDevices == 0) {
-    //         Serial.println("No I2C devices found\n");
-    //     }
-    //     else {
-    //         Serial.println("done\n");
-    //     }
-    //     delay(5000);          
-    // }
-}
-
-
 #endif

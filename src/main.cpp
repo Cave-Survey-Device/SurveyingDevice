@@ -1,300 +1,164 @@
-#define TEST_SENSORS_MODE
-#ifdef TEST_CALIB_MODE
-//#include "test.h"
-#include "Arduino.h"
-#include "test.h"
+#include <ArduinoEigenDense.h>
 
-void setup()
-{
-  Serial.begin(9600);
-  delay(1000);  
-  Serial.print("STARTING BAYBEE\n\n");
+#include <NumericalMethods_csd.h>
+#include <config_csd.h>
+#include <interrupts_csd.h>
+#include <utility_csd.h>
+
+#include <sensors_csd.h>
+
+#include <SCA3300SensorConnection.h>
+#include <RM3100SensorConnection.h>
+
+
+static RM3100 rm3100;
+static SCA3300 sca3300;
+
+static RM3100SensorConnection mag_sc(&rm3100);
+static SCA3300SensorConnection acc_sc(&sca3300);
+
+static InertialSensor mag(&mag_sc);
+static InertialSensor acc(&acc_sc);
+
+static SensorHandler sh(&acc, &mag);
+
+Vector3f data;
+
+bool available = false;
+bool btn_press = false;
+bool acc_calib = false;
+bool mag_calib = false;
+
+
+
+
+
+bool calibrated = 0;
+int cmd = 0;
+
+void test_main(void * parameter) {
+  while(true){
+    while (Serial.available() == 0) {
+    }
+
+    cmd = Serial.parseInt();
+
+    if (cmd == 2)
+    {
+      Serial << "RM3100 sample data\n";
+      displayMat(mag.GetCalibData().transpose());
+
+      Serial << "\nRM3100 calibrated data\n";
+      displayMat(     (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  ).transpose()    );
+
+      Serial << "\nRM3100 T\n";
+      displayMat( mag.GetT() );
+
+      Serial << "\nRM3100 h\n\n";
+      displayMat( mag.Geth() );
+
+      Serial << "-----------------------------------------------------------\n\n";
+      
+      Serial << "SCA3300 sample data\n";
+      displayMat(acc.GetCalibData().transpose());
+
+      Serial << "SCA3300 calibrated data\n";
+      displayMat(     (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  ).transpose()    );
+
+      Serial << "SCA3300 T\n";
+      displayMat( acc.GetT() );
+
+      Serial << "SCA3300 h\n\n";
+      displayMat( acc.Geth() );
+
+    } else if (cmd == 3) {
+      Serial << "Calibrating inertial sensors...\n";
+      sh.CalibrateInertial();
+
+    } else if (cmd == 1) {
+      Serial << "Get calibration data...\n";
+      calibrated = sh.CollectCalibrationData();
+      if (calibrated = 0)
+      {
+        Serial << "Calibrating inertial sensors...\n";
+        sh.CalibrateInertial();
+        // Serial << "SCA3300 sample data\n";
+        // displayMat(acc.GetCalibData().transpose());
+        // Serial << "\nSCA3300 calibrated data\n";
+        // displayMat(     (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  )    );
+
+        // MatrixXf calibrated_acc_data = (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  );
+        // serialPlotVec(acc.GetCalibData().colwise().norm(), calibrated_acc_data.colwise().norm(), "AccSamples", "AccCorrections");
+
+        // Serial << "\n\n";
+
+        Serial << "RM3100 sample data\n";
+        displayMat(mag.GetCalibData().transpose());
+        Serial << "\nRM3100 calibrated data\n";
+        displayMat(     (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  )    );
+
+        MatrixXf calibrated_mag_data = (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  );
+        serialPlotVec(mag.GetCalibData().colwise().norm(), calibrated_mag_data.colwise().norm(), "MagSamples", "MagCorrections");
+      } else if (calibrated == -1)
+      {
+        Serial << "Calibration sample failed! Please keep the device steady.\n";
+      } else {
+        Serial << "Calibration sample succesful.\n";
+      }
+    }
+    cmd = 0;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  Serial << "Init Mag\n";
+  rm3100.begin();
+
+  Serial << "Init accel\n";
+  #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+  #define Serial SERIAL_PORT_USBVIRTUAL
+  #endif
+
+  while (sca3300.begin() == false) {
+      Serial.println("Murata SCL3300 inclinometer not connected.");;
+  }
+
+  Serial << "Init finished\n";
 
   TaskHandle_t hardware_handle;
   xTaskCreatePinnedToCore(
       test_main, /* Function to implement the task */
-      "test_main", /* Name of the task */
-      20000,  /* Stack size in words */
+      "main", /* Name of the task */
+      50000,  /* Stack size in words */
       NULL,  /* Task input parameter */
-      2,  /* Priority of the task */
+      tskIDLE_PRIORITY ,  /* Priority of the task */
       &hardware_handle,  /* Task handle. */
       0); /* Core where the task should run */
 }
 
-void loop(){
-}
+void loop(){}
 
-#else
-#ifdef TEST_SENSORS_MODE
-#include "Arduino.h"
-#include "test.h"
+// #include "Arduino.h"
+// #include "test.h"
 
-void setup()
-{
-  Serial.begin(9600);
-  delay(1000);  
-  Serial.print("STARTING BAYBEE - TEST_SENSORS_MODE\n\n");
+// void setup()
+// {
+//   Serial.begin(115200);
+//   delay(1000);  
+//   Serial.print("STARTING BAYBEE - TEST_SENSORS_MODE\n\n");
 
-  TaskHandle_t hardware_handle;
-  xTaskCreatePinnedToCore(
-      test_sensors, /* Function to implement the task */
-      "test_sensors", /* Name of the task */
-      20000,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      tskIDLE_PRIORITY,  /* Priority of the task */
-      &hardware_handle,  /* Task handle. */
-      0); /* Core where the task should run */
-}
+//   TaskHandle_t hardware_handle;
+//   xTaskCreatePinnedToCore(
+//       test_main, /* Function to implement the task */
+//       "test_main", /* Name of the task */
+//       40000,  /* Stack size in words */
+//       NULL,  /* Task input parameter */
+//       tskIDLE_PRIORITY,  /* Priority of the task */
+//       &hardware_handle,  /* Task handle. */
+//       0); /* Core where the task should run */
+// }
 
-void loop(){
-}
-
-#else
-#include <Arduino.h>
-#include "sensors/Sensors.h"
-#include "utils/interrupts.h"
-
-enum state_enum {STATE_IDLE, STATE_B1_WAITING, STATE_B2_WAITING, STATE_B1_SHORT, STATE_B2_SHORT, STATE_B1_LONG, STATE_B2_LONG, STATE_B1B2_SHORT, STATE_B1B2_LONG, STATE_B1B2_WAITING};
-enum mode_enum {MODE_MENU, MODE_IDLE, MODE_LASER_ENA, MODE_ALIGN, MODE_CALIBRATE};
-enum menu_enum {MENU_CALIBRATE, MENU_ALIGN, MENU_LOG};
-
-float BLE_Enabled = true;
-float laser_timeout = 10.0; 
-float screen_timeout = 5;
-float device_poweroff_timeout = 300;
-float long_hold_time = 5;
-
-state_enum previous_state = STATE_IDLE;
-state_enum current_state = STATE_IDLE;
-state_enum next_state = STATE_IDLE;
-
-mode_enum current_mode = MODE_IDLE;
-mode_enum next_mode = MODE_IDLE;
-mode_enum previous_mode = MODE_IDLE;
-
-menu_enum menu_selection = MENU_CALIBRATE;
-
-float current_time;
-float b1_start_time;
-float b2_start_time;
-float b1b2_start_time;
-SensorHandler sh;
-
-void setup() {
-
-  // put your setup code here, to run once:
-}
-
-void MenuForward()
-{
-  switch(menu_selection)
-  {
-    case(MENU_CALIBRATE):
-    menu_selection = MENU_ALIGN;
-    break;
-
-    case(MENU_ALIGN):
-    menu_selection = MENU_CALIBRATE;
-    break;
-  }
-}
-void MenuBackward()
-{
-  switch(menu_selection)
-  {
-    case(MENU_CALIBRATE):
-    menu_selection = MENU_ALIGN;
-    break;
-
-    case(MENU_ALIGN):
-    menu_selection = MENU_CALIBRATE;
-    break;
-  }
-}
-void MenuSelect()
-{
-  switch(menu_selection)
-  {
-    case(MENU_CALIBRATE):
-    next_mode = MODE_CALIBRATE;
-    break;
-
-    case(MENU_ALIGN):
-    next_mode = MODE_ALIGN;
-    break;
-  }
-}
-void MenuExit(){
-  next_mode = MODE_IDLE;
-}
-
-void TakeShot(){
-  Vector3f shot_data;
-  shot_data = sh.get_measurement();
-  sh.DisableLaser();
-  // TODO: Save shot data
-}
-
-void EnableLaser(){
-  sh.EnableLaser();
-}
-
-void StateB1Waiting(){
-  next_state = STATE_B1_WAITING;
-  if (previous_state != STATE_B1_WAITING)
-  {
-    b1_start_time = current_time;
-  }
-  else if(button1_released_flag && !button2_pressed_flag)
-  {
-    next_state = STATE_B1_SHORT;
-  } 
-  else if (button1_pressed_flag && !button2_pressed_flag && current_time > b1_start_time + long_hold_time)
-  {
-    next_state = STATE_B1_LONG;
-  }
-  else if (button1_pressed_flag && button2_pressed_flag && current_time >  b1_start_time + long_hold_time)
-  {
-    next_state = STATE_B1B2_WAITING;
-  }
-}
-void StateB2Waiting(){
-  next_state = STATE_B2_WAITING;
-  if (previous_state != STATE_B2_WAITING)
-  {
-    b2_start_time = current_time;
-  }
-  else if(button2_released_flag && !button1_pressed_flag)
-  {
-    next_state = STATE_B2_SHORT;
-  } 
-  else if (button2_pressed_flag && !button1_pressed_flag && current_time > b2_start_time + long_hold_time)
-  {
-    next_state = STATE_B2_LONG;
-  }
-  else if (button2_pressed_flag && button1_pressed_flag && current_time >  b2_start_time + long_hold_time)
-  {
-    next_state = STATE_B1B2_WAITING;
-  }
-}
-void StateB1B2Waiting()
-{
-  current_time = millis();
-  if (previous_state != STATE_B1B2_WAITING)
-  {
-    b1b2_start_time = current_time;
-  }
-  else if (button1_released_flag || button2_released_flag)
-  {
-    next_state = STATE_B1B2_SHORT;
-  }
-  else if (current_time > b1b2_start_time + long_hold_time)
-  {
-    next_state = STATE_B1B2_LONG;
-  }
-}
-
-void StateIdle(){
-  next_state = STATE_IDLE;
-}
-
-// Enable laser, take shot, align shot, forwards in menu, forwards in log
-void StateB1ShortHold(){
-  switch(current_mode)
-  {
-    case(MODE_IDLE):
-    next_mode = MODE_LASER_ENA;
-    EnableLaser();
-    break;
-
-    case(MODE_LASER_ENA):
-    next_mode = MODE_IDLE;
-    TakeShot();
-    break;
-
-    case(MODE_CALIBRATE):
-    if (previous_mode != MODE_CALIBRATE)
-    {
-      sh.ResetCalibration();
-    }
-    if (sh.CollectCalibrationData())
-    {
-      sh.CalibrateInertial();
-      next_mode = MODE_IDLE;
-    }
-    break;
-
-    case(MODE_ALIGN):
-    if (previous_mode != MODE_ALIGN)
-    {
-      sh.ResetAlignment();
-    }
-    if (sh.CollectAlignmentData())
-    {
-      sh.AlignLaser();
-      next_mode = MODE_IDLE;
-    }
-    break;
-    
-    case(MODE_MENU):
-    MenuForward();
-    break;
-  }
-}
-
-// Select in menu
-void StateB1LongHold(){
-  switch(current_mode)
-  {
-    case(MODE_MENU):
-    MenuSelect();
-    break;
-  }
-}
-
-// Back in menu, back in log
-void StateB2ShortHold(){
-  switch(current_mode)
-  {
-    case(MODE_MENU):
-    MenuBackward();
-    break;
-  }
-}
-
-// Exit menu
-void StateB2LongHold(){
-  // Return
-  switch(current_mode)
-  {
-    case(MODE_MENU):
-    MenuExit();
-    break;
-  }
-  
-}
-
-// Enter menu
-void StateB1B2ShortHold(){
-  next_mode = MODE_MENU;
-}
-
-// Reset
-void StateB1B2LongHold(){
-  next_mode = MODE_IDLE;
-  next_state = STATE_IDLE;
-  // RESET
-}
-
-
-void loop()
-{
-  current_time = millis();
-  previous_state = current_state;
-  current_state = next_state;
-  previous_mode = current_mode;
-  current_mode = next_mode;
-}
-
-#endif
-#endif
+// void loop(){
+// }

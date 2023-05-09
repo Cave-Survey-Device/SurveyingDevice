@@ -1,7 +1,84 @@
 #include "utility_csd.h"
 #include <stdarg.h>
 
+void displayMat(const MatrixXf &m)
+{
+    int rows = m.rows();
+    int cols = m.cols();
+    for(int i=0; i<rows;i++)
+    {
+        Serial << "[\t";
+        for(int j=0; j<cols;j++)
+        {
+            Serial.print(m(i,j),8);
+            Serial.print("\t");
+        }
+        Serial << "\t]\n";
+    }
+    Serial << "    \n";
+}
 
+void displayVec(const VectorXf &v)
+{
+    int n = v.size();
+    for(int i=0; i<n;i++)
+    {
+        Serial.print("[\t");
+        Serial.print(v(i),8);
+        Serial.print("\t");
+        Serial.print("\t]\n");
+    }
+    Serial << "\n";
+}
+
+void displayRowVec(const VectorXf &v)
+{
+    int n = v.size();
+    for(int i=0; i<n;i++)
+    {
+        Serial.print("[\t");
+        Serial.print(v(i),8);
+        Serial.print("\t");
+    }
+    Serial << "]\n";
+}
+
+void serialPlotVec(const VectorXf &v1, const VectorXf &v2)
+{
+    //assert ((v1.size() == v2.size()), "vector1.size() == vector2.size() ");
+
+    int n = v1.size();
+    for(int i=0; i<n;i++)
+    {
+        Serial << "Var1:";
+        Serial.print(v1(i),8);
+        Serial << ",Var2:";
+        Serial.print(v2(i),8);
+        Serial << "\n";
+    }
+    Serial << "\n";
+    
+}
+
+void serialPlotVec(const VectorXf &v1, const VectorXf &v2, const char* v1_name , const char* v2_name)
+{
+    //assertm ((v1.size() == v2.size()), "vector1.size() == vector2.size() ");
+
+    int n = v1.size();
+    for(int i=0; i<n;i++)
+    {
+        Serial << v1_name << ":";
+        Serial.print(v1(i),8);
+        Serial << "," << v2_name << ":";
+        Serial.print(v2(i),8);
+        Serial << "\n";
+    }
+    Serial << "\n";
+}
+
+float Deg2Rad(float degrees) {
+    return degrees * (3.14159265359 / 180.0);
+}
 
 Vector3f generate_vector(float distance, float heading, float inclination)
 {
@@ -90,6 +167,6 @@ Vector3f Orientation(Vector3f g, Vector3f m)
     {
         heading = heading * -1;
     }
-    hi << heading, inclination, roll;
+    hi << RAD_TO_DEG * heading, RAD_TO_DEG * inclination, RAD_TO_DEG * roll;
     return hi;
 }

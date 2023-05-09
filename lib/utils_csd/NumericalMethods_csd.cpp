@@ -1,85 +1,24 @@
 #include "NumericalMethods_csd.h"
 
-void displayMat(const MatrixXf &m)
+// ------------------------------------------------- GENERAL FUNCTIONS -------------------------------------------------
+MatrixXf kron(MatrixXf m1, MatrixXf m2)
 {
-    int rows = m.rows();
-    int cols = m.cols();
-    for(int i=0; i<rows;i++)
+    int m = m1.rows();
+    int n = m1.cols();
+    int p = m2.rows();
+    int q = m2.cols();
+
+    MatrixXf out(m*p, n*q);
+    for(int i=0; i<m; i++)
     {
-        Serial << "[\t";
-        for(int j=0; j<cols;j++)
-        {
-            Serial.print(m(i,j),8);
-            Serial.print("\t");
+        for(int j=0; j<n; j++) {
+            out.block(i*p,j*q,p,q) = m1(i,j) * m2;
         }
-        Serial << "\t]\n";
     }
-    Serial << "    \n";
+    return out;
 }
 
-void displayVec(const VectorXf &v)
-{
-    int n = v.size();
-    for(int i=0; i<n;i++)
-    {
-        Serial.print("[\t");
-        Serial.print(v(i),8);
-        Serial.print("\t");
-        Serial.print("\t]\n");
-    }
-    Serial << "\n";
-}
-
-void displayRowVec(const VectorXf &v)
-{
-    int n = v.size();
-    for(int i=0; i<n;i++)
-    {
-        Serial.print("[\t");
-        Serial.print(v(i),8);
-        Serial.print("\t");
-    }
-    Serial << "]\n";
-}
-
-void serialPlotVec(const VectorXf &v1, const VectorXf &v2)
-{
-    //assert ((v1.size() == v2.size()), "vector1.size() == vector2.size() ");
-
-    int n = v1.size();
-    for(int i=0; i<n;i++)
-    {
-        Serial << "Var1:";
-        Serial.print(v1(i),8);
-        Serial << ",Var2:";
-        Serial.print(v2(i),8);
-        Serial << "\n";
-    }
-    Serial << "\n";
-    
-}
-
-void serialPlotVec(const VectorXf &v1, const VectorXf &v2, const char* v1_name , const char* v2_name)
-{
-    //assertm ((v1.size() == v2.size()), "vector1.size() == vector2.size() ");
-
-    int n = v1.size();
-    for(int i=0; i<n;i++)
-    {
-        Serial << v1_name << ":";
-        Serial.print(v1(i),8);
-        Serial << "," << v2_name << ":";
-        Serial.print(v2(i),8);
-        Serial << "\n";
-    }
-    Serial << "\n";
-}
-
-
-
-float Deg2Rad(float degrees) {
-    return degrees * (3.14159265359 / 180.0);
-}
+//  ------------------------------------------------ ROTATION FUNCTIONS  ------------------------------------------------
 
 Matrix3f x_rotation(float deg)
 {
@@ -111,8 +50,8 @@ Matrix3f z_rotation(float deg)
     return R;
 }
 
+//  ------------------------------------------ INERTIAL CALIBRATION FUNCTIONS  -------------------------------------------
 
-// Given a point cloud, calculate the best fit ellipsoid, returning the quadratic ellipsoid parameters
 RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
 {
     // Design matrix
@@ -231,10 +170,6 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     return U;
 }
 
-
-
-
-
 Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, float d)
 {
     Serial << "Beginning elipsoid transformation calculations...\n";
@@ -289,7 +224,6 @@ Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, fl
     return V;
 }
 
-// Given a point cloud, find a plane of best fit and return the vector normal to this plane
 Vector3f NormalVec(MatrixXf point_cloud){
   Vector3f normal;
   MatrixXf left_singular_mat;
@@ -308,21 +242,132 @@ Vector3f NormalVec(MatrixXf point_cloud){
   return normal;
 };
 
-// Calculates a 3x3 matrix representing a rotation of "rads" about the x axis
-Matrix3f XRotation(float rads)
-{
-    Matrix3f T;
-    T << 1,0,0,
-         0,cos(rads),-sin(rads),
-         0,sin(rads),cos(rads);
-    return T;
-};
-
-// Standard deviation of matrix (cols = x,y,z,...)
 float StdDev(MatrixXf m)
 {
     VectorXf mean = m.rowwise().mean();
     return (m.colwise() - mean).colwise().norm().array().sum();
 }
 
-float StdDev(std::queue<Vector3f> q);
+// ------------------------------------------------ ALIGNMENT FUNCTIONS  ------------------------------------------------
+
+float J(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+{
+    float J = 0;
+    int n = m.cols();
+    Vector<float, 9> dJ_dR;
+    Matrix3f R;
+    R << X.segment(0,9).reshaped(3,3);
+    float d = X(9);
+
+    Vector3f mk;
+    Vector3f fk;
+
+    for(int k=0;k<n;k++)
+    {
+        mk = m.col(k);
+        fk = f.col(k);
+        J += pow( (sin(d)-fk.transpose()*R*mk) / (fk.norm() * mk.norm()),2);
+    }
+    J += pow((R*R.transpose()-Matrix3f::Identity()).norm(),2);
+    J += pow((R.determinant() - 1),2);
+    return J;
+}
+
+Vector<float, 9> dJ_dR (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+{
+    int n = m.cols();
+    Vector<float, 9> dJ_dR;
+    Matrix3f R;
+    R << X.segment(0,9).reshaped(3,3);
+    float d = X(9);
+
+    dJ_dR.setZero();
+    Vector3f mk;
+    Vector3f fk;
+    float norms;
+    float tmp;
+
+    for(int k=0;k<n;k++)
+    {
+        mk = m.col(k);
+        fk = f.col(k);
+        tmp = fk.transpose()*R*mk;
+        norms = (fk.norm() * mk.norm());
+        dJ_dR += -2*(   (sin(d) - tmp / norms) * (kron(mk,fk) / norms) );
+    }
+
+    dJ_dR += 4* (R*R.transpose()*R - R).reshaped(9,1);
+    dJ_dR += 2* (R.determinant()-1)*R.adjoint().transpose().reshaped(9,1);
+
+    return dJ_dR;
+}
+
+float dJ_dd (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+{
+    int n = m.cols();
+    float dJ_dd = 0;
+    Matrix3f R;
+    R << X.segment(0,9).reshaped(3,3);
+    float d = X(9);
+    Vector3f mk;
+    Vector3f fk;
+    float tmp;
+    for(int k=0;k<n;k++)
+    {
+        mk = m.col(k);
+        fk = f.col(k);
+        tmp = (fk.transpose() * R * mk);
+        tmp = tmp / (fk.norm() * mk.norm());
+        dJ_dd += (sin(d) - tmp);
+    }
+    dJ_dd = dJ_dd *  2 * cos(d);
+    return dJ_dd;
+
+}
+
+Vector<float,10> GradJ(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+{
+    Vector<float,10> grad_J;
+    grad_J.segment(0,9) << dJ_dR(f,m,X).reshaped(9,1);
+    grad_J(9) = dJ_dd(f,m,X);
+
+    return grad_J;
+}
+
+Vector<float,10> Align(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m)
+{
+    Vector<float,10> X;
+    Vector<float,10> dx;
+    float alpha = 0.9; // Loss scaling parameter (how much smaller does next step have to be compared to current step?)
+    float beta = 0.75; // Line search scaling parameter
+    float t  = 10; // Step size scale
+    float cost = J(f,m,X);
+
+    X.segment(0,9) << Matrix3f::Identity().reshaped(9,1);
+    X(9) = Deg2Rad(54);
+
+    while (cost > 0.1)
+    {
+        // Calculate dJ
+        dx = -GradJ(f,m,X);
+
+        // Find scale over which to operate gradient descent at a given step
+        t = 1;
+        while (    J(f,m, X + t*dx) > J(f,m,X) + alpha*t*-dx.transpose()*dx   )
+        {
+            t = t * beta;
+        }
+
+        // Move to next step
+        X = X + dx * t;
+        cost = J(f, m, X);
+        // std::cout << "Cost: " << cost << "\n";
+
+        // If timestep too small
+        if(t < 0.00000001)
+        {
+            break;
+        }
+    }
+    return X;
+}

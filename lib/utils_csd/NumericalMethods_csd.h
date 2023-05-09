@@ -9,103 +9,122 @@
 
 using namespace Eigen;
 
-// // Given a point cloud, calculate the best fit ellipsoid, returning the quadratic ellipsoid parameters
-// RowVector<float,10> fit_ellipsoid(MatrixXf samples)
-// {
-//     int N = samples.cols();
-//     // Design matrix
-//     VectorXf x = samples.row(0);
-//     VectorXf y = samples.row(1);
-//     VectorXf z = samples.row(2);
-
-//     // Create design matrix
-//     MatrixXf D = MatrixXf::Zero(N,10);
-
-//     D << x.array().pow(2), y.array().pow(2), z.array().pow(2), 2*y.array()*z.array(), 2*x.array()*z.array(), 2*x.array()*y.array(), 2*x.array(), 2*y.array(), 2*z.array(), VectorXf::Ones(N);
-//     D.transposeInPlace();
-
-//     // D seems correct
-//     //std::cout << "D: \n" << D << "\n\n";
+/**
+ * @brief Finds the Kronecker product of two matrices
+ * 
+ * @param m1 
+ * @param m2 
+ * @return MatrixXf 
+ */
+MatrixXf kron(MatrixXf m1, MatrixXf m2);
 
 
-//     // Apply constraint kJ > I^2
-//     // The quadratic surface is an ellipse if k = 4
-//     int k = 4;
-
-//     // Create constrain matrix C - Eq(7)
-//     Matrix<float,6,6> C;
-//     C <<   -1, 0.5*k-1, 0.5*k-1, 0, 0, 0,
-//             0.5*k-1, -1, 0.5*k-1, 0, 0, 0,
-//             0.5*k-1, 0.5*k-1, -1, 0, 0, 0,
-//             0, 0, 0, -k, 0, 0,
-//             0, 0, 0, 0, -k, 0,
-//             0, 0, 0, 0, 0, -k;
-
-//     // Create S matrix from D.T*D - Eqn(11)
-//     MatrixXf S = D * D.transpose();
-//     Matrix<float,6,6> S11 = S.block<6,6>(0,0);
-//     Matrix<float,6,4> S12 = S.block<6,4>(0,6);
-//     Matrix<float,4,6> S21 = S.block<4,6>(6,0);
-//     Matrix<float,4,4> S22 = S.block<4,4>(6,6);
-
-// //    std::cout << "\n\n";
-// //    std::cout << "S11: \n" << S11 << "\n\n";
-// //    std::cout << "S12: \n" << S12 << "\n\n";
-// //    std::cout << "S21: \n" << S21 << "\n\n";
-// //    std::cout << "S22: \n" << S22 << "\n\n";
-
-
-//     // Solve least squares - Eqn(14) and Eqn(15)
-//     MatrixXf M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
-//     EigenSolver<MatrixXf> es(M);
-//     Vector<std::complex<float>,6> eigenvalues = es.eigenvalues();
-//     Matrix<std::complex<float>,6,6> eigenvectors = es.eigenvectors();
-
-//     Vector<float,6> eval = eigenvalues.array().real();
-//     Matrix<float,6,6> evec = eigenvectors.array().real();
-// //    std::cout << "Matrix to decompose: \n" << M << "\n";
-// //    std::cout << "Eigenvalues: \n" << eval << "\n";
-// //    std::cout << "Eigenvectors: \n" << evec << "\n\n";
-
-//     // Find eigenvector corresponding to largest eigenvalue
-//     Vector<float,6> u1;
-//     for (int i=0;i<6;i++)
-//     {
-//         if(eval[i] > 0.0) {
-//             u1 = evec.col(i);
-//             break;
-//         } else if (i == 5) {
-//             // No eigenvalues found
-//         }
-//     }
-
-//     Vector<float,4> u2 = (-(S22.inverse() * S21) * u1);
-//     Vector<float,10> U;
-//     U << u1, u2;
-//     return U;
-// }
-
-void displayMat(const MatrixXf &m);
-void displayVec(const VectorXf &v);
-void displayRowVec(const VectorXf &v);
-void serialPlotVec(const VectorXf &v1, const VectorXf &v2);
-void serialPlotVec(const VectorXf &v1, const VectorXf &v2, const char* v1_name , const char* v2_name);
-float Deg2Rad(float degrees);
+/**
+ * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the x axis
+ * 
+ * @param deg Angle in degrees
+ * @return Matrix3f - Rotation matrix
+ */
 Matrix3f x_rotation(float deg);
+
+/**
+ * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the y axis
+ * 
+ * @param deg Angle in degrees
+ * @return Matrix3f - Rotation matrix
+ */
 Matrix3f y_rotation(float deg);
+
+/**
+ * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the z axis
+ * 
+ * @param deg Angle in degrees
+ * @return Matrix3f - Rotation matrix
+ */
 Matrix3f z_rotation(float deg);
 
-// Given a point cloud, calculate the best fit ellipsoid, returning the quadratic ellipsoid parameters
+/**
+ * @brief Given a point cloud, calculate the best fit ellipsoid (linear least squares), returning the quadratic ellipsoid parameters
+ * 
+ * @param samples Samples to
+ * @return RowVector<float,10> Ellipsoid parameters
+ */
 RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples);
 
+/**
+ * @brief Calculates the transformation from a ellpipsoid to a sphere given the ellipsoid fitting parameters.
+ * 
+ * @param M 
+ * @param n 
+ * @param d 
+ * @return Vector<float,12> - A transformation matrix [0:9], an offset vector [9:12]
+ */
 Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, float d);
 
-// Given a point cloud, find a plane of best fit and return the vector normal to this plane
+/**
+ * @brief Given a point cloud, find a plane of best fit and return the vector normal to this plane
+ * 
+ * @param point_cloud
+ * @return Vector3f 
+ */
 Vector3f NormalVec(MatrixXf point_cloud);
 
-// Calculates a 3x3 matrix representing a rotation of "rads" about the x axis
-Matrix3f XRotation(float rads);
 
+/**
+ * @brief Calculates the standard deviation of a matrix
+ * 
+ * @param m 
+ * @return float 
+ */
 float StdDev(MatrixXf m);
+
+/**
+ * @brief Cost function: https://ieeexplore.ieee.org/document/8723161 Equation (15)
+ * 
+ * @param f - Accelerometer samples
+ * @param m - Magnetometer samples
+ * @param X - Vector of unknowns
+ * @return float - Cost
+ */
+float J(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+
+/**
+ * @brief https://ieeexplore.ieee.org/document/8723161 Equation (16)
+ * 
+ * @param f - Accelerometer samples
+ * @param m - Magnetometer samples
+ * @param X - Vector of unknowns
+ * @return Vector<float, 9> dJ/dR
+ */
+Vector<float, 9> dJ_dR (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+
+/**
+ * @brief https://ieeexplore.ieee.org/document/8723161 Equation (16)
+ * 
+ * @param f - Accelerometer samples
+ * @param m - Magnetometer samples
+ * @param X - Vector of unknowns
+ * @return float  dJ/dd
+ */
+float dJ_dd (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+
+/**
+ * @brief Calculate the gradient of the cost function
+ * 
+ * @param f - Accelerometer samples
+ * @param m - Magnetometer samples
+ * @param X - Vector of unknowns
+ * @return Vector<float,10> dJ/dX
+ */
+Vector<float,10> GradJ(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+
+/**
+ * @brief Perform alignment calculations
+ * 
+ * @param f - Accelerometer samples
+ * @param m - Magnetometer samples
+ * @return Vector<float,10> R, d
+ */
+Vector<float,10> Align(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m);
 
 #endif

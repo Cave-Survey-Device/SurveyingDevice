@@ -68,8 +68,50 @@ Vector3f Spherical(Vector3f cartesian);
  * 
  * @param g Gravitationl data
  * @param m Magnetic data
- * @return Vector3f 
+ * @return Vector3f: Heading[deg], Inclination [deg], Roll [deg]
  */
 Vector3f Orientation(Vector3f g, Vector3f m);
+
+/**
+ * @brief Displays a matrix using Serial.print()
+ */
+void displayMat(const MatrixXf &m);
+
+/**
+ * @brief Displays a vector using Serial.print()
+ */
+void displayVec(const VectorXf &v);
+
+/**
+ * @brief Displays a vector as a row vector using Serial.print()
+ */
+void displayRowVec(const VectorXf &v);
+
+/**
+ * @brief Outputs a vector to Serial formatted to be used by ArduinoIDE's serial plotter
+ * 
+ * @param v1 
+ * @param v2 
+ */
+void serialPlotVec(const VectorXf &v1, const VectorXf &v2);
+
+/**
+ * @brief Outputs a vector to Serial formatted to be used by ArduinoIDE's serial plotter
+ * 
+ * @param v1 
+ * @param v2 
+ * @param v1_name 
+ * @param v2_name 
+ */
+void serialPlotVec(const VectorXf &v1, const VectorXf &v2, const char* v1_name , const char* v2_name);
+
+/**
+ * @brief Converts a value in rads to degrees
+ * 
+ * @param degrees 
+ * @return float 
+ */
+float Deg2Rad(float degrees);
+
 
 #endif

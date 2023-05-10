@@ -166,7 +166,7 @@ void SensorHandler::resetCalibration()
     this->laser_alignment_progress = 0;
 }
 
-bool SensorHandler::CollectInertialAlignmentData()
+int SensorHandler::CollectInertialAlignmentData()
 {
     /************************************************************
     * 1. Wait 100ms to allow button press perturbation to settle

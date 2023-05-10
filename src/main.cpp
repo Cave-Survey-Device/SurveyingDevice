@@ -59,16 +59,13 @@ void test_main(void * parameter) {
     if (cmd == 1) {
       Serial << "Get calibration data...\n";
       calibrated = sh.CollectInertialAlignmentData();
-      if (calibrated = 0)
-      {
-        Serial << "Calibrating inertial sensors...\n";
-        sh.CalibrateInertial();
-        
-      } else if (calibrated == -1)
+      if (calibrated == -1)
       {
         Serial << "Calibration sample failed! Please keep the device steady.\n";
-      } else {
+      } else if (calibrated == 0){
         Serial << "Calibration sample succesful.\n";
+      } else {
+        Serial << "Calibration finished\n";
       }
     }
     else if (cmd == 2)

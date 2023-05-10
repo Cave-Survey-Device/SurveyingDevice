@@ -61,5 +61,5 @@ int Magnetometer::checkCalibrationProgress(){
 
 MatrixXf Magnetometer::getCalibData()
 {
-  return calibration_data;
+    return calibration_data;
 }

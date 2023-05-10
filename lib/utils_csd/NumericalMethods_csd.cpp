@@ -52,7 +52,7 @@ Matrix3f z_rotation(float deg)
 
 //  ------------------------------------------ INERTIAL CALIBRATION FUNCTIONS  -------------------------------------------
 
-RowVector<float,10> fit_ellipsoid(const MatrixXf &samples)
+RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
 {
     // Design matrix
     static Matrix<float,6,6> C;
@@ -70,17 +70,31 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples)
 
     Serial << "assigning data\n";
 
-    const VectorXf &x = samples.row(0);
-    const VectorXf &y = samples.row(0);
-    const VectorXf &z = samples.row(0);
+    if (n_samples == -1)
+    {
+        n_samples = samples.cols();
+    }
 
-    MatrixXf D_T(10,samples.cols());
+    const VectorXf &x = samples.row(0).segment(0,n_samples);
+    const VectorXf &y = samples.row(1).segment(0,n_samples);
+    const VectorXf &z = samples.row(2).segment(0,n_samples);
+
+
+    // VectorXf x = samples.row(0);
+    // VectorXf y = samples.row(1);
+    // VectorXf z = samples.row(2);
+
+    MatrixXf D_T(n_samples,10);
 
     // Create design matrix
     D_T.setZero();
     C.setZero();
 
+    
     Serial << "Getting transpose1\n";
+    displayVec(x.array().pow(2));
+    Serial << "D_T rows: " << D_T.rows() << "\n";
+
     D_T.col(0) << x.array().pow(2);
     D_T.col(1) << y.array().pow(2);
     D_T.col(2) << z.array().pow(2);
@@ -96,7 +110,7 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples)
     D_T.col(8) << 2*z.array();
 
     Serial << "Getting transpose4\n";
-    D_T.col(9) << VectorXf::Ones(samples.cols());
+    D_T.col(9) << VectorXf::Ones(n_samples);
 
     int k = 4;
 

@@ -8,8 +8,8 @@ bool InertialSensor::collectAlignmentSample()
         Vector3f data = this->getReading();
         Serial << "Calib num: " << this->align_num << "\t" << data(0) << " " << data(1) << " " << data(2) << "\n";
         ref_calibration_data.col(this->align_num) << data;
-        Serial << "ref_calibration_data: " << ref_calibration_data.col(this->align_num)(0) << "\t" << ref_calibration_data.col(this->align_num)(1) << " " << ref_calibration_data.col(this->align_num)(2) << "\n";
-        Serial << "calibration_data: " << getCalibData().col(this->align_num)(0) << "\t" << getCalibData().col(this->align_num)(1) << " " << getCalibData().col(this->align_num)(2) << "\n";
+        // Serial << "ref_calibration_data: " << ref_calibration_data.col(this->align_num)(0) << "\t" << ref_calibration_data.col(this->align_num)(1) << " " << ref_calibration_data.col(this->align_num)(2) << "\n";
+        // Serial << "calibration_data: " << getCalibData().col(this->align_num)(0) << "\t" << getCalibData().col(this->align_num)(1) << " " << getCalibData().col(this->align_num)(2) << "\n";
         this->align_num++;
         
         return 0;
@@ -29,7 +29,7 @@ void InertialSensor::calibrateLinear()
     // If sensor is being seperately calibrated, use that data
     if (calibrate_with_alignment)
     {
-        U = fit_ellipsoid(getCalibData().block(0,0,3,N_INERTIAL_ALIGNMENT));
+        U = fit_ellipsoid(getCalibData(),N_INERTIAL_ALIGNMENT);
     } else {
         U = fit_ellipsoid(getCalibData());
     }

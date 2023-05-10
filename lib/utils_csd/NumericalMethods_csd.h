@@ -48,7 +48,7 @@ Matrix3f z_rotation(float deg);
  * @param samples Samples to
  * @return RowVector<float,10> Ellipsoid parameters
  */
-RowVector<float,10> fit_ellipsoid(const MatrixXf &samples);
+RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples = -1);
 
 /**
  * @brief Calculates the transformation from a ellpipsoid to a sphere given the ellipsoid fitting parameters.

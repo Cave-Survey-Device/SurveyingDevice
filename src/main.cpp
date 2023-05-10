@@ -5,26 +5,18 @@
 #include <interrupts_csd.h>
 #include <utility_csd.h>
 
-#include <sensors_csd.h>
+#include <sensorhandler.h>
 
 #include <SCA3300SensorConnection.h>
 #include <RM3100SensorConnection.h>
+
+#include <accelerometer_csd.h>
+#include <magnetometer_csd.h>
 
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <OLED.h>
-
-static RM3100 rm3100;
-static SCA3300 sca3300;
-
-static RM3100SensorConnection mag_sc(&rm3100);
-static SCA3300SensorConnection acc_sc(&sca3300);
-
-static InertialSensor mag(&mag_sc);
-static InertialSensor acc(&acc_sc);
-
-static SensorHandler sh(&acc, &mag);
 
 Vector3f data;
 
@@ -33,6 +25,16 @@ bool btn_press = false;
 bool acc_calib = false;
 bool mag_calib = false;
 
+
+  static RM3100 rm3100;
+  static SCA3300 sca3300;
+
+  static RM3100SensorConnection mag_sc(&rm3100);
+  static SCA3300SensorConnection acc_sc(&sca3300);
+
+  static Magnetometer mag(&mag_sc);
+  static Accelerometer acc(&acc_sc);
+  static SensorHandler sh(&acc, &mag);
 
 static OLED oled; // create a OLED object
 
@@ -56,7 +58,7 @@ void test_main(void * parameter) {
   while(true){
     if (cmd == 1) {
       Serial << "Get calibration data...\n";
-      calibrated = sh.CollectCalibrationData();
+      calibrated = sh.CollectInertialAlignmentData();
       if (calibrated = 0)
       {
         Serial << "Calibrating inertial sensors...\n";
@@ -72,30 +74,30 @@ void test_main(void * parameter) {
     else if (cmd == 2)
     {
       Serial << "RM3100 sample data\n";
-      displayMat(mag.GetCalibData().transpose());
+      displayMat(mag.getCalibData().transpose());
 
       Serial << "\nRM3100 calibrated data\n";
-      displayMat(     (  mag.GetT() * (mag.GetCalibData().colwise() - mag.Geth())  ).transpose()    );
+      displayMat(     (  mag.getT() * (mag.getCalibData().colwise() - mag.geth())  ).transpose()    );
 
       Serial << "\nRM3100 T\n";
-      displayMat( mag.GetT() );
+      displayMat( mag.getT() );
 
       Serial << "\nRM3100 h\n\n";
-      displayMat( mag.Geth() );
+      displayMat( mag.geth() );
 
       Serial << "-----------------------------------------------------------\n\n";
       
       Serial << "SCA3300 sample data\n";
-      displayMat(acc.GetCalibData().transpose());
+      displayMat(acc.getCalibData().transpose());
 
       Serial << "SCA3300 calibrated data\n";
-      displayMat(     (  acc.GetT() * (acc.GetCalibData().colwise() - acc.Geth())  ).transpose()    );
+      displayMat(     (  acc.getT() * (acc.getCalibData().colwise() - acc.geth())  ).transpose()    );
 
       Serial << "SCA3300 T\n";
-      displayMat( acc.GetT() );
+      displayMat( acc.getT() );
 
       Serial << "SCA3300 h\n\n";
-      displayMat( acc.Geth() );
+      displayMat( acc.geth() );
 
     } else if (cmd == 3) {
       Serial << "Calibrating inertial sensors...\n";
@@ -108,7 +110,7 @@ void test_main(void * parameter) {
     cmd = 0;
 
     // delay(250);
-    orientation = Orientation(mag.GetReading(), acc.GetReading());
+    orientation = Orientation(mag.getReading(), acc.getReading());
 
     // oled.clearDisplay();
     oled.Battery(batt_percentage);
@@ -119,10 +121,34 @@ void test_main(void * parameter) {
   }
 }
 
+void blank_main(void * parameter)
+{
+  while(true)
+  {
+    Serial.print("blank_main\n");
+    delay(2000);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
-  Serial << "Init Mag\n";
+  // Serial << "Creating sensor objects\n";
+  // static RM3100 rm3100;
+  // static SCA3300 sca3300;
+
+  // Serial << "Creating sensor connection objects\n";
+  // static RM3100SensorConnection mag_sc(&rm3100);
+  // static SCA3300SensorConnection acc_sc(&sca3300);
+
+  // Serial << "Creating Magnetometer object\n";
+  // static Magnetometer mag(&mag_sc);
+  // Serial << "Creating Accelerometer object\n";
+  // static Accelerometer acc(&acc_sc);
+  // Serial << "Creating SensorHandler object\n";
+  // static SensorHandler sh(&acc, &mag);
+  // Serial << "Init Mag\n";
+  
   rm3100.begin();
 
   Serial << "Init accel\n";

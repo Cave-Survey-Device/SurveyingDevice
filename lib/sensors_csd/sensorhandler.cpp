@@ -1,101 +1,17 @@
-#include "sensors_csd.h"
-
+#include "sensorhandler.h"
 #include <NumericalMethods_csd.h>
 #include <utility_csd.h>
 #include <queue>
 
 
-
-void InertialSensor::CalibrateLinear()
-{
-    RowVector<float,10> U;
-    Matrix3f M;
-    Vector3f n;
-    float d;
-
-    Serial << "Begin ellipsoid fitting...\n";
-    U = fit_ellipsoid(this->calibration_data);
-    M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
-    n << U[6], U[7], U[8];
-    d = U[9];
-
-    Serial << "Begin ellipsoid transformation calculations\n";
-    Vector<float, 12> transformation = calculate_ellipsoid_transformation(M, n, d);
-
-    this->calibration_matrix << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
-    this->calibration_offset << transformation[9], transformation[10], transformation[11];
-}
-
-Vector3f InertialSensor::GetReading()
-{
-    // Serial << "InertialSensor::GetReading()...\n";
-    Vector3f reading;
-    reading.setZero();
-    for (int i=0;i<SAMPLES_PER_READING;i++)
-    {
-        reading += this->sensor->GetRawData();
-    }
-    reading = reading/SAMPLES_PER_READING;
-    
-    return this->calibration_matrix * (reading - this->calibration_offset);
-}
-
-bool InertialSensor::CollectCalibrationSample()
-{
-    if (this->calib_num < N_CALIB)
-    {
-        // Serial << "Getting reading...\n";
-        Vector3f data = this->GetReading();
-        // Serial << "Assigning reading...\n";
-        this->calibration_data.col(this->calib_num) << data;
-        this->calib_num++;
-        Serial << "Calib num: " << this->calib_num << "\t" << data(0) << " " << data(1) << " " << data(2) << "\n";
-        return 0;
-    } 
-    return 1;
-}
-
-void InertialSensor::ResetCalibration()
-{
-    this->calib_num = 0;
-    this->calibration_data.setZero();
-    this->calibration_matrix = Matrix3f::Identity();
-    this->calibration_offset.setZero();
-}
-
-
-InertialSensor::InertialSensor(InertialSensorConnection* sc)
-{
-    this->sensor = sc;
-    this->ResetCalibration();
-}
-
-InertialSensor::InertialSensor(){}
-
-Matrix3f InertialSensor::GetT()
-{
-    return this->calibration_matrix;
-}
-
-Vector3f InertialSensor::Geth()
-{
-    return this->calibration_offset;
-}
-
-Matrix<float,3,N_CALIB> InertialSensor::GetCalibData()
-{
-    return this->calibration_data;
-}
-
-
-SensorHandler::SensorHandler(InertialSensor* acc, InertialSensor* mag, LaserSensor* las)
+SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag, LaserSensor* las)
 {
     this->magnetometer = mag;
     this->accelerometer = acc;
     this->laser = las;
 }
 
-SensorHandler::SensorHandler(InertialSensor* acc, InertialSensor* mag)
+SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag)
 {
     this->magnetometer = mag;
     this->accelerometer = acc;
@@ -103,12 +19,12 @@ SensorHandler::SensorHandler(InertialSensor* acc, InertialSensor* mag)
 
 SensorHandler::SensorHandler(){}
 
-Vector3f SensorHandler::GetReading()
+Vector3f SensorHandler::getReading()
 {
     Vector3f reading;
-    Vector3f mag_data = inertial_alignment_mat * this->magnetometer->GetReading();
-    Vector3f accel_data = this->accelerometer->GetReading();
-    float laser_data = this->laser->GetMeasurement();    
+    Vector3f mag_data = inertial_alignment_mat * this->magnetometer->getReading();
+    Vector3f accel_data = this->accelerometer->getReading();
+    float laser_data = this->laser->getMeasurement();    
 
     reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
     reading(0) += this->laser_heading_alignment;
@@ -118,9 +34,9 @@ Vector3f SensorHandler::GetReading()
 
 bool SensorHandler::CollectAlignmentData()
 {
-    this->laser_alignment_data.col(this->laser_alignment_progress) = this->GetReading();
+    this->laser_alignment_data.col(this->laser_alignment_progress) = this->getReading();
     this->laser_alignment_progress++;
-    if (this->laser_alignment_progress == N_ALIGNMENT)
+    if (this->laser_alignment_progress == N_LASER_CAL)
     {
         // TODO
         // Execute alignment maths
@@ -143,9 +59,9 @@ void SensorHandler::AlignLaser()
     // Vector direction to target
     Vector3f target_vector;
     // Matrix to hold each calculated misalignement vector
-    Matrix<float,3,N_ALIGNMENT> misalignement_mat;
+    Matrix<float,3,N_LASER_CAL> misalignement_mat;
     // Matrix to hold cartesian versions of calibration data
-    Matrix<float,3,N_ALIGNMENT> cartesian_calibration_data;
+    Matrix<float,3,N_LASER_CAL> cartesian_calibration_data;
     // Rotation matrix for reversing the effect of tilt
     Matrix3f rotation_matrix;
 
@@ -168,7 +84,7 @@ void SensorHandler::AlignLaser()
      * 5. Convert to cartesian coordinates of target point
      *************************************************************/
     // Calculate cartesian coordinates for disto tip in each calibration shot
-    for (calib_num=0; calib_num<N_ALIGNMENT; calib_num++)
+    for (calib_num=0; calib_num<N_LASER_CAL; calib_num++)
     {
         conversion_dummy << laser_alignment_data(0,calib_num), laser_alignment_data(1,calib_num), DISTO_LEN;
         cartesian_calibration_data.col(calib_num) << Cartesian(conversion_dummy);
@@ -176,7 +92,7 @@ void SensorHandler::AlignLaser()
 
     // Calculate target distance
     target_distance = pow(pow(DISTO_LEN,2) + pow(mean_calibration_data(3),2) ,0.5); // Pythagoras on disto len and splay len
-    // Get normal to best fit plane and multiply by distance
+    // get normal to best fit plane and multiply by distance
     target_vector = NormalVec(cartesian_calibration_data) * target_distance;
 
     // Not working :( IDK why
@@ -193,13 +109,13 @@ void SensorHandler::AlignLaser()
     debugf(DEBUG_SENSOR,"Target coordinates X: %f, Y: %f, Z: %f\n",x,y,z); 
 
     /*************************************************************************************
-     * 1. Get the cartesian location of the tip of the disto for each shot
+     * 1. get the cartesian location of the tip of the disto for each shot
      * 2. Find the rotation matrix corresponding to the roll
      * 3. Calculate the vector between the target and disto tip
      * 4. Rotate this vector by the matrix to revers the effects of tilt on the result
      *************************************************************************************/
     float roll;
-    for (calib_num=0; calib_num<N_ALIGNMENT; calib_num++)
+    for (calib_num=0; calib_num<N_LASER_CAL; calib_num++)
     {
         xi = cartesian_calibration_data(0,calib_num);
         yi = cartesian_calibration_data(1,calib_num);
@@ -234,27 +150,27 @@ void SensorHandler::AlignLaser()
     debugf(DEBUG_SENSOR,"Mean misalignment vector: X: %f, Y: %f, Z: %f\n",x,y,z);
 
 
-    // Get heading and inclination corrections by converting back to polar coordinates
+    // get heading and inclination corrections by converting back to polar coordinates
     this->laser_inclination_alignment = atan2(y,x);
     this->laser_heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
     debugf(DEBUG_SENSOR,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->laser_inclination_alignment,this->laser_heading_alignment);
 
 }
 
-void SensorHandler::ResetCalibration()
+void SensorHandler::resetCalibration()
 {
-    this->magnetometer->ResetCalibration();
-    this->accelerometer->ResetCalibration();
+    this->magnetometer->resetCalibration();
+    this->accelerometer->resetCalibration();
     this->inertial_alignment_mat = Matrix3f::Identity();
     this->inclination_angle = 0;
     this->laser_alignment_progress = 0;
 }
 
-bool SensorHandler::CollectCalibrationData()
+bool SensorHandler::CollectInertialAlignmentData()
 {
     /************************************************************
     * 1. Wait 100ms to allow button press perturbation to settle
-    * 2. Get an initial set of accelerometer readings
+    * 2. get an initial set of accelerometer readings
     * 3. Keep taking readings until stdeviation is small enough
     * 4. Take a set of readings per the SAMPLES_PER_ORIENTATION definition
     ************************************************************/
@@ -269,7 +185,7 @@ bool SensorHandler::CollectCalibrationData()
     // Collect a set of N_CALIB_STDEV samples
     for (int i=0;i<N_CALIB_STDEV;i++)
     {
-        samples.col(i) << accelerometer->GetReading();
+        samples.col(i) << accelerometer->getReading();
     }
 
     // Keep collecting samples until the device is deemed to be still enough
@@ -281,14 +197,14 @@ bool SensorHandler::CollectCalibrationData()
         {
             return -1;
         }
-        samples.col(i%N_CALIB_STDEV) << accelerometer->GetReading();
+        samples.col(i%N_CALIB_STDEV) << accelerometer->getReading();
     }
     
     // Collect SAMPLES_PER_ORIENTATION samples
     for(int i=0; i<SAMPLES_PER_ORIENTATION; i++)
     {
-        calibrated = this->magnetometer->CollectCalibrationSample();
-        calibrated = calibrated * this->accelerometer->CollectCalibrationSample();
+        calibrated = this->magnetometer->collectAlignmentSample();
+        calibrated = calibrated * this->accelerometer->collectAlignmentSample();
         if (calibrated)
         {
             return 1;
@@ -300,9 +216,9 @@ bool SensorHandler::CollectCalibrationData()
 void SensorHandler::CalibrateInertial()
 {
     Serial << "Calibrating accelerometer...\n";
-    this->accelerometer->CalibrateLinear();
+    this->accelerometer->calibrateLinear();
     Serial << "Calibrating magnetometer...\n";
-    this->magnetometer->CalibrateLinear();
+    this->magnetometer->calibrateLinear();
     
     // TODO
     // Test and work on non-linear fitting with RBFs. Then add function void CalibrateNonLinear()
@@ -311,7 +227,7 @@ void SensorHandler::CalibrateInertial()
 void SensorHandler::AlignInertial()
 {
     
-    Vector<float,10> X = Align((accelerometer->GetT() * (accelerometer->GetCalibData().colwise() - accelerometer->Geth())),(magnetometer->GetT() * (magnetometer->GetCalibData().colwise() - magnetometer->Geth())));
+    Vector<float,10> X = Align((accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth())),(magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth())));
     inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
     Serial << "Magnetic inclination angle: " << RAD_TO_DEG * X(9) << "\n";
 }
@@ -325,16 +241,16 @@ void SensorHandler::DisableLaser()
     this->laser->ToggleLaser(false);
 }
 
-InertialSensor* SensorHandler::GetAccelPtr()
+InertialSensor* SensorHandler::getAccelPtr()
 {
     return this->accelerometer;
 }
-InertialSensor* SensorHandler::GetMagPtr()
+InertialSensor* SensorHandler::getMagPtr()
 {
     return this->magnetometer;
 }
 
-LaserSensor* SensorHandler::GetLaserPtr()
+LaserSensor* SensorHandler::getLaserPtr()
 {
     return this->laser;
 }

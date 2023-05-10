@@ -52,14 +52,9 @@ Matrix3f z_rotation(float deg)
 
 //  ------------------------------------------ INERTIAL CALIBRATION FUNCTIONS  -------------------------------------------
 
-RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
+RowVector<float,10> fit_ellipsoid(const MatrixXf &samples)
 {
     // Design matrix
-    static Vector<float,N_CALIB> x;
-    static Vector<float,N_CALIB> y;
-    static Vector<float,N_CALIB> z;
-    static Matrix<float,N_CALIB,10> D_T;
-    static Matrix<float,10,N_CALIB> D;
     static Matrix<float,6,6> C;
     static Matrix<float,10,10> S;
     static Matrix<float,6,6> S11;
@@ -75,13 +70,14 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
 
     Serial << "assigning data\n";
 
-    x = samples.row(0);
-    y = samples.row(1);
-    z = samples.row(2);
+    const VectorXf &x = samples.row(0);
+    const VectorXf &y = samples.row(0);
+    const VectorXf &z = samples.row(0);
+
+    MatrixXf D_T(10,samples.cols());
 
     // Create design matrix
     D_T.setZero();
-    D.setZero();
     C.setZero();
 
     Serial << "Getting transpose1\n";
@@ -100,9 +96,7 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
     D_T.col(8) << 2*z.array();
 
     Serial << "Getting transpose4\n";
-    D_T.col(9) << VectorXf::Ones(N_CALIB);
-
-    D = D_T.transpose();
+    D_T.col(9) << VectorXf::Ones(samples.cols());
 
     int k = 4;
 
@@ -114,9 +108,9 @@ RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples)
             0, 0, 0, 0, -k, 0,
             0, 0, 0, 0, 0, -k;
 
-    // Create S matrix from D.T*D - Eqn(11)
+    // Create S matrix from D*D.T - Eqn(11)
     Serial << "Setting S\n";
-    S = D * D_T;
+    S = D_T.transpose() * D_T;
     S11 = S.block<6,6>(0,0);
     S12 = S.block<6,4>(0,6);
     S21 = S.block<4,6>(6,0);
@@ -224,7 +218,7 @@ Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, fl
     return V;
 }
 
-Vector3f NormalVec(MatrixXf point_cloud){
+Vector3f NormalVec(const MatrixXf &point_cloud){
   Vector3f normal;
   MatrixXf left_singular_mat;
   // int U_cols;
@@ -250,7 +244,7 @@ float StdDev(MatrixXf m)
 
 // ------------------------------------------------ ALIGNMENT FUNCTIONS  ------------------------------------------------
 
-float J(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+float J(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
 {
     float J = 0;
     int n = m.cols();
@@ -273,7 +267,7 @@ float J(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, cons
     return J;
 }
 
-Vector<float, 9> dJ_dR (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+Vector<float, 9> dJ_dR (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
 {
     int n = m.cols();
     Vector<float, 9> dJ_dR;
@@ -302,7 +296,7 @@ Vector<float, 9> dJ_dR (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N
     return dJ_dR;
 }
 
-float dJ_dd (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+float dJ_dd (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
 {
     int n = m.cols();
     float dJ_dd = 0;
@@ -325,7 +319,7 @@ float dJ_dd (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m,
 
 }
 
-Vector<float,10> GradJ(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X)
+Vector<float,10> GradJ(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
 {
     Vector<float,10> grad_J;
     grad_J.segment(0,9) << dJ_dR(f,m,X).reshaped(9,1);
@@ -334,7 +328,7 @@ Vector<float,10> GradJ(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_
     return grad_J;
 }
 
-Vector<float,10> Align(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m)
+Vector<float,10> Align(const MatrixXf &f, const MatrixXf &m)
 {
     Vector<float,10> X;
     Vector<float,10> dx;

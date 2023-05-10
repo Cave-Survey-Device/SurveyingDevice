@@ -1,7 +1,6 @@
 #ifndef HEADER_NUMERICAL_METHODS
 #define HEADER_NUMERICAL_METHODS
 
-#include "sensors_csd.h"
 #include "utility_csd.h"
 
 #include <ArduinoEigenDense.h>
@@ -49,7 +48,7 @@ Matrix3f z_rotation(float deg);
  * @param samples Samples to
  * @return RowVector<float,10> Ellipsoid parameters
  */
-RowVector<float,10> fit_ellipsoid(const Matrix<float,3,N_CALIB> &samples);
+RowVector<float,10> fit_ellipsoid(const MatrixXf &samples);
 
 /**
  * @brief Calculates the transformation from a ellpipsoid to a sphere given the ellipsoid fitting parameters.
@@ -67,7 +66,7 @@ Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, fl
  * @param point_cloud
  * @return Vector3f 
  */
-Vector3f NormalVec(MatrixXf point_cloud);
+Vector3f NormalVec(const MatrixXf &point_cloud);
 
 
 /**
@@ -86,7 +85,7 @@ float StdDev(MatrixXf m);
  * @param X - Vector of unknowns
  * @return float - Cost
  */
-float J(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+float J(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
 
 /**
  * @brief https://ieeexplore.ieee.org/document/8723161 Equation (16)
@@ -96,7 +95,7 @@ float J(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, cons
  * @param X - Vector of unknowns
  * @return Vector<float, 9> dJ/dR
  */
-Vector<float, 9> dJ_dR (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+Vector<float, 9> dJ_dR (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
 
 /**
  * @brief https://ieeexplore.ieee.org/document/8723161 Equation (16)
@@ -106,7 +105,7 @@ Vector<float, 9> dJ_dR (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N
  * @param X - Vector of unknowns
  * @return float  dJ/dd
  */
-float dJ_dd (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+float dJ_dd (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
 
 /**
  * @brief Calculate the gradient of the cost function
@@ -116,7 +115,7 @@ float dJ_dd (const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m,
  * @param X - Vector of unknowns
  * @return Vector<float,10> dJ/dX
  */
-Vector<float,10> GradJ(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m, const Vector<float, 10> &X);
+Vector<float,10> GradJ(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
 
 /**
  * @brief Perform alignment calculations
@@ -125,6 +124,6 @@ Vector<float,10> GradJ(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_
  * @param m - Magnetometer samples
  * @return Vector<float,10> R, d
  */
-Vector<float,10> Align(const Matrix<float,3,N_CALIB> &f, const Matrix<float,3,N_CALIB> &m);
+Vector<float,10> Align(const MatrixXf &f, const MatrixXf &m);
 
 #endif

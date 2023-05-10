@@ -227,7 +227,7 @@ void SensorHandler::CalibrateInertial()
 void SensorHandler::AlignInertial()
 {
     
-    Vector<float,10> X = Align((accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth())),(magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth())));
+    Vector<float,10> X = AlignMagAcc((accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth())),(magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth())));
     inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
     Serial << "Magnetic inclination angle: " << RAD_TO_DEG * X(9) << "\n";
 }

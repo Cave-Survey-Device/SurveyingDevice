@@ -78,52 +78,11 @@ Vector3f NormalVec(const MatrixXf &point_cloud);
 float StdDev(MatrixXf m);
 
 /**
- * @brief Cost function: https://ieeexplore.ieee.org/document/8723161 Equation (15)
+ * @brief Calculate inertial alignment of sensors
  * 
- * @param f - Accelerometer samples
- * @param m - Magnetometer samples
- * @param X - Vector of unknowns
- * @return float - Cost
+ * @param g Accelerometer data
+ * @param m Magnetometer data
+ * @return Vector<float,10> 
  */
-float J(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
-
-/**
- * @brief https://ieeexplore.ieee.org/document/8723161 Equation (16)
- * 
- * @param f - Accelerometer samples
- * @param m - Magnetometer samples
- * @param X - Vector of unknowns
- * @return Vector<float, 9> dJ/dR
- */
-Vector<float, 9> dJ_dR (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
-
-/**
- * @brief https://ieeexplore.ieee.org/document/8723161 Equation (16)
- * 
- * @param f - Accelerometer samples
- * @param m - Magnetometer samples
- * @param X - Vector of unknowns
- * @return float  dJ/dd
- */
-float dJ_dd (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
-
-/**
- * @brief Calculate the gradient of the cost function
- * 
- * @param f - Accelerometer samples
- * @param m - Magnetometer samples
- * @param X - Vector of unknowns
- * @return Vector<float,10> dJ/dX
- */
-Vector<float,10> GradJ(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X);
-
-/**
- * @brief Perform alignment calculations
- * 
- * @param f - Accelerometer samples
- * @param m - Magnetometer samples
- * @return Vector<float,10> R, d
- */
-Vector<float,10> Align(const MatrixXf &f, const MatrixXf &m);
-
+Vector<float,10> AlignMagAcc(const MatrixXf &g, const MatrixXf &m);
 #endif

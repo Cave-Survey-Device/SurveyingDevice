@@ -1,5 +1,5 @@
 #include "NumericalMethods_csd.h"
-
+#include "sensor_config_csd.h"
 // ------------------------------------------------- GENERAL FUNCTIONS -------------------------------------------------
 MatrixXf kron(MatrixXf m1, MatrixXf m2)
 {
@@ -78,7 +78,6 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
     const VectorXf &x = samples.row(0).segment(0,n_samples);
     const VectorXf &y = samples.row(1).segment(0,n_samples);
     const VectorXf &z = samples.row(2).segment(0,n_samples);
-
 
     // VectorXf x = samples.row(0);
     // VectorXf y = samples.row(1);
@@ -257,125 +256,48 @@ float StdDev(MatrixXf m)
 }
 
 // ------------------------------------------------ ALIGNMENT FUNCTIONS  ------------------------------------------------
-
-float J(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
-{
-    float J = 0;
-    int n = m.cols();
-    Vector<float, 9> dJ_dR;
-    Matrix3f R;
-    R << X.segment(0,9).reshaped(3,3);
-    float d = X(9);
+Vector<float,10> AlignMagAcc(const MatrixXf &g, const MatrixXf &m) {
+    int K = N_INERTIAL_ALIGNMENT;
+    static Vector<float,10> out;
+    static RowVector<float,9> vecR;
+    static Matrix<float,N_INERTIAL_ALIGNMENT,9> A(K,9);
 
     Vector3f mk;
-    Vector3f fk;
+    Vector3f gk;
 
-    for(int k=0;k<n;k++)
+    // Step 1
+    for (int i=0; i<K; i++)
     {
-        mk = m.col(k);
-        fk = f.col(k);
-        J += pow( (sin(d)-fk.transpose()*R*mk) / (fk.norm() * mk.norm()),2);
-    }
-    J += pow((R*R.transpose()-Matrix3f::Identity()).norm(),2);
-    J += pow((R.determinant() - 1),2);
-    return J;
-}
-
-Vector<float, 9> dJ_dR (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
-{
-    int n = m.cols();
-    Vector<float, 9> dJ_dR;
-    Matrix3f R;
-    R << X.segment(0,9).reshaped(3,3);
-    float d = X(9);
-
-    dJ_dR.setZero();
-    Vector3f mk;
-    Vector3f fk;
-    float norms;
-    float tmp;
-
-    for(int k=0;k<n;k++)
-    {
-        mk = m.col(k);
-        fk = f.col(k);
-        tmp = fk.transpose()*R*mk;
-        norms = (fk.norm() * mk.norm());
-        dJ_dR += -2*(   (sin(d) - tmp / norms) * (kron(mk,fk) / norms) );
+        mk = m.col(i);
+        gk = g.col(i);
+        A.row(i) << kron(mk,gk).transpose();
     }
 
-    dJ_dR += 4* (R*R.transpose()*R - R).reshaped(9,1);
-    dJ_dR += 2* (R.determinant()-1)*R.adjoint().transpose().reshaped(9,1);
+    // Step 2 - solve lstsq
+    Matrix3f H = ((A.transpose()*A).inverse() * A.transpose() * MatrixXf::Ones(K,1)).reshaped(3,3);
 
-    return dJ_dR;
-}
+    // Step 3
+    JacobiSVD<Matrix3f> svd(H, ComputeThinU | ComputeThinV);
+    Matrix3f U = svd.matrixU();
+    Matrix3f V = svd.matrixV();
+    Matrix3f Sig = svd.singularValues().asDiagonal();
 
-float dJ_dd (const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
-{
-    int n = m.cols();
-    float dJ_dd = 0;
-    Matrix3f R;
-    R << X.segment(0,9).reshaped(3,3);
-    float d = X(9);
-    Vector3f mk;
-    Vector3f fk;
-    float tmp;
-    for(int k=0;k<n;k++)
+    // Step 4
+    Matrix3f Uhat = sign(H.determinant()) * U;
+    Matrix3f Rhat = Uhat * V.transpose();
+
+    // Step 5
+    float shat = 0;
+    for (int i=0; i<K; i++)
     {
-        mk = m.col(k);
-        fk = f.col(k);
-        tmp = (fk.transpose() * R * mk);
-        tmp = tmp / (fk.norm() * mk.norm());
-        dJ_dd += (sin(d) - tmp);
+        gk = g.col(i);
+        mk = m.col(i);
+        shat += gk.transpose() * Rhat * mk;
     }
-    dJ_dd = dJ_dd *  2 * cos(d);
-    return dJ_dd;
+    shat = shat * 1/K;
 
-}
+    out.segment(0,9) << Rhat.reshaped(9,1);
+    out(9) = shat;
 
-Vector<float,10> GradJ(const MatrixXf &f, const MatrixXf &m, const Vector<float, 10> &X)
-{
-    Vector<float,10> grad_J;
-    grad_J.segment(0,9) << dJ_dR(f,m,X).reshaped(9,1);
-    grad_J(9) = dJ_dd(f,m,X);
-
-    return grad_J;
-}
-
-Vector<float,10> Align(const MatrixXf &f, const MatrixXf &m)
-{
-    Vector<float,10> X;
-    Vector<float,10> dx;
-    float alpha = 0.9; // Loss scaling parameter (how much smaller does next step have to be compared to current step?)
-    float beta = 0.75; // Line search scaling parameter
-    float t  = 10; // Step size scale
-    float cost = J(f,m,X);
-
-    X.segment(0,9) << Matrix3f::Identity().reshaped(9,1);
-    X(9) = Deg2Rad(54);
-
-    while (cost > 0.1)
-    {
-        // Calculate dJ
-        dx = -GradJ(f,m,X);
-
-        // Find scale over which to operate gradient descent at a given step
-        t = 1;
-        while (    J(f,m, X + t*dx) > J(f,m,X) + alpha*t*-dx.transpose()*dx   )
-        {
-            t = t * beta;
-        }
-
-        // Move to next step
-        X = X + dx * t;
-        cost = J(f, m, X);
-        // std::cout << "Cost: " << cost << "\n";
-
-        // If timestep too small
-        if(t < 0.00000001)
-        {
-            break;
-        }
-    }
-    return X;
+    return out;
 }

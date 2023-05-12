@@ -27,13 +27,21 @@ protected:
     Eigen::Map<Matrix<float,3,-1>> ref_calibration_data;
     // Ref<MatrixXf> ref_calibration_data;
     //MatrixXf ref_calibration_data;
+    bool separate_calib;
 
 public:
 
+    bool getCalibMode();
+    void setCalibMode(bool mode);
+
     InertialSensor(InertialSensorConnection* sc, float* ptr, int size);
 
-    
-
+    /**
+     * @brief Linear calibrataes an inertial sensor via ellipsoid fitting.
+     * 1. Sorts all zero-valued columns of the calibration data to the end of the matrix
+     * 2. Performs ellipsoid fit with first n elements of sorted matrix where n is the numer of non-zero values
+     * 
+     */
     void calibrateLinear();  
 
     Vector3f getSingleSample();

@@ -161,7 +161,7 @@
 //     Serial << "Calculated hm:\n";
 //     displayVec(sh.GetMagPtr()->Geth());
 //     // Serial.print(buffer.out);
-//     // sh.collectAlignmentData();
+//     // sh.collectLaserAlignmentData();
 //     // sh.alignLaser();
 
 //     Serial << "Mag calib data: \n";

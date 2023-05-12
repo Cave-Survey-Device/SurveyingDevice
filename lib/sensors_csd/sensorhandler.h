@@ -95,12 +95,12 @@ public:
     void alignLaser();   
 
     /**
-     * @brief Collects one shot of alignment data.
+     * @brief Collects one shot of laser alignment data.
      * 
      * @return true if all alignment shots HAVE been collected
      * @return false if all alignment shots HAVE NOT been collected
      */
-    bool collectAlignmentData();   
+    bool collectLaserAlignmentData();   
 
     /**
      * @brief Collects one orientation of calibration data.
@@ -108,7 +108,7 @@ public:
      * @return true if 12 orientations have been sampled.
      * @return false if less than 12 orientations have been sampled.
      */
-    bool collectInertialAlignmentData(); 
+    int collectInertialAlignmentData(); 
     
     /**
      * @brief Resets the clalibration data and progress. MUST be run before calibration.

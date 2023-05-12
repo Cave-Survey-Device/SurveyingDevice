@@ -32,7 +32,7 @@ Vector3f SensorHandler::getReading()
     return reading;
 }
 
-bool SensorHandler::collectAlignmentData()
+bool SensorHandler::collectLaserAlignmentData()
 {
     this->laser_alignment_data.col(this->laser_alignment_progress) = this->getReading();
     this->laser_alignment_progress++;
@@ -166,7 +166,7 @@ void SensorHandler::resetCalibration()
     this->laser_alignment_progress = 0;
 }
 
-int SensorHandler::CollectInertialAlignmentData()
+int SensorHandler::collectInertialAlignmentData()
 {
     /************************************************************
     * 1. Wait 100ms to allow button press perturbation to settle
@@ -226,7 +226,16 @@ void SensorHandler::calibrateInertial()
 
 void SensorHandler::alignInertial()
 {
-    
+    // Calibrate if not already calibrated. Uses alignment data
+    if (magnetometer->getCalibMode() == false)
+    {
+        magnetometer->calibrateLinear();
+    }
+    if (accelerometer->getCalibMode() == false)
+    {
+        accelerometer->calibrateLinear();
+    }
+    // Calculate alignment
     Vector<float,10> X = AlignMagAcc((accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth())),(magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth())));
     inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
     Serial << "Magnetic inclination angle: " << RAD_TO_DEG * X(9) << "\n";

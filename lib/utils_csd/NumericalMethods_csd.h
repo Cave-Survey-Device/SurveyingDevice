@@ -17,6 +17,7 @@ using namespace Eigen;
  */
 MatrixXf kron(MatrixXf m1, MatrixXf m2);
 
+int sign(float f);
 
 /**
  * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the x axis

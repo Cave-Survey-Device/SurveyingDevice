@@ -18,6 +18,15 @@ MatrixXf kron(MatrixXf m1, MatrixXf m2)
     return out;
 }
 
+int sign(float f)
+{
+    if (f>=0)
+    {
+        return 1;
+    } else {
+        return -1;
+    }
+}
 //  ------------------------------------------------ ROTATION FUNCTIONS  ------------------------------------------------
 
 Matrix3f x_rotation(float deg)

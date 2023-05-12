@@ -21,7 +21,7 @@ public:
     virtual float getMeasurement()=0;
 
     // Toggle laser
-    virtual void ToggleLaser(bool mode)=0;
+    virtual void toggleLaser(bool mode)=0;
 };
 
 /**
@@ -82,17 +82,17 @@ public:
     /**
      * @brief Calibrate the inertial sensors - accelerometer and magnetometer. This runs a one-off calibration using the stored calibration data in each InertialSensor bject respectively.
      */
-    void CalibrateInertial();
+    void calibrateInertial();
 
     /**
      * @brief Runs a one-off alignment of the inertial sensors using the stored calibration data in each InertialSensor respectively.
      */
-    void AlignInertial();
+    void alignInertial();
 
     /**
      * @brief Runs a one-off alignment of the laser and inertial sensors using the stored calibration data in each alignment_data respectively.
      */
-    void AlignLaser();   
+    void alignLaser();   
 
     /**
      * @brief Collects one shot of alignment data.
@@ -100,7 +100,7 @@ public:
      * @return true if all alignment shots HAVE been collected
      * @return false if all alignment shots HAVE NOT been collected
      */
-    bool CollectAlignmentData();   
+    bool collectAlignmentData();   
 
     /**
      * @brief Collects one orientation of calibration data.
@@ -108,7 +108,7 @@ public:
      * @return true if 12 orientations have been sampled.
      * @return false if less than 12 orientations have been sampled.
      */
-    bool CollectInertialAlignmentData(); 
+    bool collectInertialAlignmentData(); 
     
     /**
      * @brief Resets the clalibration data and progress. MUST be run before calibration.
@@ -118,27 +118,27 @@ public:
     /**
      * @brief Loads calibration data from file
      */
-    void LoadCalibration();
+    void loadCalibration();
 
     /**
      * @brief Resets alignment data and progress. MUST be run before alignment.
      */
-    void ResetAlignment();
+    void resetAlignment();
 
     /**
      * @brief Loads alignment data from file
      */
-    void LoadAlignment();
+    void loadAlignment();
 
     /**
      * @brief Enables the laser dot on the laser sensor
      */
-    void EnableLaser();
+    void enableLaser();
 
     /**
      * @brief Disables the laser dot on the laser sensor
      */
-    void DisableLaser();
+    void disableLaser();
 
     /**
      * @brief Updates the sensors and gets a reading from all sensors

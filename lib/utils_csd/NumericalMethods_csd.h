@@ -1,5 +1,7 @@
 #ifndef HEADER_NUMERICAL_METHODS
 #define HEADER_NUMERICAL_METHODS
+// Uncomment if using this library outside of an embedded system with defined data sizes
+//#define NUMERICAL_MDETHODS_STANDALONE
 
 #include "utility_csd.h"
 

@@ -58,7 +58,7 @@ void test_main(void * parameter) {
   while(true){
     if (cmd == 1) {
       Serial << "Get calibration data...\n";
-      calibrated = sh.CollectInertialAlignmentData();
+      calibrated = sh.collectInertialAlignmentData();
       if (calibrated == -1)
       {
         Serial << "Calibration sample failed! Please keep the device steady.\n";
@@ -98,11 +98,11 @@ void test_main(void * parameter) {
 
     } else if (cmd == 3) {
       Serial << "Calibrating inertial sensors...\n";
-      sh.CalibrateInertial();
+      sh.calibrateInertial();
     
     } else if (cmd == 4) {
       Serial << "Aligning inertial sensors...\n";
-      sh.AlignInertial();
+      sh.alignInertial();
     }
     cmd = 0;
 

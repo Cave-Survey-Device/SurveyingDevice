@@ -32,7 +32,7 @@ Vector3f SensorHandler::getReading()
     return reading;
 }
 
-bool SensorHandler::CollectAlignmentData()
+bool SensorHandler::collectAlignmentData()
 {
     this->laser_alignment_data.col(this->laser_alignment_progress) = this->getReading();
     this->laser_alignment_progress++;
@@ -41,13 +41,13 @@ bool SensorHandler::CollectAlignmentData()
         // TODO
         // Execute alignment maths
         // Make some kind of warning if alignment appears to be low quality. Could be checked by checking angle between each of the spays for angle to te normal. Other method would be to do a test splay between the same two points and checking whether each shot is the inverse of the other
-        this->AlignLaser();
+        this->alignLaser();
         return 1;
     }
     return 0;
 }
 
-void SensorHandler::AlignLaser()
+void SensorHandler::alignLaser()
 {
     int calib_num;
     // Heading, Inclination, roll, distance
@@ -213,7 +213,7 @@ int SensorHandler::CollectInertialAlignmentData()
     return 0;
 }
 
-void SensorHandler::CalibrateInertial()
+void SensorHandler::calibrateInertial()
 {
     Serial << "Calibrating accelerometer...\n";
     this->accelerometer->calibrateLinear();
@@ -224,7 +224,7 @@ void SensorHandler::CalibrateInertial()
     // Test and work on non-linear fitting with RBFs. Then add function void CalibrateNonLinear()
 }
 
-void SensorHandler::AlignInertial()
+void SensorHandler::alignInertial()
 {
     
     Vector<float,10> X = AlignMagAcc((accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth())),(magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth())));
@@ -232,13 +232,13 @@ void SensorHandler::AlignInertial()
     Serial << "Magnetic inclination angle: " << RAD_TO_DEG * X(9) << "\n";
 }
 
-void SensorHandler::EnableLaser()
+void SensorHandler::enableLaser()
 {
-    this->laser->ToggleLaser(true);
+    this->laser->toggleLaser(true);
 }
-void SensorHandler::DisableLaser()
+void SensorHandler::disableLaser()
 {
-    this->laser->ToggleLaser(false);
+    this->laser->toggleLaser(false);
 }
 
 InertialSensor* SensorHandler::getAccelPtr()

@@ -266,10 +266,16 @@ float StdDev(MatrixXf m)
 
 // ------------------------------------------------ ALIGNMENT FUNCTIONS  ------------------------------------------------
 Vector<float,10> AlignMagAcc(const MatrixXf &g, const MatrixXf &m) {
+    #ifdef NUMERICAL_METHODS_STANDALONE
+    int K = g.cols();
+    static MatrixXf A(K,9);
+    #else
     int K = N_INERTIAL_ALIGNMENT;
+    static Matrix<float,N_INERTIAL_ALIGNMENT,9> A(K,9);
+    #endif
     static Vector<float,10> out;
     static RowVector<float,9> vecR;
-    static Matrix<float,N_INERTIAL_ALIGNMENT,9> A(K,9);
+    
 
     Vector3f mk;
     Vector3f gk;

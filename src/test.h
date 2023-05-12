@@ -72,7 +72,7 @@
 // public:
 //     TestSensorHandler(InertialSensor* accel, InertialSensor* mag): SensorHandler(accel,mag){}
 
-//     bool CollectInertialAlignmentData()
+//     bool collectInertialAlignmentData()
 //     {
 //         for(int i=0; i<ORIENTATIONS; i++)
 //         {
@@ -126,10 +126,10 @@
 //     sh.ResetCalibration();
 
 //     Serial.print("Collecting calibration data4\n");
-//     sh.CollectInertialAlignmentData();
+//     sh.collectInertialAlignmentData();
 
 //     Serial.print("Calibrating data\n");
-//     sh.CalibrateInertial();
+//     sh.calibrateInertial();
 //     // Serial.print("Aligning data\n");
 //     // sh.AlignInertial();
 
@@ -161,8 +161,8 @@
 //     Serial << "Calculated hm:\n";
 //     displayVec(sh.GetMagPtr()->Geth());
 //     // Serial.print(buffer.out);
-//     // sh.CollectAlignmentData();
-//     // sh.AlignLaser();
+//     // sh.collectAlignmentData();
+//     // sh.alignLaser();
 
 //     Serial << "Mag calib data: \n";
 //     displayMat(mag.GetCalibData().transpose());

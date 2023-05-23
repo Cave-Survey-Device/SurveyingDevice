@@ -281,25 +281,35 @@ Vector<float,10> AlignMagAcc(const MatrixXf &g, const MatrixXf &m) {
     Vector3f gk;
 
     // Step 1
+    Serial << "ALIGN: Step 1...\n";
     for (int i=0; i<K; i++)
     {
         mk = m.col(i);
         gk = g.col(i);
         A.row(i) << kron(mk,gk).transpose();
     }
+    displayMat(A);
 
     // Step 2 - solve lstsq
+    Serial << "ALIGN: Step 2...\n";
     Matrix3f H = ((A.transpose()*A).inverse() * A.transpose() * MatrixXf::Ones(K,1)).reshaped(3,3);
-
+    displayMat(H)
+;
     // Step 3
-    JacobiSVD<Matrix3f> svd(H, ComputeThinU | ComputeThinV);
+    Serial << "ALIGN: Step 3.1...\n";
+    JacobiSVD<MatrixXf> svd(H, ComputeThinU | ComputeThinV);
+    Serial << "ALIGN: Step 3.2...\n";
     Matrix3f U = svd.matrixU();
     Matrix3f V = svd.matrixV();
     Matrix3f Sig = svd.singularValues().asDiagonal();
+    displayMat(Sig);
 
     // Step 4
+    Serial << "ALIGN: Step 4...\n";
     Matrix3f Uhat = sign(H.determinant()) * U;
     Matrix3f Rhat = Uhat * V.transpose();
+    displayMat(Uhat);
+    displayMat(Rhat);
 
     // Step 5
     float shat = 0;

@@ -28,6 +28,7 @@ protected:
     // Ref<MatrixXf> ref_calibration_data;
     //MatrixXf ref_calibration_data;
     bool separate_calib;
+    char device_ID[6]; // Device's ID for saving calibration data
 
 public:
 
@@ -55,7 +56,11 @@ public:
     Matrix3f getT();
     Vector3f geth();
 
-    virtual MatrixXf getCalibData()=0;
+    virtual Ref<MatrixXf> getCalibData()=0;
+
+    void load_calibration_data();
+    void save_calibration_data();
+    void setID(const char* ID);
 };
 
 #endif

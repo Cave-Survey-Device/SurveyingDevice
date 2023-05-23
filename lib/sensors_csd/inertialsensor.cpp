@@ -1,3 +1,4 @@
+#include <filesystem_csd.h>
 #include "inertialsensor.h"
 #include "NumericalMethods_csd.h"
 
@@ -17,55 +18,7 @@ bool InertialSensor::collectAlignmentSample()
     return 1;
 }
 
-// Shifts all zero-valued columns to the end of the matrix and return the number of zero-valued columns
-int removeNullData(float* data_ptr, int size)
-{
-    // Creates a map to the incoming data to prevent a copy being needed. A map just holds the information about how and where the data is stored. It can be interfaced with just like any other Eigen object.
-    Eigen::Map<Matrix<float,3,-1>> mat(data_ptr,3,size);
 
-    // Initialise blank cols mat to -1
-    VectorXi blank_cols(mat.cols());
-    blank_cols.setOnes();
-    blank_cols *= -1;
-    int index = 0;
-    int max_index = 0;
-
-    int i;
-    // Index zero values in reverse order
-    for (int i=mat.cols()-1; i>-1; i--)
-    {
-        if (mat.col(i).norm() == 0)
-        {
-            blank_cols(index) = i;
-            index++;
-        }
-    }
-    max_index = index;
-
-    // Iterate in reverse through matrix, replacing zero valued sections with non-zero valued elements nearest the end of the matrix, replacing those with zero
-    for (int i=mat.cols()-1; i>-1; i--)
-    {
-        // Check if value is non-zero
-        if (mat.col(i).norm() > 0)
-        {
-            // Replace zero value closest to start or matrix with non-zero value
-            mat.col(blank_cols(index)) = mat.col(i);
-            // Replace non-zero value with zero
-            mat.col(i) << 0, 0, 0;
-            // Decrease index
-            index--;
-
-            // If all zero-valued sections have been replaced, break
-            if (index < 0)
-            {
-                break;
-            }
-        }
-    }
-
-    return max_index;
-
-}
 void InertialSensor::calibrateLinear()
 {    
     RowVector<float,10> U;
@@ -77,7 +30,12 @@ void InertialSensor::calibrateLinear()
 
     // Re-arrange data and remove values equal to 0,0,0;
     // Passing non-const references appears to be a bit broken in Eigen so a workaround is to use maps
-    int n_zeros = removeNullData(&getCalibData()(0,0),getCalibData().cols());
+    float* data_ptr = &getCalibData()(0,0);
+    int data_size = getCalibData().cols();
+    int n_zeros = removeNullData(data_ptr,data_size);
+
+    Serial.print("Sorted data:\n");
+    displayMat(getCalibData().block(0,0,3,getCalibData().cols()-n_zeros));
 
     // Calculate ellipsoid parameters
     U = fit_ellipsoid(getCalibData(), getCalibData().cols()-n_zeros);
@@ -153,4 +111,19 @@ bool InertialSensor::getCalibMode()
 void InertialSensor::setCalibMode(bool mode)
 {
     separate_calib = mode;
+}
+
+void InertialSensor::load_calibration_data()
+{
+    read_from_file("calib",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+}
+
+void InertialSensor::save_calibration_data()
+{
+    write_to_file("calib",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+}
+
+void InertialSensor::setID(const char* ID)
+{
+    strncpy(device_ID,ID,sizeof(device_ID)-1);
 }

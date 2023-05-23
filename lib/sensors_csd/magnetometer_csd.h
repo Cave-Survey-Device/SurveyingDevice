@@ -19,7 +19,7 @@ public:
   int getMagnetometerIndex(const Vector3f &sample);
   void addCalibrationData();
 
-  MatrixXf getCalibData();
+  Ref<MatrixXf> getCalibData();
 
 };
 

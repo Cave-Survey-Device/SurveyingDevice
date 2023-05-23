@@ -10,6 +10,7 @@ Magnetometer::Magnetometer(InertialSensorConnection* sc) : InertialSensor(sc, &c
     //ref_calibration_data = Map<Matrix<float,3,n_calib>>(&calibration_data(0,0),3,n_calib);
     //ref_calibration_data = calibrated_data;
     static_assert(n_calib >= N_INERTIAL_ALIGNMENT,  "ASSERT n_calib >= N_INERTIAL_ALIGNMENT");
+    setID("mag");
 }
 
 void Magnetometer::addCalibrationData(){
@@ -59,7 +60,8 @@ int Magnetometer::checkCalibrationProgress(){
   return int(progress*100.0/643.0);
 }
 
-MatrixXf Magnetometer::getCalibData()
+Ref<MatrixXf> Magnetometer::getCalibData()
 {
     return calibration_data;
 }
+

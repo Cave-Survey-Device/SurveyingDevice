@@ -44,6 +44,8 @@ protected:
     Magnetometer* magnetometer; // Connection to magnetometer sensor
     LaserSensor* laser; // Connection to LIDAR sensor
 
+    bool using_laser;
+
 public:
 
 

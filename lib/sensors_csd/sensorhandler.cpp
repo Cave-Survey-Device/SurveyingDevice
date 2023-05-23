@@ -9,24 +9,40 @@ SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag, LaserSensor*
     this->magnetometer = mag;
     this->accelerometer = acc;
     this->laser = las;
+    this->using_laser = true;
+    this->resetCalibration();
 }
 
 SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag)
 {
     this->magnetometer = mag;
     this->accelerometer = acc;
+    this->using_laser = false;
+    this->resetCalibration();
 }
 
-SensorHandler::SensorHandler(){}
+SensorHandler::SensorHandler(){
+    this->resetCalibration();
+}
 
 Vector3f SensorHandler::getReading()
 {
     Vector3f reading;
     Vector3f mag_data = inertial_alignment_mat * this->magnetometer->getReading();
     Vector3f accel_data = this->accelerometer->getReading();
-    float laser_data = this->laser->getMeasurement();    
+    if (using_laser)
+    {
+        float laser_data = this->laser->getMeasurement();   
+        reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
+    }
+     
+    Serial << "Mag data: ";
+    displayRowVec(mag_data);
+    Serial << "Heading: " << Orientation(accel_data, mag_data)(0) << "\t\t" << 
+    "Inclination: " << Orientation(accel_data, mag_data)(1) << "\t\t" << 
+    "Roll: " << Orientation(accel_data, mag_data)(2) << "\n\n";
 
-    reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
+    reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), 0.;
     reading(0) += this->laser_heading_alignment;
     reading(1) += this->laser_inclination_alignment;
     return reading;
@@ -235,10 +251,53 @@ void SensorHandler::alignInertial()
     {
         accelerometer->calibrateLinear();
     }
+
+    Serial << "-----------------------------------------------------------\n\n";
+    Serial << "Accelerometer sample data\n";
+    displayMat(     (  accelerometer->getCalibData()  ).transpose()    );
+    Serial << "Magnetometer sample data\n";
+    displayMat(     (  magnetometer->getCalibData()  ).transpose()    );
+    Serial << "-----------------------------------------------------------\n\n";
+
+
+    // Remove zero valued data
+    Serial << "Removing zero data...\n";
+    float* mag_data_ptr = &magnetometer->getCalibData()(0,0);
+    float* acc_data_ptr = &accelerometer->getCalibData()(0,0);
+    // float* mag_data_ptr = magnetometer->getCalibData().data();
+    // float* acc_data_ptr = accelerometer->getCalibData().data();
+
+    Serial.printf("mag_ptr: %p, acc_ptr %p \n", magnetometer, accelerometer);
+    Serial.printf("mag_mat_ptr: %p, acc_mat_ptr %p \n", &magnetometer->ref_calibration_data, &accelerometer->ref_calibration_data);
+    Serial.printf("mag_data_ptr: %p, acc_data_ptr %p \n", mag_data_ptr, acc_data_ptr);
+
+    int acc_size = accelerometer->getCalibData().cols()-removeNullData(acc_data_ptr,accelerometer->getCalibData().cols());
+    int mag_size = magnetometer->getCalibData().cols()-removeNullData(mag_data_ptr,magnetometer->getCalibData().cols());
+    
+    Eigen::Map<Matrix<float,3,-1>> acc_data(acc_data_ptr,3,acc_size);
+    Eigen::Map<Matrix<float,3,-1>> mag_data(mag_data_ptr,3,mag_size);
+
+    // Calculate corrections
+    Serial << "Calculating corrections...\n";
+    acc_data = accelerometer->getT() * (acc_data.colwise() - accelerometer->geth());
+    mag_data = magnetometer->getT() * (mag_data.colwise() - magnetometer->geth());
+
+
+    Serial << "Accelerometer correction data";
+    displayMat(acc_data);
+    Serial << "Magnetometer correction data";
+    displayMat(mag_data);
+
     // Calculate alignment
-    Vector<float,10> X = AlignMagAcc((accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth())),(magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth())));
+    Serial << "Calculating alignment...\n";
+    Vector<float,10> X = AlignMagAcc(acc_data,mag_data);
     inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
-    Serial << "Magnetic inclination angle: " << RAD_TO_DEG * X(9) << "\n";
+    Serial << "Magnetic inclination angle: " << RAD_TO_DEG * asinf(X(9)) << "\n";
+    Serial << "\n\n Output vec: ";
+    displayVec(X);
+    Serial << "\n";
+
+
 }
 
 void SensorHandler::enableLaser()

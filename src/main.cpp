@@ -18,8 +18,6 @@
 #include <Adafruit_GFX.h>
 #include <OLED.h>
 
-Vector3f data;
-
 bool available = false;
 bool btn_press = false;
 bool acc_calib = false;
@@ -44,7 +42,7 @@ float clino = -23;
 bool ble_status =  true;
 
 float batt_percentage = 25;
-static Vector3f orientation;
+static Vector3f data;
 
 bool calibrated = 0;
 int cmd = 0;
@@ -57,11 +55,12 @@ void serialEvent()
 void test_main(void * parameter) {
   while(true){
     if (cmd == 1) {
+      Serial << "CMD1\n";
       Serial << "Get calibration data...\n";
       calibrated = sh.collectInertialAlignmentData();
       if (calibrated == -1)
       {
-        Serial << "Calibration sample failed! Please keep the device steady.\n";
+        Serial << "Calibration sample failed! Please keep t device steady.\n";
       } else if (calibrated == 0){
         Serial << "Calibration sample succesful.\n";
       } else {
@@ -70,6 +69,7 @@ void test_main(void * parameter) {
     }
     else if (cmd == 2)
     {
+      Serial << "CMD2\n";
       Serial << "RM3100 sample data\n";
       displayMat(mag.getCalibData().transpose());
 
@@ -96,24 +96,49 @@ void test_main(void * parameter) {
       Serial << "SCA3300 h\n\n";
       displayMat( acc.geth() );
 
+      // Serial << "-----------------------------------------------------------\n\n";
+      // Serial << "SCA3300 sample data\n";
+      // displayMat(     (  sh.getAccelPtr()->getCalibData()  ).transpose()    );
+      // Serial << "RM3100 sample data\n";
+      // displayMat(     (  sh.getMagPtr()->getCalibData()  ).transpose()    );
+
+
     } else if (cmd == 3) {
+      Serial << "CMD3\n";
       Serial << "Calibrating inertial sensors...\n";
       sh.calibrateInertial();
     
     } else if (cmd == 4) {
+      Serial << "CMD4\n";
       Serial << "Aligning inertial sensors...\n";
       sh.alignInertial();
-    }
-    cmd = 0;
 
-    // delay(250);
-    orientation = Orientation(mag.getReading(), acc.getReading());
+    // } else if (cmd == 5) {
+    //   Serial << "CMD5\n";
+    //   // Read from file
+    //   Serial << "Save data";
+    //   mag.save_calibration_data();
+    //   acc.save_calibration_data();
+
+    } else if (cmd == 6){
+      Serial << "CMD6\n";
+      // Write to file
+      Serial << "Read data";
+      mag.load_calibration_data();
+      acc.load_calibration_data();
+    } else if (cmd == 9) {
+      Serial << "CMD9\n";
+      data = sh.getReading();
+    } else {}
+    cmd = 0;
+    
+    
 
     // oled.clearDisplay();
     oled.Battery(batt_percentage);
-    oled.Distance(distance);
-    oled.Compass(orientation(0));
-    oled.Clino(orientation(1));
+    oled.Compass(data(0));
+    oled.Clino(data(1));
+    oled.Distance(data(2));
     oled.Blutooth(ble_status);
   }
 }

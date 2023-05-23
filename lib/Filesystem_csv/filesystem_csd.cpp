@@ -1,5 +1,4 @@
-#include "Filesystem_csd.h"
-
+#include "filesystem_csd.h"
 #ifdef ESP32
 void write_to_file(const char* fname, const char* name, const float data){
   preferences.begin(fname, false);
@@ -26,19 +25,47 @@ void write_to_file(const char* fname, const char* name, const String data){
 }
 
 
-template<typename Derived>
-void write_to_file(const char* fname, const char* name, const Eigen::MatrixBase<Derived>& Data){
+
+//template<typename Derived>
+// void write_to_file(const char* fname, const char* name, const Eigen::MatrixBase<Derived>& Data){
+//     preferences.begin(fname, false);
+//     preferences.putBytes(name,Data.data(),Data.size()*sizeof(Derived));
+//     preferences.end();
+// }
+// template<typename Derived>
+// void write_to_file(const char* fname, const char* name, const Eigen::MapBase<Derived>& Data){
+//     preferences.begin(fname, false);
+//     preferences.putBytes(name,Data.data(),Data.size()*sizeof(Derived));
+//     preferences.end();
+// }
+// template<typename Derived>
+// void read_from_file(const char* fname, const char* name, Eigen::MatrixBase<Derived>* Data){
+//     preferences.begin(fname, true);
+//     preferences.getBytes(name,Data.data(),Data.data()*sizeof(Derived));
+//     preferences.end();
+// }
+
+// template<typename Derived>
+// void read_from_file(const char* fname, const char* name, Eigen::MapBase<Derived>* Data){
+//     preferences.begin(fname, true);
+//     preferences.getBytes(name,Data.data(),Data.data()*sizeof(Derived));
+//     preferences.end();
+// }
+
+void write_to_file(const char* fname, const char* name, const float* data, int size)
+{
     preferences.begin(fname, false);
-    preferences.putBytes(name,Data.data(),Data.size()*sizeof(Derived));
+    preferences.putBytes(name,data,size*sizeof(float));
     preferences.end();
 }
 
-template<typename Derived>
-void read_from_file(const char* fname, const char* name, Eigen::MatrixBase<Derived>* Data){
-    preferences.begin(fname, false);
-    preferences.putBytes(name,Data.data(),Data.data()*sizeof(Derived));
+void read_from_file(const char* fname, const char* name, float* data, int size)
+{
+    preferences.begin(fname, true);
+    preferences.getBytes(name,data,size*sizeof(float));
     preferences.end();
 }
+
 #else
 #ifdef SEEED
 

@@ -262,35 +262,32 @@ void SensorHandler::alignInertial()
 
     // Remove zero valued data
     Serial << "Removing zero data...\n";
-    float* mag_data_ptr = &magnetometer->getCalibData()(0,0);
-    float* acc_data_ptr = &accelerometer->getCalibData()(0,0);
+    // float* mag_data_ptr = &magnetometer->getCalibData()(0,0);
+    // float* acc_data_ptr = &accelerometer->getCalibData()(0,0);
     // float* mag_data_ptr = magnetometer->getCalibData().data();
     // float* acc_data_ptr = accelerometer->getCalibData().data();
 
-    Serial.printf("mag_ptr: %p, acc_ptr %p \n", magnetometer, accelerometer);
-    Serial.printf("mag_mat_ptr: %p, acc_mat_ptr %p \n", &magnetometer->ref_calibration_data, &accelerometer->ref_calibration_data);
-    Serial.printf("mag_data_ptr: %p, acc_data_ptr %p \n", mag_data_ptr, acc_data_ptr);
+    // Serial.printf("mag_ptr: %p, acc_ptr %p \n", magnetometer, accelerometer);
+    // Serial.printf("mag_mat_ptr: %p, acc_mat_ptr %p \n", &magnetometer->ref_calibration_data, &accelerometer->ref_calibration_data);
+    // Serial.printf("mag_data_ptr: %p, acc_data_ptr %p \n", mag_data_ptr, acc_data_ptr);
 
-    int acc_size = accelerometer->getCalibData().cols()-removeNullData(acc_data_ptr,accelerometer->getCalibData().cols());
-    int mag_size = magnetometer->getCalibData().cols()-removeNullData(mag_data_ptr,magnetometer->getCalibData().cols());
-    
-    Eigen::Map<Matrix<float,3,-1>> acc_data(acc_data_ptr,3,acc_size);
-    Eigen::Map<Matrix<float,3,-1>> mag_data(mag_data_ptr,3,mag_size);
+    int acc_size = accelerometer->getCalibData().cols()-removeNullData(accelerometer->getCalibData());
+    int mag_size = magnetometer->getCalibData().cols()-removeNullData(magnetometer->getCalibData());
 
-    // Calculate corrections
+    // Calculate corrections and modift calibration data
     Serial << "Calculating corrections...\n";
-    acc_data = accelerometer->getT() * (acc_data.colwise() - accelerometer->geth());
-    mag_data = magnetometer->getT() * (mag_data.colwise() - magnetometer->geth());
+    accelerometer->getCalibData() = accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth());
+    magnetometer->getCalibData() = magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth());
 
 
     Serial << "Accelerometer correction data";
-    displayMat(acc_data);
+    displayMat(accelerometer->getCalibData());
     Serial << "Magnetometer correction data";
-    displayMat(mag_data);
+    displayMat(magnetometer->getCalibData());
 
     // Calculate alignment
     Serial << "Calculating alignment...\n";
-    Vector<float,10> X = AlignMagAcc(acc_data,mag_data);
+    Vector<float,10> X = AlignMagAcc(accelerometer->getCalibData(), magnetometer->getCalibData());
     inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
     Serial << "Magnetic inclination angle: " << RAD_TO_DEG * asinf(X(9)) << "\n";
     Serial << "\n\n Output vec: ";

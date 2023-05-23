@@ -114,7 +114,7 @@ void serialPlotVec(const VectorXf &v1, const VectorXf &v2, const char* v1_name ,
 float Deg2Rad(float degrees);
 
 // Shifts all zero-valued columns to the end of the matrix and return the number of zero-valued columns
-int removeNullData(float* data_ptr, int size);
+int removeNullData(Ref<MatrixXf> mat);
 
 
 #endif

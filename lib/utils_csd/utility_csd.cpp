@@ -172,11 +172,11 @@ Vector3f Orientation(Vector3f g, Vector3f m)
 }
 
 // Shifts all zero-valued columns to the end of the matrix and return the number of zero-valued columns
-int removeNullData(float* data_ptr, int size)
+int removeNullData(Ref<MatrixXf> mat)
 {
     Serial << "Remove null data\n";
     // Creates a map to the incoming data to prevent a copy being needed. A map just holds the information about how and where the data is stored. It can be interfaced with just like any other Eigen object.
-    Eigen::Map<Matrix<float,3,-1>> mat(data_ptr,3,size);
+    // Eigen::Map<Matrix<float,3,-1>> mat(data_ptr,3,size);
 
     // Initialise blank cols mat to -1
     VectorXi blank_cols(mat.cols());
@@ -231,5 +231,4 @@ int removeNullData(float* data_ptr, int size)
     Serial << "Finished removing null data\n";
 
     return max_index;
-
 }

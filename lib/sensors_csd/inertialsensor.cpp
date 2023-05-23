@@ -30,9 +30,9 @@ void InertialSensor::calibrateLinear()
 
     // Re-arrange data and remove values equal to 0,0,0;
     // Passing non-const references appears to be a bit broken in Eigen so a workaround is to use maps
-    float* data_ptr = &getCalibData()(0,0);
-    int data_size = getCalibData().cols();
-    int n_zeros = removeNullData(data_ptr,data_size);
+    // float* data_ptr = &getCalibData()(0,0);
+    // int data_size = getCalibData().cols();
+    int n_zeros = removeNullData(getCalibData());
 
     Serial.print("Sorted data:\n");
     displayMat(getCalibData().block(0,0,3,getCalibData().cols()-n_zeros));

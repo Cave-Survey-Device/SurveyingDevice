@@ -152,21 +152,84 @@ Vector3f Spherical(Vector3f cartesian){
 
 Vector3f Orientation(Vector3f g, Vector3f m)
 {    
-    Vector3f hi;
+    Vector3f hir;
     // Returns heading and inclination
     // https://arduino.stackexchange.com/a/88707
     // https://www.analog.com/en/app-notes/an-1057.html equation (11)
 	float inclination =  atan2(g(0),pow(pow(g(1),2) + pow(g(2),2),0.5));
     float roll = atan2(g(1),pow(pow(g(0),2) + pow(g(2),2),0.5));
+    float heading = atan2(m(0),pow(pow(m(1),2) + pow(m(2),2),0.5));
+    // // Project magnetic vector onto horizontal plane
+    // Vector3f vector_north = m - ((m.dot(g) / g.dot(g)) * g);
 
-    // Project magnetic vector onto horizontal plane
-    Vector3f vector_north = m - ((m.dot(g) / g.dot(g)) * g);
+    // float heading =  atan2(vector_north(0), vector_north(1));
+    // if (g(2) < 0)
+    // {
+    //     heading = heading * -1;
+    // }
+    hir << RAD_TO_DEG * heading, RAD_TO_DEG * inclination, RAD_TO_DEG * roll;
+    return hir;
+}
 
-    float heading =  atan2(vector_north(1), vector_north(0));
-    if (g(2) < 0)
+// Shifts all zero-valued columns to the end of the matrix and return the number of zero-valued columns
+int removeNullData(float* data_ptr, int size)
+{
+    Serial << "Remove null data\n";
+    // Creates a map to the incoming data to prevent a copy being needed. A map just holds the information about how and where the data is stored. It can be interfaced with just like any other Eigen object.
+    Eigen::Map<Matrix<float,3,-1>> mat(data_ptr,3,size);
+
+    // Initialise blank cols mat to -1
+    VectorXi blank_cols(mat.cols());
+    blank_cols.setOnes();
+    blank_cols *= -1;
+    int index = 0;
+    int max_index = 0;
+
+    int i;
+    Serial << "Finding null indexes\n";
+    // Index zero values in reverse order
+    for (int i=mat.cols()-1; i>-1; i--)
     {
-        heading = heading * -1;
+        if (mat.col(i).norm() == 0)
+        {
+            blank_cols(index) = i;
+            index++;
+        }
     }
-    hi << RAD_TO_DEG * heading, RAD_TO_DEG * inclination, RAD_TO_DEG * roll;
-    return hi;
+    max_index = index;
+
+    // Push index back due to index++ happening AFTER assignment
+    index--;
+    if (index == -1)
+    {
+        Serial << "No zeroes found\n";
+        return 0;
+    }
+    
+    Serial << "Sorting data\n";
+
+    // Iterate in reverse through matrix, replacing zero valued sections with non-zero valued elements nearest the end of the matrix, replacing those with zero
+    for (int i=mat.cols()-1; i>-1; i--)
+    {
+        // Check if value is non-zero
+        if (mat.col(i).norm() > 0)
+        {
+            // Replace zero value closest to start or matrix with non-zero value
+            mat.col(blank_cols(index)) = mat.col(i);
+            // Replace non-zero value with zero
+            mat.col(i) << 0, 0, 0;
+            // Decrease index
+            index--;
+
+            // If all zero-valued sections have been replaced, break
+            if (index < 0)
+            {
+                break;
+            }
+        }
+    }
+    Serial << "Finished removing null data\n";
+
+    return max_index;
+
 }

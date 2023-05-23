@@ -10,12 +10,12 @@ using namespace Eigen;
 class Accelerometer: public InertialSensor
 {
 private:
-  const static int n_calib = 36*18; 
+  const static int n_calib = 12*5; 
   Matrix<float,3,n_calib> calibration_data;
 
 public:
     Accelerometer(InertialSensorConnection* sc);
-    MatrixXf getCalibData();
+    Ref<MatrixXf> getCalibData();
 };
 
 #endif

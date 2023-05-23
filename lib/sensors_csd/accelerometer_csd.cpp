@@ -7,9 +7,10 @@ Accelerometer::Accelerometer(InertialSensorConnection* sc) : InertialSensor(sc, 
     //ref_calibration_data = calibrated_data;
     //new (&ref_calibration_data) Map<Matrix<float,3,-1>>(&calibration_data(0,0),3,n_calib);
     static_assert(n_calib >= N_INERTIAL_ALIGNMENT,  "STATIC_ASSERT n_calib >= N_INERTIAL_ALIGNMENT");
+    setID("acc");
 }
 
-MatrixXf Accelerometer::getCalibData()
+Ref<MatrixXf> Accelerometer::getCalibData();
 {
   return calibration_data;
 }

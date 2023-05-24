@@ -77,8 +77,6 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
     static Vector<std::complex<float>,6> eigenvalues;
     static Matrix<std::complex<float>,6,6> eigenvectors;
 
-    Serial << "assigning data\n";
-
     if (n_samples == -1)
     {
         n_samples = samples.cols();
@@ -88,36 +86,23 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
     const VectorXf &y = samples.row(1).segment(0,n_samples);
     const VectorXf &z = samples.row(2).segment(0,n_samples);
 
-    // VectorXf x = samples.row(0);
-    // VectorXf y = samples.row(1);
-    // VectorXf z = samples.row(2);
-
     MatrixXf D_T(n_samples,10);
 
     // Create design matrix
     D_T.setZero();
     C.setZero();
 
-    
-    Serial << "Getting transpose1\n";
     displayVec(x.array().pow(2));
-    Serial << "D_T rows: " << D_T.rows() << "\n";
 
     D_T.col(0) << x.array().pow(2);
     D_T.col(1) << y.array().pow(2);
     D_T.col(2) << z.array().pow(2);
-
-    Serial << "Getting transpose2\n";
     D_T.col(3) << 2*y.array()*z.array();
     D_T.col(4) << 2*x.array()*z.array();
     D_T.col(5) << 2*x.array()*y.array();
-
-    Serial << "Getting transpose3\n";
     D_T.col(6) << 2*x.array();
     D_T.col(7) << 2*y.array();
     D_T.col(8) << 2*z.array();
-
-    Serial << "Getting transpose4\n";
     D_T.col(9) << VectorXf::Ones(n_samples);
 
     int k = 4;
@@ -131,14 +116,12 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
             0, 0, 0, 0, 0, -k;
 
     // Create S matrix from D*D.T - Eqn(11)
-    Serial << "Setting S\n";
     S = D_T.transpose() * D_T;
     S11 = S.block<6,6>(0,0);
     S12 = S.block<6,4>(0,6);
     S21 = S.block<4,6>(6,0);
     S22 = S.block<4,4>(6,6);
 
-    Serial << "Solving...\n";
     // Solve least squares - Eqn(14) and Eqn(15)
     M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
     es.compute(M);
@@ -147,15 +130,6 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
 
     eval = eigenvalues.array().real();
     evec = eigenvectors.array().real();
-    Serial << "evals: \n";
-    displayVec(eval);
-    Serial << "\n";
-    Serial << "evecs: \n";
-    displayMat(evec);
-    Serial << "\n";
-//    std::cout << "Matrix to decompose: \n" << M << "\n";
-//    std::cout << "Eigenvalues: \n" << eval << "\n";
-//    std::cout << "Eigenvectors: \n" << evec << "\n\n";
 
     // Find eigenvector corresponding to largest eigenvalue
     Vector<float,6> u1;
@@ -181,8 +155,6 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples)
     Vector<float,10> U;
     U << u1, u2;
 
-    Serial << "Output coefficients:\n";
-    displayVec(U);
     return U;
 }
 
@@ -265,7 +237,20 @@ float StdDev(MatrixXf m)
 }
 
 // ------------------------------------------------ ALIGNMENT FUNCTIONS  ------------------------------------------------
+
 Vector<float,10> AlignMagAcc(const MatrixXf &g, const MatrixXf &m) {
+    /**************************************************************
+     * Given a set of calibrated magnetometer and accelerometer data, this function
+     * finds the least squares best fit for the alignment of the sensor axis and outputs
+     * a rotation matrix for correcting the magnetometer and the magnetic inclination at
+     * the location of measurement.
+     * 
+     * 1. Calculate the design matirx, A
+     * 2. Solve Ax=b with least squares
+     * 3. Find SVD of least squares solution
+     * 4. Calculate U_hat and R_hat
+     * 5. Calculate s_hat
+    */
     #ifdef NUMERICAL_METHODS_STANDALONE
     int K = g.cols();
     static MatrixXf A(K,9);
@@ -280,36 +265,26 @@ Vector<float,10> AlignMagAcc(const MatrixXf &g, const MatrixXf &m) {
     Vector3f mk;
     Vector3f gk;
 
-    // Step 1
-    Serial << "ALIGN: Step 1...\n";
+    // Step 1 - Form the design matrix
     for (int i=0; i<K; i++)
     {
         mk = m.col(i);
         gk = g.col(i);
         A.row(i) << kron(mk,gk).transpose();
     }
-    displayMat(A);
 
-    // Step 2 - solve lstsq
-    Serial << "ALIGN: Step 2...\n";
+    // Step 2 - Solve lstsq
     Matrix3f H = ((A.transpose()*A).inverse() * A.transpose() * MatrixXf::Ones(K,1)).reshaped(3,3);
-    displayMat(H)
 ;
-    // Step 3
-    Serial << "ALIGN: Step 3.1...\n";
+    // Step 3 - 
     JacobiSVD<MatrixXf> svd(H, ComputeThinU | ComputeThinV);
-    Serial << "ALIGN: Step 3.2...\n";
     Matrix3f U = svd.matrixU();
     Matrix3f V = svd.matrixV();
     Matrix3f Sig = svd.singularValues().asDiagonal();
-    displayMat(Sig);
 
     // Step 4
-    Serial << "ALIGN: Step 4...\n";
     Matrix3f Uhat = sign(H.determinant()) * U;
     Matrix3f Rhat = Uhat * V.transpose();
-    displayMat(Uhat);
-    displayMat(Rhat);
 
     // Step 5
     float shat = 0;

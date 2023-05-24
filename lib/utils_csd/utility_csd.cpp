@@ -1,6 +1,7 @@
 #include "utility_csd.h"
 #include <stdarg.h>
 
+
 void displayMat(const MatrixXf &m)
 {
     int rows = m.rows();
@@ -46,7 +47,6 @@ void displayRowVec(const VectorXf &v)
 void serialPlotVec(const VectorXf &v1, const VectorXf &v2)
 {
     //assert ((v1.size() == v2.size()), "vector1.size() == vector2.size() ");
-
     int n = v1.size();
     for(int i=0; i<n;i++)
     {
@@ -57,7 +57,6 @@ void serialPlotVec(const VectorXf &v1, const VectorXf &v2)
         Serial << "\n";
     }
     Serial << "\n";
-    
 }
 
 void serialPlotVec(const VectorXf &v1, const VectorXf &v2, const char* v1_name , const char* v2_name)
@@ -103,7 +102,7 @@ Vector3f generate_vector(float distance, float heading, float inclination)
     return -vector;
 }
 
-void debug(unsigned int mode, const char* str)
+void debug(debug_type mode, const char* str)
 {
     if ((int)mode == 0 || (DEBUG_BOOL_ARR[(int)mode] && sizeof(str) < 250*sizeof(char)))
     {
@@ -113,7 +112,7 @@ void debug(unsigned int mode, const char* str)
     }
 }
 
-void debugf(unsigned int mode, const char *format, ...)
+void debugf(debug_type mode, const char *format, ...)
 {
     if ((int)mode == 0 || (DEBUG_BOOL_ARR[(int)mode] && sizeof(format) < 250*sizeof(char)))
     {
@@ -174,10 +173,6 @@ Vector3f Orientation(Vector3f g, Vector3f m)
 // Shifts all zero-valued columns to the end of the matrix and return the number of zero-valued columns
 int removeNullData(Ref<MatrixXf> mat)
 {
-    Serial << "Remove null data\n";
-    // Creates a map to the incoming data to prevent a copy being needed. A map just holds the information about how and where the data is stored. It can be interfaced with just like any other Eigen object.
-    // Eigen::Map<Matrix<float,3,-1>> mat(data_ptr,3,size);
-
     // Initialise blank cols mat to -1
     VectorXi blank_cols(mat.cols());
     blank_cols.setOnes();
@@ -186,7 +181,6 @@ int removeNullData(Ref<MatrixXf> mat)
     int max_index = 0;
 
     int i;
-    Serial << "Finding null indexes\n";
     // Index zero values in reverse order
     for (int i=mat.cols()-1; i>-1; i--)
     {
@@ -205,8 +199,6 @@ int removeNullData(Ref<MatrixXf> mat)
         Serial << "No zeroes found\n";
         return 0;
     }
-    
-    Serial << "Sorting data\n";
 
     // Iterate in reverse through matrix, replacing zero valued sections with non-zero valued elements nearest the end of the matrix, replacing those with zero
     for (int i=mat.cols()-1; i>-1; i--)
@@ -228,7 +220,6 @@ int removeNullData(Ref<MatrixXf> mat)
             }
         }
     }
-    Serial << "Finished removing null data\n";
 
     return max_index;
 }

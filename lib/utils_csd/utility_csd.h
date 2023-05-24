@@ -42,7 +42,7 @@ Vector3f generate_vector(float distance, float heading, float inclination);
  * @param mode 
  * @param str 
  */
-void debug(unsigned int mode, const char* str);
+void debug(debug_type mode, const char* str);
 
 /**
  * @brief Debug with functionality of printf. Very nice :).
@@ -51,7 +51,7 @@ void debug(unsigned int mode, const char* str);
  * @param format 
  * @param ... 
  */
-void debugf(unsigned int mode, const char *format, ...);
+void debugf(debug_type mode, const char *format, ...);
 
 Vector3f Cartesian(Vector3f spherical);
 

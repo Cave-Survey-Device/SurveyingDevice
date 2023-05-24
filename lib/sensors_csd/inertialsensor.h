@@ -45,12 +45,32 @@ public:
      */
     void calibrateLinear();  
 
+    /**
+     * @brief Gets a single sample from the connected inertial sensor. No calibration or averaging, "raw data" from the sensor.
+     * 
+     * @return Vector3f 
+     */
     Vector3f getSingleSample();
 
+    /**
+     * @brief Collectes a reading from the connected inertial sensor. This means that calibration and averaging is applied
+     * 
+     * @return Vector3f 
+     */
     virtual Vector3f getReading();
 
+    /**
+     * @brief Resets the calibration data in memory
+     * 
+     */
     void resetCalibration();
 
+    /**
+     * @brief 
+     * 
+     * @return true 
+     * @return false 
+     */
     bool collectAlignmentSample();
 
     Matrix3f getT();
@@ -58,8 +78,31 @@ public:
 
     virtual Ref<MatrixXf> getCalibData()=0;
 
+    /**
+     * @brief Loads calibration data and paremeters from non-volatile memory
+     * 
+     */
     void load_calibration_data();
+
+    /**
+     * @brief Saves the calibration data and correction paremeters to non-volatile memory
+     * 
+     */
     void save_calibration_data();
+
+    /**
+     * @brief Saves calibration data and parameters to non-volatile storage in a seperate location
+     * This is to allow form calibration data to be generated and discarded if necessary.
+     * 
+     */
+    void save_tmp_calibration_data();
+
+
+    /**
+     * @brief Sets the device's ID such that calibration data for teh device can be read
+     * 
+     * @param ID 
+     */
     void setID(const char* ID);
 };
 

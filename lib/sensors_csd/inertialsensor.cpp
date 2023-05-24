@@ -60,7 +60,7 @@ Vector3f InertialSensor::getSingleSample()
 
 Vector3f InertialSensor::getReading()
 {
-    // Serial << "InertialSensor::GetReading()...\n";
+    debug(DEBUG_INERTIALSENSOR, "InertialSensor::getReading()");
     Vector3f reading;
     reading.setZero();
     for (int i=0;i<SAMPLES_PER_READING;i++)
@@ -74,11 +74,9 @@ Vector3f InertialSensor::getReading()
 
 void InertialSensor::resetCalibration()
 {
-    Serial.print("InertialSensor::resetCalibration()\n");
+    debug(DEBUG_INERTIALSENSOR, "InertialSensor::resetCalibration()");
     this->align_num = 0;
-    Serial.print("getCalibData().setZero()\n");
     ref_calibration_data.setZero();
-    Serial.print("Other assignments...\n");
     this->calibration_matrix = Matrix3f::Identity();
     this->calibration_offset.setZero();
     this->calibrate_with_alignment = true;
@@ -86,7 +84,7 @@ void InertialSensor::resetCalibration()
 
 InertialSensor::InertialSensor(InertialSensorConnection* sc, float* ptr, int size) : ref_calibration_data(ptr,3,size)
 {
-    Serial.print("InertialSensor::InertialSensor(InertialSensorConnection* sc)\n");
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::InertialSensor(InertialSensorConnection* sc, float* ptr, int size)");
     this->sensor = sc;
     this->resetCalibration();
     separate_calib = false;
@@ -115,15 +113,25 @@ void InertialSensor::setCalibMode(bool mode)
 
 void InertialSensor::load_calibration_data()
 {
-    read_from_file("calib",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::load_calibration_data()");
+    read_from_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
 }
 
 void InertialSensor::save_calibration_data()
 {
-    write_to_file("calib",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::save_calibration_data()");
+    write_to_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
 }
+
+void InertialSensor::save_tmp_calibration_data()
+{
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::save_tmp_calibration_data()");
+    write_to_file("tmp_calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+}
+
 
 void InertialSensor::setID(const char* ID)
 {
+    debugf(DEBUG_INERTIALSENSOR,"InertialSensor::setID(const char* ID), ID = %c", ID);
     strncpy(device_ID,ID,sizeof(device_ID)-1);
 }

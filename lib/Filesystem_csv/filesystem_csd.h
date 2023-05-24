@@ -8,6 +8,7 @@
 #include <preferences.h>
 #include <nvs_flash.h>
 #include <ArduinoEigenDense.h>
+#include <utility_csd.h>
 
 static Preferences preferences;
 void write_to_file(const char* fname, const char* name, const float data);
@@ -18,17 +19,13 @@ void read_from_file(const char* fname, const char* name, float* data);
 void read_from_file(const char* fname, const char* name, int* data);
 void erase_storage();
 
-// template<typename Derived> 
-// void write_to_file(const char* fname, const char* name, const Eigen::MatrixBase<Derived>& Data);
-// template<typename Derived> 
-// void write_to_file(const char* fname, const char* name, const Eigen::MapBase<Derived>& Data);
-// template<typename Derived> 
-// void read_from_file(const char* fname, const char* name, Eigen::MatrixBase<Derived>* Data);
-// template<typename Derived> 
-// void read_from_file(const char* fname, const char* name, Eigen::MapBase<Derived>* Data);
-
 void write_to_file(const char* fname, const char* name, const float* data, int size);
 void read_from_file(const char* fname, const char* name, float* data, int size);
+
+// template <typename Derived>
+// void write_to_file(const char* fname, const char* name, MatrixBase<Derived>& mat);
+// template <typename Derived>
+// void read_from_file(const char* fname, const char* name, Ref<MatrixBase<Derived>> mat);
 
 #else 
 #ifdef SEEED

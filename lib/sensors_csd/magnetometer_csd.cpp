@@ -21,14 +21,10 @@ void Magnetometer::addCalibrationData(){
 }
 
 int Magnetometer::getMagnetometerIndex(const Vector3f &sample){
-    // -pi to pi
-    float azimuth = 0;
-    //-pi/2 to pi/2
-    float elevation = 0;
-    // 0 - 17
-    int index1;
-    // 0 - 35
-    int index2;
+    float azimuth = 0; // -pi to pi
+    float elevation = 0; //-pi/2 to pi/2
+    int index1; // 0 - 17
+    int index2; // 0 - 35
 
     // https://uk.mathworks.com/help/matlab/ref/cart2sph.html
     azimuth = atan2(sample(1),sample(0)) + PI;

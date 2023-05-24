@@ -81,7 +81,10 @@ Vector3f NormalVec(const MatrixXf &point_cloud);
 float StdDev(MatrixXf m);
 
 /**
- * @brief Calculate inertial alignment of sensors
+ * @brief Given a set of calibrated magnetometer and accelerometer data, this function
+     * finds the least squares best fit for the alignment of the sensor axis and outputs
+     * a rotation matrix for correcting the magnetometer and the magnetic inclination at
+     * the location of measurement.
  * 
  * @param g Accelerometer data
  * @param m Magnetometer data

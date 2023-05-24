@@ -3,7 +3,6 @@
 #include <utility_csd.h>
 #include <queue>
 
-
 SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag, LaserSensor* las)
 {
     this->magnetometer = mag;
@@ -27,6 +26,7 @@ SensorHandler::SensorHandler(){
 
 Vector3f SensorHandler::getReading()
 {
+    debugf(DEBUG_SENSORHANDLER, "SensorHandler::getReading()");
     Vector3f reading;
     Vector3f mag_data = inertial_alignment_mat * this->magnetometer->getReading();
     Vector3f accel_data = this->accelerometer->getReading();
@@ -35,29 +35,29 @@ Vector3f SensorHandler::getReading()
         float laser_data = this->laser->getMeasurement();   
         reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), laser_data;
     }
-     
+    
+    reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), 0.;
+    reading(0) += this->laser_heading_alignment;
+    reading(1) += this->laser_inclination_alignment;
+
+    #ifdef SENSORHANDLER_EXTENDED_DEBUG
     Serial << "Mag data: ";
     displayRowVec(mag_data);
     Serial << "Heading: " << Orientation(accel_data, mag_data)(0) << "\t\t" << 
     "Inclination: " << Orientation(accel_data, mag_data)(1) << "\t\t" << 
     "Roll: " << Orientation(accel_data, mag_data)(2) << "\n\n";
+    #endif
 
-    reading << Orientation(accel_data, mag_data)(0), Orientation(accel_data, mag_data)(1), 0.;
-    reading(0) += this->laser_heading_alignment;
-    reading(1) += this->laser_inclination_alignment;
     return reading;
 }
 
 bool SensorHandler::collectLaserAlignmentData()
 {
+    debugf(DEBUG_SENSORHANDLER, "SensorHandler::collectLaserAlignmentData()");
     this->laser_alignment_data.col(this->laser_alignment_progress) = this->getReading();
     this->laser_alignment_progress++;
     if (this->laser_alignment_progress == N_LASER_CAL)
     {
-        // TODO
-        // Execute alignment maths
-        // Make some kind of warning if alignment appears to be low quality. Could be checked by checking angle between each of the spays for angle to te normal. Other method would be to do a test splay between the same two points and checking whether each shot is the inverse of the other
-        this->alignLaser();
         return 1;
     }
     return 0;
@@ -65,28 +65,19 @@ bool SensorHandler::collectLaserAlignmentData()
 
 void SensorHandler::alignLaser()
 {
-    int calib_num;
-    // Heading, Inclination, roll, distance
-    Vector3f mean_calibration_data;
-    // Mean misalignement vector
-    Vector3f misalignement_mean;
-    // Dummy variable for cartesian <=> spherical conversions
-    Vector3f conversion_dummy;
-    // Vector direction to target
-    Vector3f target_vector;
-    // Matrix to hold each calculated misalignement vector
-    Matrix<float,3,N_LASER_CAL> misalignement_mat;
-    // Matrix to hold cartesian versions of calibration data
-    Matrix<float,3,N_LASER_CAL> cartesian_calibration_data;
-    // Rotation matrix for reversing the effect of tilt
-    Matrix3f rotation_matrix;
+    debugf(DEBUG_SENSORHANDLER, "SensorHandler::alignLaser()");
 
-    // Distance of target from origin
-    float target_distance;
-    // Cartesian coordinates for target
-    float x, y, z;
-    // Cartesian coordinated for tip of disto
-    float xi, yi, zi;
+    int calib_num;
+    Vector3f mean_calibration_data; // Heading, Inclination, roll, distance
+    Vector3f misalignement_mean; // Mean misalignement vector
+    Vector3f conversion_dummy; // Dummy variable for cartesian <=> spherical conversions
+    Vector3f target_vector; // Vector direction to target
+    Matrix<float,3,N_LASER_CAL> misalignement_mat; // Matrix to hold each calculated misalignement vector
+    Matrix<float,3,N_LASER_CAL> cartesian_calibration_data; // Matrix to hold cartesian versions of calibration data
+    Matrix3f rotation_matrix; // Rotation matrix for reversing the effect of tilt
+    float target_distance; // Distance of target from origin
+    float x, y, z; // Cartesian coordinates for target
+    float xi, yi, zi; // Cartesian coordinated for tip of disto
 
     // Mean of all calibration data collected
     mean_calibration_data = this->laser_alignment_data.rowwise().mean();
@@ -122,10 +113,10 @@ void SensorHandler::alignLaser()
     y = target_vector(1);
     z = target_vector(2);
 
-    debugf(DEBUG_SENSOR,"Target coordinates X: %f, Y: %f, Z: %f\n",x,y,z); 
+    debugf(DEBUG_SENSORHANDLER,"Target coordinates X: %f, Y: %f, Z: %f\n",x,y,z); 
 
     /*************************************************************************************
-     * 1. get the cartesian location of the tip of the disto for each shot
+     * 1. Get the cartesian location of the tip of the disto for each shot
      * 2. Find the rotation matrix corresponding to the roll
      * 3. Calculate the vector between the target and disto tip
      * 4. Rotate this vector by the matrix to revers the effects of tilt on the result
@@ -136,7 +127,7 @@ void SensorHandler::alignLaser()
         xi = cartesian_calibration_data(0,calib_num);
         yi = cartesian_calibration_data(1,calib_num);
         zi = cartesian_calibration_data(2,calib_num);
-        debugf(DEBUG_SENSOR,"Disto tip coordinates X: %f, Y: %f, Z: %f\n",xi,yi,zi);
+        debugf(DEBUG_SENSORHANDLER,"Disto tip coordinates X: %f, Y: %f, Z: %f\n",xi,yi,zi);
 
         // Rotation matrix about x depending on device roll
         roll = this->laser_alignment_data(2,calib_num);
@@ -147,8 +138,8 @@ void SensorHandler::alignLaser()
         // Reverse the effects of tilt on the misalignement vector
         misalignement_mat.col(calib_num) = rotation_matrix * misalignement_mat.col(calib_num);
         //Serial.printf("Misalignment vector: X: %f, Y: %f, Z: %f\n",misalignement_mat(0,calib_num),misalignement_mat(1,calib_num),misalignement_mat(2,calib_num));
-        debugf(DEBUG_SENSOR,"Misalignment mat X: %f, Y: %f, Z: %f\n",x-xi, y-yi, z-zi);
-        debugf(DEBUG_SENSOR,"Rotated misalignment mat X: %f, Y: %f, Z: %f\n\n",misalignement_mat(0,calib_num), misalignement_mat(1,calib_num), misalignement_mat(2,calib_num));
+        debugf(DEBUG_SENSORHANDLER,"Misalignment mat X: %f, Y: %f, Z: %f\n",x-xi, y-yi, z-zi);
+        debugf(DEBUG_SENSORHANDLER,"Rotated misalignment mat X: %f, Y: %f, Z: %f\n\n",misalignement_mat(0,calib_num), misalignement_mat(1,calib_num), misalignement_mat(2,calib_num));
     }
 
 
@@ -163,18 +154,19 @@ void SensorHandler::alignLaser()
     x = misalignement_mean(0);
     y = misalignement_mat(1);
     z = misalignement_mat(2);
-    debugf(DEBUG_SENSOR,"Mean misalignment vector: X: %f, Y: %f, Z: %f\n",x,y,z);
+    debugf(DEBUG_SENSORHANDLER,"Mean misalignment vector: X: %f, Y: %f, Z: %f\n",x,y,z);
 
 
     // get heading and inclination corrections by converting back to polar coordinates
     this->laser_inclination_alignment = atan2(y,x);
     this->laser_heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
-    debugf(DEBUG_SENSOR,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->laser_inclination_alignment,this->laser_heading_alignment);
+    debugf(DEBUG_SENSORHANDLER,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->laser_inclination_alignment,this->laser_heading_alignment);
 
 }
 
 void SensorHandler::resetCalibration()
 {
+    debug(DEBUG_SENSORHANDLER,"SensorHandler::resetCalibration()");
     this->magnetometer->resetCalibration();
     this->accelerometer->resetCalibration();
     this->inertial_alignment_mat = Matrix3f::Identity();
@@ -184,13 +176,14 @@ void SensorHandler::resetCalibration()
 
 int SensorHandler::collectInertialAlignmentData()
 {
+    debug(DEBUG_SENSORHANDLER,"SensorHandler::collectInertialAlignmentData()");
     /************************************************************
     * 1. Wait 100ms to allow button press perturbation to settle
     * 2. get an initial set of accelerometer readings
     * 3. Keep taking readings until stdeviation is small enough
     * 4. Take a set of readings per the SAMPLES_PER_ORIENTATION definition
     ************************************************************/
-    // Wait for 250ms to allow button-press distrubance to go
+    // 1. Wait for 250ms to allow button-press distrubance to go
     delay(250);
     float start_time = millis();
     float calibration_timeout = 2500; //2500ms
@@ -198,13 +191,13 @@ int SensorHandler::collectInertialAlignmentData()
     Matrix<float,3,N_CALIB_STDEV> samples;
 
 
-    // Collect a set of N_CALIB_STDEV samples
+    // 2 Collect a set of N_CALIB_STDEV samples
     for (int i=0;i<N_CALIB_STDEV;i++)
     {
         samples.col(i) << accelerometer->getReading();
     }
 
-    // Keep collecting samples until the device is deemed to be still enough
+    // 3  Keep collecting samples until the device is deemed to be still enough
     int i=0;
     while (StdDev(samples) > CALIBRATION_STDEV_MIN)
     {   
@@ -216,7 +209,7 @@ int SensorHandler::collectInertialAlignmentData()
         samples.col(i%N_CALIB_STDEV) << accelerometer->getReading();
     }
     
-    // Collect SAMPLES_PER_ORIENTATION samples
+    // 4. Collect SAMPLES_PER_ORIENTATION samples
     for(int i=0; i<SAMPLES_PER_ORIENTATION; i++)
     {
         calibrated = this->magnetometer->collectAlignmentSample();
@@ -231,18 +224,28 @@ int SensorHandler::collectInertialAlignmentData()
 
 void SensorHandler::calibrateInertial()
 {
-    Serial << "Calibrating accelerometer...\n";
+    debug(DEBUG_SENSORHANDLER,"SensorHandler::calibrateInertial()");
     this->accelerometer->calibrateLinear();
-    Serial << "Calibrating magnetometer...\n";
     this->magnetometer->calibrateLinear();
-    
     // TODO
     // Test and work on non-linear fitting with RBFs. Then add function void CalibrateNonLinear()
 }
 
 void SensorHandler::alignInertial()
 {
-    // Calibrate if not already calibrated. Uses alignment data
+    /*********************************************************************************************
+     * This function calculates the matrix required to transform the magnetometer axis onto the
+     *  accelerometer axis. The process works by:
+     * 
+     * 1. Check if accelerometer and magnetometer have already been calibratied and calibrate if not
+     * 2. Sort the calibration data matrices such that zero-valued data is at the end
+     * 3. Calculate the corrected calibration data and save it over the top of the old calibration
+     *    data (which is already saved in a tmp file so no data loss)
+     * 4. Use the calibrated data to calculate the alignment by calling AlignMacAcc(...)
+     * 5. TODO: Save the generated alignment data to a tmp file
+    *********************************************************************************************/
+   debug(DEBUG_SENSORHANDLER,"SensorHandler::alignInertial()");
+    // 1. Calibrate if not already calibrated. Uses alignment data
     if (magnetometer->getCalibMode() == false)
     {
         magnetometer->calibrateLinear();
@@ -252,49 +255,43 @@ void SensorHandler::alignInertial()
         accelerometer->calibrateLinear();
     }
 
+    #ifdef SENSORHANDLER_EXTENDED_DEBUG
     Serial << "-----------------------------------------------------------\n\n";
     Serial << "Accelerometer sample data\n";
     displayMat(     (  accelerometer->getCalibData()  ).transpose()    );
     Serial << "Magnetometer sample data\n";
     displayMat(     (  magnetometer->getCalibData()  ).transpose()    );
     Serial << "-----------------------------------------------------------\n\n";
+    #endif
 
-
-    // Remove zero valued data
-    Serial << "Removing zero data...\n";
-    // float* mag_data_ptr = &magnetometer->getCalibData()(0,0);
-    // float* acc_data_ptr = &accelerometer->getCalibData()(0,0);
-    // float* mag_data_ptr = magnetometer->getCalibData().data();
-    // float* acc_data_ptr = accelerometer->getCalibData().data();
-
-    // Serial.printf("mag_ptr: %p, acc_ptr %p \n", magnetometer, accelerometer);
-    // Serial.printf("mag_mat_ptr: %p, acc_mat_ptr %p \n", &magnetometer->ref_calibration_data, &accelerometer->ref_calibration_data);
-    // Serial.printf("mag_data_ptr: %p, acc_data_ptr %p \n", mag_data_ptr, acc_data_ptr);
-
+    // 2. Remove zero valued data
+    debug(DEBUG_SENSORHANDLER,"Removing zero data...");
     int acc_size = accelerometer->getCalibData().cols()-removeNullData(accelerometer->getCalibData());
     int mag_size = magnetometer->getCalibData().cols()-removeNullData(magnetometer->getCalibData());
 
-    // Calculate corrections and modift calibration data
-    Serial << "Calculating corrections...\n";
+    // 3. Calculate corrections and modift calibration data
+    debug(DEBUG_SENSORHANDLER,"Calculating corrections...");
     accelerometer->getCalibData() = accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth());
     magnetometer->getCalibData() = magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth());
 
-
+    #ifdef SENSORHANDLER_EXTENDED_DEBUG
     Serial << "Accelerometer correction data";
     displayMat(accelerometer->getCalibData());
     Serial << "Magnetometer correction data";
     displayMat(magnetometer->getCalibData());
+    #endif
 
-    // Calculate alignment
-    Serial << "Calculating alignment...\n";
+    // 4. Calculate alignment
+    debug(DEBUG_SENSORHANDLER,"Calculating alignment...");
     Vector<float,10> X = AlignMagAcc(accelerometer->getCalibData(), magnetometer->getCalibData());
     inertial_alignment_mat = X.segment(0,9).reshaped(3,3);
-    Serial << "Magnetic inclination angle: " << RAD_TO_DEG * asinf(X(9)) << "\n";
+    debugf(DEBUG_SENSORHANDLER,"Magnetic inclination angle: %f", RAD_TO_DEG * asinf(X(9)));
+
+    #ifdef SENSORHANDLER_EXTENDED_DEBUG
     Serial << "\n\n Output vec: ";
     displayVec(X);
     Serial << "\n";
-
-
+    #endif
 }
 
 void SensorHandler::enableLaser()
@@ -314,7 +311,6 @@ InertialSensor* SensorHandler::getMagPtr()
 {
     return this->magnetometer;
 }
-
 LaserSensor* SensorHandler::getLaserPtr()
 {
     return this->laser;

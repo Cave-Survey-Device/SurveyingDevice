@@ -32,19 +32,51 @@ enum state_enum {
     STATE_B1B2_LONG,
     STATE_B1B2_WAITING
 };
+static const char* state_names[] = {
+    "STATE_IDLE",
+    "STATE_B1_WAITING",
+    "STATE_B2_WAITING",
+    "STATE_B1_SHORT",
+    "STATE_B2_SHORT",
+    "STATE_B1_LONG",
+    "STATE_B2_LONG",
+    "STATE_B1B2_SHORT",
+    "STATE_B1B2_LONG",
+    "STATE_B1B2_WAITING"
+};
 
 enum mode_enum {
     MODE_MENU,
     MODE_IDLE,
     MODE_LASER_ENA,
     MODE_ALIGN,
-    MODE_CALIBRATE
+    MODE_CALIBRATE,
+    MODE_CALIBRATE_MAG,
+    MODE_SAVE_LASER_ALIGN,
+    MODE_SAVE_MAG_CALIBRATE,
+    MODE_SAVE_INERTIAL_ALIGN
+};
+static const char* mode_names[] = {
+    "MODE_MENU",
+    "MODE_IDLE",
+    "MODE_LASER_ENA",
+    "MODE_ALIGN",
+    "MODE_CALIBRATE",
+    "MODE_CALIBRATE_MAG",
+    "MODE_SAVE_LASER_ALIGN",
+    "MODE_SAVE_MAG_CALIBRATE",
+    "MODE_SAVE_INERTIAL_ALIGN"
 };
 
 enum menu_enum {
     MENU_CALIBRATE,
     MENU_ALIGN,
     MENU_SETTINGS
+};
+static const char* menu_names[] = {
+    "MENU_CALIBRATE",
+    "MENU_ALIGN",
+    "MENU_SETTINGS"
 };
 const static int MENU_ENUM_MAX = 2;
 inline menu_enum& operator++(menu_enum& menu)
@@ -62,7 +94,6 @@ menu_enum operator++(menu_enum& menu, int)
   ++menu;
   return tmp;
 }
-
 inline  menu_enum& operator--(menu_enum& menu)
 {
     
@@ -79,6 +110,8 @@ menu_enum operator--(menu_enum& menu, int)
   --menu;
   return tmp;
 }
+
+
 /* ----------------------------------- CONTROL VARIABLE DECLERATION -----------------------------------*/
 
 static float BLE_Enabled = true;
@@ -91,11 +124,13 @@ static state_enum previous_state = STATE_IDLE;
 static state_enum current_state = STATE_IDLE;
 static state_enum next_state = STATE_IDLE;
 
+static mode_enum previous_mode = MODE_IDLE;
 static mode_enum current_mode = MODE_IDLE;
 static mode_enum next_mode = MODE_IDLE;
-static mode_enum previous_mode = MODE_IDLE;
 
-static menu_enum menu_selection = MENU_CALIBRATE;
+static menu_enum previous_menu = MENU_CALIBRATE;
+static menu_enum current_menu = MENU_CALIBRATE;
+static menu_enum next_menu = MENU_CALIBRATE;
 
 static RM3100 rm3100;
 static SCA3300 sca3300;
@@ -115,15 +150,14 @@ static float b1b2_start_time;
 /* ----------------------------------- OPERATION FUNCTION DEFINITIONS -----------------------------------*/
 
 void takeShot(){
-    debug(DEBUG_ALWAYS,"Take shot");
     Vector3f shot_data;
-    shot_data = sh.get_measurement();
+    shot_data = sh.getReading();
     sh.disableLaser();
     // TODO: Save shot data
 }
 
 void enableLaser(){
-  sh.enableLaser();
+    sh.enableLaser();
 }
 
 void stateB1Waiting(){
@@ -168,7 +202,6 @@ void stateB2Waiting(){
 
 void stateB1B2Waiting()
 {
-    debug(DEBUG_ALWAYS,"stateB1B2Waiting()");
     current_time = millis();
     if (previous_state != STATE_B1B2_WAITING)
     {
@@ -185,24 +218,33 @@ void stateB1B2Waiting()
 }
 
 void stateIdle(){
-    debug(DEBUG_ALWAYS,"stateIdle()");
-  previous_state = current_state;
-  next_state = STATE_IDLE;
+    previous_state = current_state;
+    next_state = STATE_IDLE;
 }
 
 // Enable laser, take shot, align shot, forwards in menu
 void stateB1ShortHold(){
-  switch(current_mode)
-  {
-    debug(DEBUG_ALWAYS,"stateB1ShortHold()");
+    next_mode = MODE_IDLE;
+    switch(current_mode)
+    {
     case(MODE_IDLE):
     next_mode = MODE_LASER_ENA;
+
     enableLaser();
     break;
 
     case(MODE_LASER_ENA):
-    next_mode = MODE_IDLE;
     takeShot();
+    break;
+
+    case(MODE_CALIBRATE_MAG):
+    if (previous_mode != MODE_CALIBRATE_MAG)
+    {
+        mag.setCalibMode(true);
+    }
+    mag.addCalibrationData();
+    next_mode = MODE_CALIBRATE_MAG;
+    // TODO: Display calibration amount...
     break;
 
     case(MODE_CALIBRATE):
@@ -212,8 +254,8 @@ void stateB1ShortHold(){
     }
     if (sh.collectInertialAlignmentData())
     {
-        sh.calibrateInertial();
-        next_mode = MODE_IDLE;
+        sh.alignInertial();
+        next_mode = MODE_SAVE_INERTIAL_ALIGN;
     }
     break;
 
@@ -225,51 +267,56 @@ void stateB1ShortHold(){
     if (sh.collectLaserAlignmentData())
     {
         sh.alignLaser();
-        next_mode = MODE_IDLE;
+        next_mode = MODE_SAVE_LASER_ALIGN;
     }
     break;
 
-    case(MODE_MENU): menu_selection++; 
+    case(MODE_MENU): current_menu++; 
     break;
 
     break;
-  }
+    }
 }
 
 // Select in menu
 void stateB1LongHold()
 {
-    debug(DEBUG_ALWAYS,"stateB1LongHold()");
-    switch(current_mode)
+    switch (current_mode)
     {
-    case(MODE_MENU):
+        case (MODE_MENU):
+        switch (current_menu){
+            case(MENU_ALIGN):   next_mode = MODE_CALIBRATE;
+            break;
+            case(MENU_CALIBRATE):  next_mode = MODE_ALIGN;  
+            break;
+        }
+        break;
 
+        case(MODE_CALIBRATE_MAG):
+        mag.calibrateLinear();
+        next_mode = MODE_SAVE_MAG_CALIBRATE;
+        break;
     }
 }
 
 // Back in menu
 void stateB2ShortHold(){
-    debug(DEBUG_ALWAYS,"stateB2ShortHold()");
     switch(current_mode)
     {
-    case(MODE_MENU): menu_selection--; 
+    case(MODE_MENU): current_menu--; 
     break;
     }
 }
 void stateB2LongHold(){
-    debug(DEBUG_ALWAYS,"stateB2LongHold()");
-  // Return
 }
 
 // Enter menu
 void stateB1B2ShortHold(){
-    debug(DEBUG_ALWAYS,"stateB1B2ShortHold()");
     next_mode = MODE_MENU;
 }
 
 // Reset
 void stateB1B2LongHold(){
-    debug(DEBUG_ALWAYS,"stateB1B2LongHold()");
     next_mode = MODE_IDLE;
     next_state = STATE_IDLE;
     // RESET
@@ -277,16 +324,64 @@ void stateB1B2LongHold(){
 
 void mainloop(void* parameter)
 {
-  current_time = millis();
-  previous_state = current_state;
-  current_state = next_state;
-  previous_mode = current_mode;
-  current_mode = next_mode;
+    while(true)
+    {
+        current_time = millis();
+
+        previous_state = current_state;
+        current_state = next_state;
+
+        previous_mode = current_mode;
+        current_mode = next_mode;
+
+        previous_menu = current_menu;
+        current_menu = next_menu;
+
+        switch (current_state)
+        {
+            case(STATE_IDLE): stateIdle(); break;
+
+            case(STATE_B1_WAITING): stateB1Waiting(); break;
+            case(STATE_B1_SHORT): stateB1ShortHold(); break;
+            case(STATE_B1_LONG): stateB1LongHold(); break;
+
+            case(STATE_B2_WAITING): stateB2Waiting(); break;
+            case(STATE_B2_SHORT): stateB2ShortHold(); break;
+            case(STATE_B2_LONG): stateB2LongHold(); break;
+
+            case(STATE_B1B2_WAITING): stateB1B2Waiting(); break;
+            case(STATE_B1B2_SHORT): stateB1B2ShortHold(); break;
+            case(STATE_B1B2_LONG): stateB1B2LongHold(); break;
+        }
+
+        if (next_state != current_state){
+            debug(DEBUG_ALWAYS, state_names[(int)next_state]);
+        }
+        if (next_mode != current_mode){
+            debug(DEBUG_ALWAYS, mode_names[(int)next_mode]);
+        }
+        if (next_menu != current_menu){
+            debug(DEBUG_ALWAYS, mode_names[(int)next_mode]);
+        }
+    }
 }
 
 /* ----------------------------------- SETUP AND LOOP FOR ARDUINO -----------------------------------*/
 
 void setup(){
+  Serial.begin(115200);
+  rm3100.begin();
+
+  Serial << "Init accel\n";
+  #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+  #define Serial SERIAL_PORT_USBVIRTUAL
+  #endif
+
+  while (sca3300.begin() == false) {
+      Serial.println("Murata SCL3300 inclinometer not connected.");;
+  }
+
+  Serial << "Init finished\n";
     TaskHandle_t hardware_handle;
     xTaskCreatePinnedToCore(
         mainloop, /* Function to implement the task */

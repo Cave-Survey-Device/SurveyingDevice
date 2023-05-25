@@ -49,6 +49,9 @@ void InertialSensor::calibrateLinear()
 
     this->calibration_matrix << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
     this->calibration_offset << transformation[9], transformation[10], transformation[11];
+    
+    // Save calibration data in tmp file
+    save_tmp_calibration_data();
 }
 
 Vector3f InertialSensor::getSingleSample()
@@ -74,17 +77,15 @@ Vector3f InertialSensor::getReading()
 
 void InertialSensor::resetCalibration()
 {
-    debug(DEBUG_INERTIALSENSOR, "InertialSensor::resetCalibration()");
-    this->align_num = 0;
+    align_num = 0;
     ref_calibration_data.setZero();
-    this->calibration_matrix = Matrix3f::Identity();
-    this->calibration_offset.setZero();
-    this->calibrate_with_alignment = true;
+    calibration_matrix = Matrix3f::Identity();
+    calibration_offset = Vector3f::Identity();
+    calibrate_with_alignment = true;
 }
 
 InertialSensor::InertialSensor(InertialSensorConnection* sc, float* ptr, int size) : ref_calibration_data(ptr,3,size)
 {
-    debug(DEBUG_INERTIALSENSOR,"InertialSensor::InertialSensor(InertialSensorConnection* sc, float* ptr, int size)");
     this->sensor = sc;
     this->resetCalibration();
     separate_calib = false;
@@ -126,12 +127,15 @@ void InertialSensor::save_calibration_data()
 void InertialSensor::save_tmp_calibration_data()
 {
     debug(DEBUG_INERTIALSENSOR,"InertialSensor::save_tmp_calibration_data()");
-    write_to_file("tmp_calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    write_to_file("tmp_calib_data",device_ID,getCalibData());
+    write_to_file("tmp_calib_mat",device_ID,getT());
+    write_to_file("tmp_calib_off",device_ID,geth());
 }
 
 
 void InertialSensor::setID(const char* ID)
 {
-    debugf(DEBUG_INERTIALSENSOR,"InertialSensor::setID(const char* ID), ID = %c", ID);
+    // debugf(DEBUG_INERTIALSENSOR,"InertialSensor::setID(const char* ID), ID = %c", ID);
+    debug(DEBUG_INERTIALSENSOR, "Setting device_ID");
     strncpy(device_ID,ID,sizeof(device_ID)-1);
 }

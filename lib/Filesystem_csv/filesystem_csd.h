@@ -22,10 +22,10 @@ void erase_storage();
 void write_to_file(const char* fname, const char* name, const float* data, int size);
 void read_from_file(const char* fname, const char* name, float* data, int size);
 
-// template <typename Derived>
-// void write_to_file(const char* fname, const char* name, MatrixBase<Derived>& mat);
-// template <typename Derived>
-// void read_from_file(const char* fname, const char* name, Ref<MatrixBase<Derived>> mat);
+void write_to_file(const char* fname, const char* name, const MatrixXf& mat);
+// void write_to_file(const char* fname, const char* name, const VectorXf& vec);
+void read_from_file(const char* fname, const char* name, Ref<MatrixXf> mat);
+// void read_from_file(const char* fname, const char* name, Ref<VectorXf> vec);
 
 #else 
 #ifdef SEEED

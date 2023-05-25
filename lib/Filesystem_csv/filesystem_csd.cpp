@@ -24,7 +24,31 @@ void write_to_file(const char* fname, const char* name, const String data){
   preferences.end();
 }
 
+void write_to_file(const char* fname, const char* name, const MatrixXf& mat)
+{
+  preferences.begin(fname, false);
+  preferences.putBytes(name,mat.data(),mat.size()*sizeof(float));
+  preferences.end();
+}
+// void write_to_file(const char* fname, const char* name, const VectorXf& vec)
+// {
+//   preferences.begin(fname, false);
+//   preferences.putBytes(name,vec.data(),vec.size()*sizeof(float));
+//   preferences.end();
+// }
 
+void read_from_file(const char* fname, const char* name, Ref<MatrixXf> mat)
+{
+  preferences.begin(fname, false);
+  preferences.getBytes(name,mat.data(),mat.size()*sizeof(float));
+  preferences.end();
+}
+// void read_from_file(const char* fname, const char* name, Ref<VectorXf> vec)
+// {
+//   preferences.begin(fname, false);
+//   preferences.getBytes(name,vec.data(),vec.size()*sizeof(float));
+//   preferences.end();
+// }
 
 //template<typename Derived>
 // void write_to_file(const char* fname, const char* name, const Eigen::MatrixBase<Derived>& Data){

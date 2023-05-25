@@ -36,6 +36,7 @@ protected:
     float laser_inclination_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
     float laser_heading_alignment; // Value to be ADDED to value of sensors to align laser and inertial sensors
     int laser_alignment_progress;
+    Matrix3f laser_alignment_mat;
 
     Matrix3f inertial_alignment_mat;
     float inclination_angle;
@@ -71,15 +72,6 @@ public:
      * 
      */
     SensorHandler();
-
-    // 
-    /**
-     * @brief Takes a measurement using all 3 sensors. Value returned is Vector3d(Heading, Inclination, Distace)
-     * 
-     * @return Vector3f Heading [deg], Inclination [deg], Distance [m]
-     */
-    Vector3f get_measurement();
-
  
     /**
      * @brief Calibrate the inertial sensors - accelerometer and magnetometer. This runs a one-off calibration using the stored calibration data in each InertialSensor bject respectively.
@@ -148,6 +140,13 @@ public:
      * @return Vector3f Heading [deg], Inclination [deg], Distance [m]
      */
     Vector3f getReading();
+
+    /**
+     * @brief Saves inertial alignment data to non-volatile storage in a seperate location
+     * This is to allow form calibration data to be generated and discarded if necessary.
+     * 
+     */
+    void save_tmp_inertial_align_data();
 
     InertialSensor* getAccelPtr();
     InertialSensor* getMagPtr();

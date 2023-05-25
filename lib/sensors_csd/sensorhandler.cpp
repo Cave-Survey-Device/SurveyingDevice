@@ -2,6 +2,7 @@
 #include <NumericalMethods_csd.h>
 #include <utility_csd.h>
 #include <queue>
+#include <filesystem_csd.h>
 
 SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag, LaserSensor* las)
 {
@@ -10,6 +11,7 @@ SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag, LaserSensor*
     this->laser = las;
     this->using_laser = true;
     this->resetCalibration();
+    this->resetAlignment();
 }
 
 SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag)
@@ -18,10 +20,12 @@ SensorHandler::SensorHandler(Accelerometer* acc, Magnetometer* mag)
     this->accelerometer = acc;
     this->using_laser = false;
     this->resetCalibration();
+    this->resetAlignment();
 }
 
 SensorHandler::SensorHandler(){
     this->resetCalibration();
+    this->resetAlignment();
 }
 
 Vector3f SensorHandler::getReading()
@@ -171,7 +175,14 @@ void SensorHandler::resetCalibration()
     this->accelerometer->resetCalibration();
     this->inertial_alignment_mat = Matrix3f::Identity();
     this->inclination_angle = 0;
+}
+
+void SensorHandler::resetAlignment()
+{
+    debug(DEBUG_SENSORHANDLER,"SensorHandler::resetAlignment()");
     this->laser_alignment_progress = 0;
+    this->laser_alignment_data.setZero();
+    this->laser_alignment_mat.setZero();
 }
 
 int SensorHandler::collectInertialAlignmentData()
@@ -302,6 +313,14 @@ void SensorHandler::disableLaser()
 {
     this->laser->toggleLaser(false);
 }
+
+ void SensorHandler::save_tmp_inertial_align_data()
+ {
+    debug(DEBUG_SENSORHANDLER,"SensorHandler::save_tmp_inertial_align_data()");
+    write_to_file("tmp_align_mat","sh",inertial_alignment_mat);
+    write_to_file("tmp_align_mat","sh",inclination_angle);
+
+ }
 
 InertialSensor* SensorHandler::getAccelPtr()
 {

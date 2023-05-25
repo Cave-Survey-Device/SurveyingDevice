@@ -35,11 +35,11 @@ void ISR_button2_released()
 
 void init_interrupts()
 {
-    attachInterrupt(PIN_EXTERNAL_BUTTON,ISR_button1_pressed,FALLING);
-    attachInterrupt(PIN_EXTERNAL_BUTTON,ISR_button1_released,RISING);
-
-    attachInterrupt(PIN_INTERNAL_BUTTON1,ISR_button2_pressed,FALLING);
-    attachInterrupt(PIN_INTERNAL_BUTTON1,ISR_button2_released,RISING);
+    attachInterrupt(PIN_BUTTON1,ISR_button1_pressed,FALLING);
+    attachInterrupt(PIN_BUTTON1,ISR_button1_released,RISING);
+    
+    attachInterrupt(PIN_BUTTON2,ISR_button2_pressed,FALLING);
+    attachInterrupt(PIN_BUTTON2,ISR_button2_released,RISING);
     //attachInterrupt(PIN_INTERNAL_BUTTON2,ISR_internal_button2,FALLING);
 }
 

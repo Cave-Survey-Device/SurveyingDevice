@@ -37,6 +37,12 @@ void write_to_file(const char* fname, const char* name, const MatrixXf& mat)
 //   preferences.end();
 // }
 
+void write_to_file(const char* fname, const char* name, float& data){
+  preferences.begin(fname, false);
+  preferences.getFloat(name,data);
+  preferences.end();
+}
+
 void read_from_file(const char* fname, const char* name, Ref<MatrixXf> mat)
 {
   preferences.begin(fname, false);

@@ -90,6 +90,11 @@ public:
      */
     void save_calibration_data();
 
+    /**
+     * @brief Loads non-default (temporary) calibration data and paremeters from non-volatile memory
+     * 
+     */
+    void load_tmp_calibration_data();
 
     /**
      * @brief Saves calibration data and parameters to non-volatile storage in a seperate location
@@ -97,6 +102,8 @@ public:
      * 
      */
     void save_tmp_calibration_data();
+    
+    
 
 
     /**

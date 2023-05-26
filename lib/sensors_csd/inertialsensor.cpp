@@ -18,7 +18,6 @@ bool InertialSensor::collectAlignmentSample()
     return 1;
 }
 
-
 void InertialSensor::calibrateLinear()
 {    
     RowVector<float,10> U;
@@ -101,7 +100,6 @@ Vector3f InertialSensor::geth()
     return this->calibration_offset;
 }
 
-
 bool InertialSensor::getCalibMode()
 {
     return separate_calib;
@@ -115,23 +113,35 @@ void InertialSensor::setCalibMode(bool mode)
 void InertialSensor::load_calibration_data()
 {
     debug(DEBUG_INERTIALSENSOR,"InertialSensor::load_calibration_data()");
-    read_from_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    //read_from_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    read_from_file(device_ID,"calib_data",getCalibData());
+    read_from_file(device_ID,"calib_mat",calibration_matrix);
+    read_from_file(device_ID,"calib_off",calibration_offset);
 }
-
 void InertialSensor::save_calibration_data()
 {
     debug(DEBUG_INERTIALSENSOR,"InertialSensor::save_calibration_data()");
-    write_to_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    //write_to_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    write_to_file(device_ID,"calib_data",getCalibData());
+    write_to_file(device_ID,"calib_mat",calibration_matrix);
+    write_to_file(device_ID,"calib_off",calibration_offset);
 }
 
+void InertialSensor::load_tmp_calibration_data()
+{
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::load_calibration_data()");
+    //read_from_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    read_from_file(device_ID,"tmp_calib_data",getCalibData());
+    read_from_file(device_ID,"tmp_calib_mat",calibration_matrix);
+    read_from_file(device_ID,"tmp_calib_off",calibration_offset);
+}
 void InertialSensor::save_tmp_calibration_data()
 {
     debug(DEBUG_INERTIALSENSOR,"InertialSensor::save_tmp_calibration_data()");
-    write_to_file("tmp_calib_data",device_ID,getCalibData());
-    write_to_file("tmp_calib_mat",device_ID,getT());
-    write_to_file("tmp_calib_off",device_ID,geth());
+    write_to_file(device_ID,"tmp_calib_data",getCalibData());
+    write_to_file(device_ID,"tmp_calib_mat",calibration_matrix);
+    write_to_file(device_ID,"tmp_calib_off",calibration_offset);
 }
-
 
 void InertialSensor::setID(const char* ID)
 {

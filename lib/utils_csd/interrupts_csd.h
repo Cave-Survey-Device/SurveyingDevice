@@ -9,38 +9,61 @@ bool button2_pressed_flag = false;
 bool button1_released_flag = false;
 bool button2_released_flag = false;
 
-void ISR_button1_pressed()
+// void IRAM_ATTR ISR_button1_pressed()
+// {
+//     Serial << "ISR_button1_pressed()";
+//     button1_released_flag = false;
+//     button1_pressed_flag = true;
+// }
+
+// void IRAM_ATTR ISR_button1_released()
+// {
+//     Serial << "ISR_button1_released()";
+//     button1_pressed_flag = false;
+//     button1_released_flag = true;
+// }
+
+// void IRAM_ATTR ISR_button2_pressed()
+// {
+//     Serial << "ISR_button2_pressed()";
+//     button2_released_flag = false;
+//     button2_pressed_flag = true;
+// }
+
+// void IRAM_ATTR ISR_button2_released()
+// {
+//     Serial << "ISR_button2_released()";
+//     button2_pressed_flag = false;
+//     button2_released_flag = true;
+// }
+
+void IRAM_ATTR ISR_button1_change()
 {
+    if (digitalRead(PIN_BUTTON1))
+    {
     button1_released_flag = false;
     button1_pressed_flag = true;
-}
-
-void ISR_button1_released()
-{
-    button1_pressed_flag = false;
+    } else {
     button1_released_flag = true;
+    button1_pressed_flag = false;
+    }
 }
-
-void ISR_button2_pressed()
+void IRAM_ATTR ISR_button2_change()
 {
+    if (digitalRead(PIN_BUTTON2))
+    {
     button2_released_flag = false;
     button2_pressed_flag = true;
-}
-
-void ISR_button2_released()
-{
-    button2_pressed_flag = false;
+    } else {
     button2_released_flag = true;
+    button2_pressed_flag = false;
+    }
 }
 
 void init_interrupts()
 {
-    attachInterrupt(PIN_BUTTON1,ISR_button1_pressed,FALLING);
-    attachInterrupt(PIN_BUTTON1,ISR_button1_released,RISING);
-    
-    attachInterrupt(PIN_BUTTON2,ISR_button2_pressed,FALLING);
-    attachInterrupt(PIN_BUTTON2,ISR_button2_released,RISING);
-    //attachInterrupt(PIN_INTERNAL_BUTTON2,ISR_internal_button2,FALLING);
+    attachInterrupt(PIN_BUTTON1,ISR_button1_change,CHANGE);
+    attachInterrupt(PIN_BUTTON2,ISR_button2_change,FALLING);
 }
 
 #endif

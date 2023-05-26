@@ -47,7 +47,8 @@ enum debug_type {
     DEBUG_INERTIAL_CALIB, 
     DEBUG_LASER_ALIGN};
 
-const static bool DEBUG_BOOL_ARR[9] = {
+const static bool DEBUG_BOOL_ARR[10] = {
+    true,
     DEBUG_FILE_ENA, 
     DEBUG_LASER_ENA, 
     DEBUG_LASER_EXTENDED_ENA, 
@@ -58,7 +59,8 @@ const static bool DEBUG_BOOL_ARR[9] = {
     DEBUG_INERTIAL_CALIB_ENA, 
     DEBUG_LASER_ALIGN_ENA};
 
-const static char DEBUG_STR_ARR[9][7] = {
+const static char DEBUG_STR_ARR[10][7] = {
+    "SYS   ",
     "FILE  ", 
     "LASER ", 
     "LASER+", 

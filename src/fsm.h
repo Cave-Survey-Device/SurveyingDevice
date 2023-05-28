@@ -2,7 +2,6 @@
 
 #include <NumericalMethods_csd.h>
 #include <config_csd.h>
-#include <interrupts_csd.h>
 #include <utility_csd.h>
 
 #include <sensorhandler.h>
@@ -120,24 +119,6 @@ void checkForNotify(uint32_t& notifiedValue)
                         ULONG_MAX, /* Reset the notification value to 0 on exit. */
                         &notifiedValue, /* Notified value pass out in computefuncNotifiedValue. */
                         5 );  /* Block for 5ms. */
-}
-
-
-void evaluateFSM(uint16_t action)
-{
-    current_mode = next_mode;
-    next_mode = MODE_IDLE;
-
-    switch (action)
-    {
-    case NOTIFY_B1_SHORT_PRESS:     b1ShortHold();      break;
-    case NOTIFY_B2_SHORT_PRESS:     b2ShortHold();      break;
-    case NOTIFY_B1_LONG_PRESS:      b1LongHold();       break;
-    case NOTIFY_B2_LONG_PRESS:      b2LongHold();       break;
-    case NOTIFY_B1B2_SHORT_PRESS:   b1b2ShortHold();    break;
-    case NOTIFY_B1B2_LONG_PRESS:    b1b2LongHold();     break;
-    default:    break;
-    }
 }
 
 void menuSelect()
@@ -275,19 +256,16 @@ void b1LongHold()
         case MODE_SAVE_INERTIAL_CALIB:
         debug(DEBUG_MAIN,"MODE_SAVE_INERTIAL_CALIB");
         sh.save_inertial_align_data();
-        sh.loadCalibration();
         break;
 
         case MODE_SAVE_LASER_ALIGN:
         debug(DEBUG_MAIN,"MODE_SAVE_INERTIAL_CALIB");
         sh.save_laser_align_data();
-        sh.loadAlignment();
         break;
 
         case MODE_SAVE_MAG_CALIBRATE:
         debug(DEBUG_MAIN,"MODE_SAVE_MAG_CALIBRATE");
         mag.save_calibration_data();
-        mag.load_calibration_data();
         break;
 
         case MODE_MENU:
@@ -352,3 +330,19 @@ void b1b2LongHold()
     next_mode = MODE_IDLE;
 }
 
+void evaluateFSM(uint16_t action)
+{
+    current_mode = next_mode;
+    next_mode = MODE_IDLE;
+
+    switch (action)
+    {
+    case NOTIFY_B1_SHORT_PRESS:     b1ShortHold();      break;
+    case NOTIFY_B2_SHORT_PRESS:     b2ShortHold();      break;
+    case NOTIFY_B1_LONG_PRESS:      b1LongHold();       break;
+    case NOTIFY_B2_LONG_PRESS:      b2LongHold();       break;
+    case NOTIFY_B1B2_SHORT_PRESS:   b1b2ShortHold();    break;
+    case NOTIFY_B1B2_LONG_PRESS:    b1b2LongHold();     break;
+    default:    break;
+    }
+}

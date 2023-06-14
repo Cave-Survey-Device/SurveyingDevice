@@ -118,7 +118,8 @@ static float BLE_Enabled = true;
 static float laser_timeout = 10.0; 
 static float screen_timeout = 5;
 static float device_poweroff_timeout = 300;
-static float long_hold_time = 5;
+static float long_hold_time = 2;
+static float long_hold_time_ms = 2000;
 
 static state_enum previous_state = STATE_IDLE;
 static state_enum current_state = STATE_IDLE;
@@ -142,6 +143,8 @@ static Magnetometer mag(&mag_sc);
 static Accelerometer acc(&acc_sc);
 static SensorHandler sh(&acc, &mag);
 
+static OLED oled; // create a OLED object
+
 static float current_time;
 static float b1_start_time;
 static float b2_start_time;
@@ -151,7 +154,7 @@ static float b1b2_start_time;
 
 void takeShot(){
     Vector3f shot_data;
-    shot_data = sh.getReading();
+    shot_data = sh.takeShot();
     sh.disableLaser();
     // TODO: Save shot data
 }
@@ -217,34 +220,53 @@ void stateB1B2Waiting()
     }
 }
 
+static Vector3f data;
 void stateIdle(){
-    previous_state = current_state;
     next_state = STATE_IDLE;
+
+    if (button1_pressed_flag)
+    {
+        next_state = STATE_B1_WAITING;
+    } else if (button2_pressed_flag) {
+        next_state = STATE_B2_WAITING;
+    }
+
+    switch(current_mode)
+    {
+        case(MODE_CALIBRATE_MAG):
+        if (previous_mode != MODE_CALIBRATE_MAG)
+        {
+            mag.setCalibMode(true);
+        }
+        mag.addCalibrationData();
+        next_mode = MODE_CALIBRATE_MAG;
+        // TODO: Display calibration amount...
+        break;
+
+        // case(MODE_IDLE):
+        // data = sh.getReading();
+        // oled.Battery(25);
+        // oled.Compass(data(0));
+        // oled.Clino(data(1));
+        // oled.Distance(data(2));
+        // oled.Blutooth(true);
+        // break;
+    }
+
 }
 
 // Enable laser, take shot, align shot, forwards in menu
 void stateB1ShortHold(){
-    next_mode = MODE_IDLE;
+    next_state = STATE_IDLE;
     switch(current_mode)
     {
     case(MODE_IDLE):
     next_mode = MODE_LASER_ENA;
-
     enableLaser();
     break;
 
     case(MODE_LASER_ENA):
     takeShot();
-    break;
-
-    case(MODE_CALIBRATE_MAG):
-    if (previous_mode != MODE_CALIBRATE_MAG)
-    {
-        mag.setCalibMode(true);
-    }
-    mag.addCalibrationData();
-    next_mode = MODE_CALIBRATE_MAG;
-    // TODO: Display calibration amount...
     break;
 
     case(MODE_CALIBRATE):
@@ -281,6 +303,7 @@ void stateB1ShortHold(){
 // Select in menu
 void stateB1LongHold()
 {
+    next_state = STATE_IDLE;
     switch (current_mode)
     {
         case (MODE_MENU):
@@ -301,24 +324,28 @@ void stateB1LongHold()
 
 // Back in menu
 void stateB2ShortHold(){
+    next_state = STATE_IDLE;
     switch(current_mode)
     {
     case(MODE_MENU): current_menu--; 
     break;
     }
 }
+
 void stateB2LongHold(){
+    next_state = STATE_IDLE;
 }
 
 // Enter menu
 void stateB1B2ShortHold(){
+    next_state = STATE_IDLE;
     next_mode = MODE_MENU;
 }
 
 // Reset
 void stateB1B2LongHold(){
-    next_mode = MODE_IDLE;
     next_state = STATE_IDLE;
+    next_mode = MODE_IDLE;
     // RESET
 }
 
@@ -355,13 +382,13 @@ void mainloop(void* parameter)
         }
 
         if (next_state != current_state){
-            debug(DEBUG_ALWAYS, state_names[(int)next_state]);
+            debug(DEBUG_MAIN, state_names[(int)next_state]);
         }
         if (next_mode != current_mode){
-            debug(DEBUG_ALWAYS, mode_names[(int)next_mode]);
+            debug(DEBUG_MAIN, mode_names[(int)next_mode]);
         }
         if (next_menu != current_menu){
-            debug(DEBUG_ALWAYS, mode_names[(int)next_mode]);
+            debug(DEBUG_MAIN, mode_names[(int)next_mode]);
         }
     }
 }
@@ -380,6 +407,10 @@ void setup(){
   while (sca3300.begin() == false) {
       Serial.println("Murata SCL3300 inclinometer not connected.");;
   }
+
+  init_interrupts();
+
+  oled.Initialise();
 
   Serial << "Init finished\n";
     TaskHandle_t hardware_handle;

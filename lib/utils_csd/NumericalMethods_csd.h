@@ -19,31 +19,8 @@ using namespace Eigen;
  */
 MatrixXf kron(MatrixXf m1, MatrixXf m2);
 
-int sign(float f);
 
-/**
- * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the x axis
- * 
- * @param deg Angle in degrees
- * @return Matrix3f - Rotation matrix
- */
-Matrix3f x_rotation(float deg);
 
-/**
- * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the y axis
- * 
- * @param deg Angle in degrees
- * @return Matrix3f - Rotation matrix
- */
-Matrix3f y_rotation(float deg);
-
-/**
- * @brief Calculates the rotation matrix correcsponding to a rotation of 'deg' about the z axis
- * 
- * @param deg Angle in degrees
- * @return Matrix3f - Rotation matrix
- */
-Matrix3f z_rotation(float deg);
 
 /**
  * @brief Given a point cloud, calculate the best fit ellipsoid (linear least squares), returning the quadratic ellipsoid parameters

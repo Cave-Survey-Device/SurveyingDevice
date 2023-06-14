@@ -18,46 +18,6 @@ MatrixXf kron(MatrixXf m1, MatrixXf m2)
     return out;
 }
 
-int sign(float f)
-{
-    if (f>=0)
-    {
-        return 1;
-    } else {
-        return -1;
-    }
-}
-//  ------------------------------------------------ ROTATION FUNCTIONS  ------------------------------------------------
-
-Matrix3f x_rotation(float deg)
-{
-    deg = Deg2Rad(deg);
-    Matrix3f R;
-    R << cos(deg), 0., sin(deg),
-            0., 1., 0.,
-            -sin(deg), 0., cos(deg);
-    return R;
-}
-
-Matrix3f y_rotation(float deg)
-{
-    deg = Deg2Rad(deg);
-    Matrix3f R;
-    R << 1., 0., 0.,
-            0., cos(deg), -sin(deg),
-            0., sin(deg), cos(deg);
-    return R;
-}
-
-Matrix3f z_rotation(float deg)
-{
-    deg = Deg2Rad(deg);
-    Matrix3f R;
-    R << cos(deg), -sin(deg), 0.,
-            sin(deg), cos(deg), 0.,
-            0., 0. , 1.;
-    return R;
-}
 
 //  ------------------------------------------ INERTIAL CALIBRATION FUNCTIONS  -------------------------------------------
 

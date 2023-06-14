@@ -113,6 +113,8 @@ static SensorHandler sh(&acc, &mag);
 
 static OLED oled; // create a OLED object
 
+static uint32_t notification;
+
 void checkForNotify(uint32_t& notifiedValue)
 {
     xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
@@ -153,76 +155,75 @@ void menuSelect()
 
 void b1ShortHold()
 {
-    debug(DEBUG_MAIN,"b1ShortHold()");
-    static uint32_t notification;
+    // debug(DEBUG_MAIN,"b1ShortHold()");
     switch (current_mode)
     {
     case MODE_IDLE:
     debug(DEBUG_MAIN,"MODE_IDLE");
     next_mode = MODE_LASER_ENA;
-    sh.enableLaser(); 
+    // sh.enableLaser(); 
     break;
 
     case MODE_LASER_ENA:
     debug(DEBUG_MAIN,"MODE_LASER_ENA");
-    sh.takeShot();
+    // sh.takeShot();
     break;
 
     case MODE_CALIBRATE_MAG:
     debug(DEBUG_MAIN,"MODE_CALIBRATE_MAG");
-    mag.setCalibMode(true);
-    while (true)
-    {
-        checkForNotify(notification);
-        if (notification == NOTIFY_B1_LONG_PRESS)
-        {
-            next_mode = MODE_SAVE_MAG_CALIBRATE;
-            mag.calibrateLinear();
-            mag.save_tmp_calibration_data();
-            break;
-        }   else if (notification == NOTIFY_B2_LONG_PRESS)
-        {
-            mag.resetCalibration();
-            mag.load_calibration_data();
-            break;
-        }
+    // mag.setCalibMode(true);
+    // while (true)
+    // {
+    //     checkForNotify(notification);
+    //     if (notification == NOTIFY_B1_LONG_PRESS)
+    //     {
+    //         next_mode = MODE_SAVE_MAG_CALIBRATE;
+    //         mag.calibrateLinear();
+    //         mag.save_tmp_calibration_data();
+    //         break;
+    //     }   else if (notification == NOTIFY_B2_LONG_PRESS)
+    //     {
+    //         mag.resetCalibration();
+    //         mag.load_calibration_data();
+    //         break;
+    //     }
 
-        mag.addCalibrationData();
-        // Display mag.checkCalibrationProgress()
-    }
+    //     mag.addCalibrationData();
+    //     // Display mag.checkCalibrationProgress()
+    // }
     break;
 
     case MODE_CALIBRATE_INERTIAL:
     debug(DEBUG_MAIN,"MODE_CALIBRATE_INERTIAL");
-    if (sh.collectInertialAlignmentData())
-    {
-        next_mode = MODE_SAVE_INERTIAL_CALIB;
-        sh.alignInertial();
-    }
-    else
-    {
-        next_mode = MODE_CALIBRATE_INERTIAL;
-    }
-    break;
+    // if (sh.collectInertialAlignmentData())
+    // {
+    //     next_mode = MODE_SAVE_INERTIAL_CALIB;
+    //     sh.alignInertial();
+    // }
+    // else
+    // {
+    //     next_mode = MODE_CALIBRATE_INERTIAL;
+    // }
+    // break;
 
-    case MODE_ALIGN_LASER:
-    debug(DEBUG_MAIN,"MODE_ALIGN_LASER");
-    next_mode = MODE_ALIGN_LASER;
-    if (sh.collectLaserAlignmentData())
-    {
-        sh.alignLaser();
-        next_mode = MODE_SAVE_LASER_ALIGN;
-    }
-    else
-    {
-        next_mode = MODE_CALIBRATE_INERTIAL;
-    }
+    // case MODE_ALIGN_LASER:
+    // debug(DEBUG_MAIN,"MODE_ALIGN_LASER");
+    // next_mode = MODE_ALIGN_LASER;
+    // if (sh.collectLaserAlignmentData())
+    // {
+    //     sh.alignLaser();
+    //     next_mode = MODE_SAVE_LASER_ALIGN;
+    // }
+    // else
+    // {
+    //     next_mode = MODE_CALIBRATE_INERTIAL;
+    // }
     break;
 
     case MODE_MENU:
     debug(DEBUG_MAIN,"MODE_MENU");
-    next_mode = MODE_MENU;
-    current_menu++;
+    // next_mode = MODE_MENU;
+    // current_menu++;
     break;
 
     default:
@@ -232,12 +233,12 @@ void b1ShortHold()
 
 void b2ShortHold()
 {
-    debug(DEBUG_MAIN,"b2ShortHold()");
+    // debug(DEBUG_MAIN,"b2ShortHold()");
     switch (current_mode)
     {
         case MODE_LASER_ENA:
         debug(DEBUG_MAIN,"MODE_LASER_ENA");
-        sh.disableLaser();
+        // sh.disableLaser();
         break;
 
         case MODE_MENU:
@@ -255,22 +256,23 @@ void b1LongHold()
     {
         case MODE_SAVE_INERTIAL_CALIB:
         debug(DEBUG_MAIN,"MODE_SAVE_INERTIAL_CALIB");
-        sh.save_inertial_align_data();
+
+        // sh.save_inertial_align_data();
         break;
 
         case MODE_SAVE_LASER_ALIGN:
         debug(DEBUG_MAIN,"MODE_SAVE_INERTIAL_CALIB");
-        sh.save_laser_align_data();
+        // sh.save_laser_align_data();
         break;
 
         case MODE_SAVE_MAG_CALIBRATE:
         debug(DEBUG_MAIN,"MODE_SAVE_MAG_CALIBRATE");
-        mag.save_calibration_data();
+        // mag.save_calibration_data();
         break;
 
         case MODE_MENU:
         debug(DEBUG_MAIN,"MODE_MENU");
-        menuSelect();
+        // menuSelect();
         break;
 
         default:
@@ -280,22 +282,22 @@ void b1LongHold()
 
 void b2LongHold()
 {
-    debug(DEBUG_MAIN,"b2LongHold()");
+    // debug(DEBUG_MAIN,"b2LongHold()");
     switch (current_mode)
     {
         case MODE_SAVE_INERTIAL_CALIB:
         debug(DEBUG_MAIN,"MODE_SAVE_INERTIAL_CALIB");
-        sh.resetCalibration();
+        // sh.resetCalibration();
         break;
 
         case MODE_SAVE_LASER_ALIGN:
         debug(DEBUG_MAIN,"MODE_SAVE_LASER_ALIGN");
-        sh.resetAlignment();
+        // sh.resetAlignment();
         break;
 
         case MODE_SAVE_MAG_CALIBRATE:
         debug(DEBUG_MAIN,"MODE_SAVE_MAG_CALIBRATE");
-        mag.resetCalibration();
+        // mag.resetCalibration();
         break;
 
         case MODE_MENU:
@@ -310,7 +312,7 @@ void b2LongHold()
 
 void b1b2ShortHold()
 {
-    debug(DEBUG_MAIN,"b1b2ShortHold()");
+    // debug(DEBUG_MAIN,"b1b2ShortHold()");
     switch (current_mode)
     {
     case MODE_IDLE:
@@ -326,7 +328,7 @@ void b1b2ShortHold()
 
 void b1b2LongHold()
 {
-    debug(DEBUG_MAIN,"b1b2LongHold()");
+    // debug(DEBUG_MAIN,"b1b2LongHold()");
     next_mode = MODE_IDLE;
 }
 

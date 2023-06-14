@@ -7,15 +7,16 @@ TaskHandle_t computefunc_task;
 
 #define long_hold_time_ms 2000
 #define NOTIFY_B1_PRESSED 0x02
-#define NOTIFY_B1_RELEASED 0x03
-#define NOTIFY_B2_PRESSED 0x04
-#define NOTIFY_B2_RELEASED 0x05
+#define NOTIFY_B1_RELEASED 0x08
+#define NOTIFY_B2_PRESSED 0x03
+#define NOTIFY_B2_RELEASED 0x09
 
 static uint32_t eventhandlerNotifiedValue = 0x00;
 static uint32_t computefuncNotifiedValue = 0x00;
 static uint32_t compute_notification = 0x00;
 static uint32_t event_notification = 0x00;
 static uint32_t action = 0x00;
+static bool timedout;
 
 void IRAM_ATTR ISR_b1_interrupt()
 {
@@ -30,7 +31,7 @@ void IRAM_ATTR ISR_b1_interrupt()
     
     xTaskNotifyFromISR( eventhandler_task,
                             event_notification,
-                            eSetValueWithOverwrite,
+                            eSetValueWithoutOverwrite,
                             &xHigherPriorityTaskWoken );
 }
 void IRAM_ATTR ISR_b2_interrupt()
@@ -44,13 +45,9 @@ void IRAM_ATTR ISR_b2_interrupt()
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xTaskNotifyFromISR( eventhandler_task,
                             event_notification,
-                            eSetValueWithOverwrite,
+                            eSetValueWithoutOverwrite,
                             &xHigherPriorityTaskWoken );
 }
-
-
-
-static bool timedout;
 
 
 uint32_t b1b2Waiting()
@@ -61,7 +58,7 @@ uint32_t b1b2Waiting()
         debug(DEBUG_ALWAYS,"NOTIFY_B1B2_LONG_PRESS");
         return NOTIFY_B1B2_LONG_PRESS;
     }
-    else if (eventhandlerNotifiedValue == NOTIFY_B1_RELEASED || eventhandlerNotifiedValue == 5000)
+    else if (eventhandlerNotifiedValue == NOTIFY_B1_RELEASED || eventhandlerNotifiedValue == NOTIFY_B2_RELEASED || eventhandlerNotifiedValue == 5000)
     {
         debug(DEBUG_ALWAYS,"NOTIFY_B1B2_SHORT_PRESS");
         return NOTIFY_B1B2_SHORT_PRESS;
@@ -136,34 +133,35 @@ void eventhandler(void* parameter)
         switch (eventhandlerNotifiedValue)
         {
             case NOTIFY_B1_PRESSED:
-                debug(DEBUG_ALWAYS,"button1 pressed");
+                // debug(DEBUG_ALWAYS,"button1 pressed");
                 action = b1Waiting();
             break;
 
             case NOTIFY_B2_PRESSED:
-                debug(DEBUG_ALWAYS,"button2 pressed");
+                // debug(DEBUG_ALWAYS,"button2 pressed");
                 action = b2Waiting();
             break;
 
             case NOTIFY_B1_RELEASED:
-                debug(DEBUG_ALWAYS,"button1 released");
+                // debug(DEBUG_ALWAYS,"button1 released");
             break;
 
             case NOTIFY_B2_RELEASED:
-                debug(DEBUG_ALWAYS,"button2 released");
+                // debug(DEBUG_ALWAYS,"button2 released");
             break;
 
             default:
-                debug(DEBUG_ALWAYS,"Notify with no body!");
+                // debug(DEBUG_ALWAYS,"Notify with no body!");
             break;
         }
 
-        // // Notifies computefunc_task with the value "notification", overwriting the current notificaiton value
-        // xTaskNotify( computefunc_task, action, eSetValueWithOverwrite );
+        // Notifies computefunc_task with the value "notification", overwriting the current notificaiton value
+        xTaskNotify( computefunc_task, action, eSetValueWithOverwrite );
 
         // // Clear any notifications received during running, this prevents chained inputs
         xTaskNotifyStateClear(eventhandler_task);
         ulTaskNotifyValueClear(eventhandler_task,0);
+        eventhandlerNotifiedValue = 0x00;
         Serial << "\n";
     }
 }

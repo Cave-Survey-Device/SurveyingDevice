@@ -96,6 +96,14 @@ void read_from_file(const char* fname, const char* name, float* data, int size)
     preferences.end();
 }
 
+
+void erase_flash()
+{
+  nvs_flash_erase(); // erase the NVS partition and...
+  nvs_flash_init(); // initialize the NVS partition.
+}
+
+
 #else
 #ifdef SEEED
 

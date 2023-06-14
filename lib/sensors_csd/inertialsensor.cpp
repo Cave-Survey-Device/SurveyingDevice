@@ -50,7 +50,7 @@ void InertialSensor::calibrateLinear()
     this->calibration_offset << transformation[9], transformation[10], transformation[11];
     
     // Save calibration data in tmp file
-    save_tmp_calibration_data();
+    // save_tmp_calibration_data();
 }
 
 Vector3f InertialSensor::getSingleSample()
@@ -71,6 +71,10 @@ Vector3f InertialSensor::getReading()
     }
     reading = reading/SAMPLES_PER_READING;
     
+    // Serial << "Reading:";
+    // displayRowVec(reading);
+    // Serial << "Corrected reading:";
+    // displayRowVec(this->calibration_matrix * (reading - this->calibration_offset));
     return this->calibration_matrix * (reading - this->calibration_offset);
 }
 
@@ -79,7 +83,7 @@ void InertialSensor::resetCalibration()
     align_num = 0;
     ref_calibration_data.setZero();
     calibration_matrix = Matrix3f::Identity();
-    calibration_offset = Vector3f::Identity();
+    calibration_offset = Vector3f::Zero();
     calibrate_with_alignment = true;
 }
 

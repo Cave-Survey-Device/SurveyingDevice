@@ -24,7 +24,9 @@ Vector3f RM3100SensorConnection::getRawData()
     rm3100_connection->update();
     Eigen::Vector3f data;
     // Div by 45 to come closer to normalised
-    data << rm3100_connection->getX()/45., rm3100_connection->getY()/45, rm3100_connection->getZ()/45;
+    data << rm3100_connection->getX()/45, rm3100_connection->getY()/45, rm3100_connection->getZ()/45;
+    // Serial << "RM3100 data: ";
+    // displayRowVec(data);
     return data;
 }
 

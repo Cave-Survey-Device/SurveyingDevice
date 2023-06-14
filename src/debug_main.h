@@ -18,6 +18,8 @@
 #include <Adafruit_GFX.h>
 #include <OLED.h>
 
+#include <filesystem_csd.h>
+
 bool available = false;
 bool btn_press = false;
 bool acc_calib = false;
@@ -55,7 +57,6 @@ void serialEvent()
 void test_main(void * parameter) {
   while(true){
     if (cmd == 1) {
-      Serial << "CMD1\n";
       Serial << "Get calibration data...\n";
       calibrated = sh.collectInertialAlignmentData();
       if (calibrated == -1)
@@ -95,46 +96,41 @@ void test_main(void * parameter) {
 
       Serial << "SCA3300 h\n\n";
       displayMat( acc.geth() );
-
-      // Serial << "-----------------------------------------------------------\n\n";
-      // Serial << "SCA3300 sample data\n";
-      // displayMat(     (  sh.getAccelPtr()->getCalibData()  ).transpose()    );
-      // Serial << "RM3100 sample data\n";
-      // displayMat(     (  sh.getMagPtr()->getCalibData()  ).transpose()    );
-
-
-    } else if (cmd == 3) {
+    } else if (cmd == 4) {
       Serial << "CMD3\n";
       Serial << "Calibrating inertial sensors...\n";
       sh.calibrateInertial();
     
-    } else if (cmd == 4) {
+    } else if (cmd == 5) {
       Serial << "CMD4\n";
       Serial << "Aligning inertial sensors...\n";
       sh.alignInertial();
 
-    // } else if (cmd == 5) {
-    //   Serial << "CMD5\n";
-    //   // Read from file
-    //   Serial << "Save data";
-    //   mag.save_calibration_data();
-    //   acc.save_calibration_data();
+    } else if (cmd == 6) {
+      Serial << "Save data";
+      mag.save_calibration_data();
+      acc.save_calibration_data();
+      sh.save_inertial_align_data();
 
-    } else if (cmd == 6){
-      Serial << "CMD6\n";
-      // Write to file
-      Serial << "Read data";
+    } else if (cmd == 7){
+      Serial << "Load data\n";
       mag.load_calibration_data();
       acc.load_calibration_data();
+      sh.load_inertial_align_data();
     } else if (cmd == 9) {
       Serial << "CMD9\n";
-      data = sh.getReading();
-    } else {}
+      data = sh.updateInertial();
+    } else if (cmd == 3)
+    {
+      erase_flash();
+    }
     cmd = 0;
+    // delay(10);
     
     
 
     // oled.clearDisplay();
+    data = sh.updateInertial();
     oled.Battery(batt_percentage);
     oled.Compass(data(0));
     oled.Clino(data(1));
@@ -203,6 +199,9 @@ void setup() {
       tskIDLE_PRIORITY ,  /* Priority of the task */
       &hardware_handle,  /* Task handle. */
       0); /* Core where the task should run */
+
+  sh.resetCalibration();
+  sh.resetAlignment();
 }
 
 void loop(){}

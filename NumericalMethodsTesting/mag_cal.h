@@ -13,6 +13,8 @@
 #include "util.h"
 using namespace Eigen;
 
+#define N_grid 5
+#define N_equations N_grid*N_grid+3+1
 
 RowVector<float,10> fit_ellipsoid(MatrixXf samples)
 {
@@ -52,12 +54,6 @@ RowVector<float,10> fit_ellipsoid(MatrixXf samples)
     Matrix<float,4,6> S21 = S.block<4,6>(6,0);
     Matrix<float,4,4> S22 = S.block<4,4>(6,6);
 
-//    std::cout << "\n\n";
-//    std::cout << "S11: \n" << S11 << "\n\n";
-//    std::cout << "S12: \n" << S12 << "\n\n";
-//    std::cout << "S21: \n" << S21 << "\n\n";
-//    std::cout << "S22: \n" << S22 << "\n\n";
-
 
     // Solve least squares - Eqn(14) and Eqn(15)
     MatrixXf M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
@@ -68,10 +64,6 @@ RowVector<float,10> fit_ellipsoid(MatrixXf samples)
 
     Vector<float,6> eval = eigenvalues.array().real();
     Matrix<float,6,6> evec = eigenvectors.array().real();
-////    std::cout << "Matrix to decompose: \n" << M << "\n";
-////    std::cout << "Eigenvalues: \n" << eval << "\n";
-////    std::cout << "Eigenvectors: \n" << evec << "\n\n";
-
 
     // Find eigenvector corresponding to largest eigenvalue
     Vector<float,6> u1;
@@ -136,4 +128,61 @@ Vector<float,12> calculate_transformation(Matrix3f M, Vector3f n, float d)
 }
 
 
+
+float basisFunc(Vector2f data, Vector2f center)
+{
+    float out;
+    float r = (center-data).norm();
+    float alpha = 1;
+
+    out = 1/(1+alpha*r*r);
+    return out;
+}
+
+//Vector<float,N_equations> fitRBF(MatrixXf samples)
+//{
+//    Vector<float,N_equations> out;
+//
+//    // Consider using Halton points: https://www.sciencedirect.com/science/article/pii/S0307904X17304717
+//
+////    // Construct grid
+////    Matrix<Vector2f,N_grid,N_grid> grid;
+////    for(int x=0; x < N_grid; x++)
+////    {
+////        for(int y=0; y < N_grid; y++)
+////        {
+////            grid(x,y) << x/N_grid, y/N_grid;
+////        }
+////    }
+//
+//    // Construct design matrix
+//    Matrix<float, -1, N_equations> A(samples.cols(), N_equations);
+//    Vector2f center;
+//    for(int x=0; x < N_grid; x++)
+//    {
+//        for(int y=0; y < N_grid; y++)
+//        {
+//            for (int i=0;i<A.rows();i++)
+//            {
+//
+//                A(i,x*N_grid+y) = basisFunc();
+//            }
+//        }
+//    }
+//    for (int i=0;i<A.rows();i++)
+//    {
+//        A(i,N_equations-3) = samples.col(i)(0);
+//        A(i,N_equations-2) = samples.col(i)(1);
+//        A(i,N_equations-1) = 1;
+//    }
+//
+//
+//
+//
+//
+//
+//
+//    // Construct design matrix
+//
+//}
 #endif //MAGNETOMETER_CALIBRATION_MAG_CAL_H

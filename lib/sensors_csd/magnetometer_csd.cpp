@@ -4,7 +4,6 @@
 
 Magnetometer::Magnetometer(InertialSensorConnection* sc) : InertialSensor(sc, &calibration_data(0,0), n_calib)
 {
-    Serial.print("Magnetometer::Magnetometer(InertialSensorConnection* sc)\n");
     static_assert(n_calib >= N_INERTIAL_ALIGNMENT,  "ASSERT n_calib >= N_INERTIAL_ALIGNMENT");
     setID("mag");
 }

@@ -1,0 +1,46 @@
+\doxysection{SCA3300\+Sensor\+Connection.\+h}
+\hypertarget{_s_c_a3300_sensor_connection_8h_source}{}\label{_s_c_a3300_sensor_connection_8h_source}\index{lib/sensors\_csd/SCA3300SensorConnection.h@{lib/sensors\_csd/SCA3300SensorConnection.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ HEADER\_SCA3300SC}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ HEADER\_SCA3300SC}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}inertialsensor.h"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <SCA3300.h>}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_s_c_a3300_sensor_connection}{SCA3300SensorConnection}}:\ \textcolor{keyword}{public}\ \mbox{\hyperlink{class_inertial_sensor_connection}{InertialSensorConnection}}}
+\DoxyCodeLine{00008\ \{}
+\DoxyCodeLine{00009\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00010\ \ \ \ \ \mbox{\hyperlink{class_s_c_a3300_sensor_connection}{SCA3300SensorConnection}}(SCA3300*\ ptr\_sca3300);}
+\DoxyCodeLine{00011\ \ \ \ \ Vector3f\ getRawData();}
+\DoxyCodeLine{00012\ \ \ \ \ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00014\ \ \ \ \ SCA3300*\ sca3300\_connection;}
+\DoxyCodeLine{00015\ \};}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ SCA3300SensorConnection::SCA3300SensorConnection(SCA3300*\ ptr\_sca3300)}
+\DoxyCodeLine{00018\ \{}
+\DoxyCodeLine{00019\ \ \ \ \ this-\/>sca3300\_connection\ =\ ptr\_sca3300;}
+\DoxyCodeLine{00020\ \}}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ Vector3f\ SCA3300SensorConnection::getRawData()}
+\DoxyCodeLine{00023\ \{}
+\DoxyCodeLine{00024\ \ \ \ \ Eigen::Vector3f\ data;}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keywordtype}{bool}\ available\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordflow}{while}\ (!available)}
+\DoxyCodeLine{00028\ \ \ \ \ \{}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ available\ =\ sca3300\_connection-\/>available();}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!available)\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \ \ \ \ sca3300\_connection-\/>reset();}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00033\ \ \ \ \ \}}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \ \ \ \ data\ <<\ (float)sca3300\_connection-\/>getCalculatedAccelerometerX(),\ (float)sca3300\_connection-\/>getCalculatedAccelerometerY(),\ (float)sca3300\_connection-\/>getCalculatedAccelerometerZ();}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordflow}{return}\ data;}
+\DoxyCodeLine{00038\ \}}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

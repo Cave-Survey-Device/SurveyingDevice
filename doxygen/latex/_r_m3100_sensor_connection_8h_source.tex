@@ -1,0 +1,39 @@
+\doxysection{RM3100\+Sensor\+Connection.\+h}
+\hypertarget{_r_m3100_sensor_connection_8h_source}{}\label{_r_m3100_sensor_connection_8h_source}\index{lib/sensors\_csd/RM3100SensorConnection.h@{lib/sensors\_csd/RM3100SensorConnection.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ HEADER\_RM3100SC}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ HEADER\_RM3100SC}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}inertialsensor.h"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <RM3100.h>}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{keyword}{class\ }\mbox{\hyperlink{class_r_m3100_sensor_connection}{RM3100SensorConnection}}:\ \textcolor{keyword}{public}\ \mbox{\hyperlink{class_inertial_sensor_connection}{InertialSensorConnection}}}
+\DoxyCodeLine{00008\ \{}
+\DoxyCodeLine{00009\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00010\ \ \ \ \ \mbox{\hyperlink{class_r_m3100_sensor_connection}{RM3100SensorConnection}}(RM3100*\ ptr\_rm3100);}
+\DoxyCodeLine{00011\ \ \ \ \ Vector3f\ getRawData();}
+\DoxyCodeLine{00012\ \ \ \ \ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00014\ \ \ \ \ RM3100*\ rm3100\_connection;}
+\DoxyCodeLine{00015\ \};}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ RM3100SensorConnection::RM3100SensorConnection(RM3100*\ ptr\_rm3100)}
+\DoxyCodeLine{00018\ \{}
+\DoxyCodeLine{00019\ \ \ \ \ this-\/>rm3100\_connection\ =\ ptr\_rm3100;}
+\DoxyCodeLine{00020\ \}}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ Vector3f\ RM3100SensorConnection::getRawData()}
+\DoxyCodeLine{00023\ \{}
+\DoxyCodeLine{00024\ \ \ \ \ rm3100\_connection-\/>update();}
+\DoxyCodeLine{00025\ \ \ \ \ Eigen::Vector3f\ data;}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{comment}{//\ Div\ by\ 45\ to\ come\ closer\ to\ normalised}}
+\DoxyCodeLine{00027\ \ \ \ \ data\ <<\ rm3100\_connection-\/>getX()/45,\ rm3100\_connection-\/>getY()/45,\ rm3100\_connection-\/>getZ()/45;}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{comment}{//\ Serial\ <<\ "{}RM3100\ data:\ "{};}}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{comment}{//\ displayRowVec(data);}}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keywordflow}{return}\ data;}
+\DoxyCodeLine{00031\ \}}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

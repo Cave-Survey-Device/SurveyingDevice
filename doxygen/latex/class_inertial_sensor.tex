@@ -1,0 +1,216 @@
+\doxysection{Inertial\+Sensor Class Reference}
+\hypertarget{class_inertial_sensor}{}\label{class_inertial_sensor}\index{InertialSensor@{InertialSensor}}
+Inheritance diagram for Inertial\+Sensor\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{class_inertial_sensor}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{class_inertial_sensor_afa4f54aed1efe974eb7da4792ace6ed4}\label{class_inertial_sensor_afa4f54aed1efe974eb7da4792ace6ed4} 
+bool {\bfseries get\+Calib\+Mode} ()
+\item 
+\Hypertarget{class_inertial_sensor_a7c229a2dc55b732054967e7a42247297}\label{class_inertial_sensor_a7c229a2dc55b732054967e7a42247297} 
+void {\bfseries set\+Calib\+Mode} (bool mode)
+\item 
+\Hypertarget{class_inertial_sensor_a5c20ecbaa4674a44f546be0e4addf885}\label{class_inertial_sensor_a5c20ecbaa4674a44f546be0e4addf885} 
+{\bfseries Inertial\+Sensor} (\mbox{\hyperlink{class_inertial_sensor_connection}{Inertial\+Sensor\+Connection}} \texorpdfstring{$\ast$}{*}sc, float \texorpdfstring{$\ast$}{*}ptr, int size)
+\item 
+void \mbox{\hyperlink{class_inertial_sensor_a2be970c7b6aff599228eea5050ebb1dc}{calibrate\+Linear}} ()
+\begin{DoxyCompactList}\small\item\em Linear calibrataes an inertial sensor via ellipsoid fitting. \end{DoxyCompactList}\item 
+Vector3f \mbox{\hyperlink{class_inertial_sensor_a9b9f1bd06a7745e1c97b66d38d11f14e}{get\+Single\+Sample}} ()
+\begin{DoxyCompactList}\small\item\em Gets a single sample from the connected inertial sensor. No calibration or averaging, \"{}raw data\"{} from the sensor. \end{DoxyCompactList}\item 
+virtual Vector3f \mbox{\hyperlink{class_inertial_sensor_a1dab08a7ee3e0dda9ddbaff7c87eaf50}{get\+Reading}} ()
+\begin{DoxyCompactList}\small\item\em Collectes a reading from the connected inertial sensor. This means that calibration and averaging is applied. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ab53a97140d28e44909a24abc58f62a18}{reset\+Calibration}} ()
+\begin{DoxyCompactList}\small\item\em Resets the calibration data in memory. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{class_inertial_sensor_a96234058de3647b76838e8313c45b5e7}{collect\+Alignment\+Sample}} ()
+\item 
+\Hypertarget{class_inertial_sensor_a6ff40aa65ae775dbe3d4abfb85dfb418}\label{class_inertial_sensor_a6ff40aa65ae775dbe3d4abfb85dfb418} 
+Matrix3f {\bfseries getT} ()
+\item 
+\Hypertarget{class_inertial_sensor_acd1db00f60d35bbf0a97112a32f79f9f}\label{class_inertial_sensor_acd1db00f60d35bbf0a97112a32f79f9f} 
+Vector3f {\bfseries geth} ()
+\item 
+virtual Ref$<$ Matrix\+Xf $>$ \mbox{\hyperlink{class_inertial_sensor_a194f0097ff99b3ac3f937b53c325a12e}{get\+Calib\+Data}} ()=0
+\item 
+void \mbox{\hyperlink{class_inertial_sensor_a8cee1bb99050249486e682ee81645dc9}{load\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Loads calibration data and paremeters from non-\/volatile memory. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_aa9cbe225ed4e3ee0a00b1350ca1f123b}{save\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Saves the calibration data and correction paremeters to non-\/volatile memory. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ab03acbb078aabaaaf45de3af6e6ed28d}{load\+\_\+tmp\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Loads non-\/default (temporary) calibration data and paremeters from non-\/volatile memory. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ad35ff6a578ff85dade74f5b821a89bf7}{save\+\_\+tmp\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Saves calibration data and parameters to non-\/volatile storage in a seperate location This is to allow form calibration data to be generated and discarded if necessary. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ab7cd0a11c14ca4acb841065743180fa3}{set\+ID}} (const char \texorpdfstring{$\ast$}{*}ID)
+\begin{DoxyCompactList}\small\item\em Sets the device\textquotesingle{}s ID such that calibration data for teh device can be read. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{class_inertial_sensor_ad802bcd1cec618d53efd5f1db1a23c5f}\label{class_inertial_sensor_ad802bcd1cec618d53efd5f1db1a23c5f} 
+Matrix3f {\bfseries calibration\+\_\+matrix}
+\item 
+\Hypertarget{class_inertial_sensor_aea2b99a01a2f2629dec6f88e70841379}\label{class_inertial_sensor_aea2b99a01a2f2629dec6f88e70841379} 
+Vector3f {\bfseries calibration\+\_\+offset}
+\item 
+\Hypertarget{class_inertial_sensor_af2d15ac2482eb071773db66ee7743cd3}\label{class_inertial_sensor_af2d15ac2482eb071773db66ee7743cd3} 
+Vector3f {\bfseries calibrated\+\_\+data}
+\item 
+\Hypertarget{class_inertial_sensor_a1b22f2cd61d2f20fe1e4fbcca90807cb}\label{class_inertial_sensor_a1b22f2cd61d2f20fe1e4fbcca90807cb} 
+Vector3f {\bfseries raw\+\_\+data}
+\item 
+\Hypertarget{class_inertial_sensor_a002caf6251fa446abe37f601ae6ad70f}\label{class_inertial_sensor_a002caf6251fa446abe37f601ae6ad70f} 
+\mbox{\hyperlink{class_inertial_sensor_connection}{Inertial\+Sensor\+Connection}} \texorpdfstring{$\ast$}{*} {\bfseries sensor}
+\item 
+\Hypertarget{class_inertial_sensor_ae38335caf6ec89cc9392edd46a24d301}\label{class_inertial_sensor_ae38335caf6ec89cc9392edd46a24d301} 
+bool {\bfseries calibrate\+\_\+with\+\_\+alignment}
+\item 
+\Hypertarget{class_inertial_sensor_a0b94ab27d4de7402cc99de30d60a2d03}\label{class_inertial_sensor_a0b94ab27d4de7402cc99de30d60a2d03} 
+int {\bfseries align\+\_\+num}
+\item 
+\Hypertarget{class_inertial_sensor_a3c4d1a5f09ce942e26a147b48e976df1}\label{class_inertial_sensor_a3c4d1a5f09ce942e26a147b48e976df1} 
+Eigen\+::\+Map$<$ Matrix$<$ float, 3,-\/1 $>$ $>$ {\bfseries ref\+\_\+calibration\+\_\+data}
+\item 
+\Hypertarget{class_inertial_sensor_af421a7ad00c09c30aa95d1342218e1dd}\label{class_inertial_sensor_af421a7ad00c09c30aa95d1342218e1dd} 
+bool {\bfseries separate\+\_\+calib}
+\item 
+\Hypertarget{class_inertial_sensor_a3d41f91a44997abe12ac212942504e88}\label{class_inertial_sensor_a3d41f91a44997abe12ac212942504e88} 
+char {\bfseries device\+\_\+\+ID} \mbox{[}6\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_inertial_sensor_a2be970c7b6aff599228eea5050ebb1dc}\label{class_inertial_sensor_a2be970c7b6aff599228eea5050ebb1dc} 
+\index{InertialSensor@{InertialSensor}!calibrateLinear@{calibrateLinear}}
+\index{calibrateLinear@{calibrateLinear}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{calibrateLinear()}{calibrateLinear()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::calibrate\+Linear (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Linear calibrataes an inertial sensor via ellipsoid fitting. 
+
+
+\begin{DoxyEnumerate}
+\item Sorts all zero-\/valued columns of the calibration data to the end of the matrix
+\item Performs ellipsoid fit with first n elements of sorted matrix where n is the numer of non-\/zero values 
+\end{DoxyEnumerate}\Hypertarget{class_inertial_sensor_a96234058de3647b76838e8313c45b5e7}\label{class_inertial_sensor_a96234058de3647b76838e8313c45b5e7} 
+\index{InertialSensor@{InertialSensor}!collectAlignmentSample@{collectAlignmentSample}}
+\index{collectAlignmentSample@{collectAlignmentSample}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{collectAlignmentSample()}{collectAlignmentSample()}}
+{\footnotesize\ttfamily bool Inertial\+Sensor\+::collect\+Alignment\+Sample (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+\begin{DoxyReturn}{Returns}
+true 
+
+false 
+\end{DoxyReturn}
+\Hypertarget{class_inertial_sensor_a194f0097ff99b3ac3f937b53c325a12e}\label{class_inertial_sensor_a194f0097ff99b3ac3f937b53c325a12e} 
+\index{InertialSensor@{InertialSensor}!getCalibData@{getCalibData}}
+\index{getCalibData@{getCalibData}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{getCalibData()}{getCalibData()}}
+{\footnotesize\ttfamily virtual Ref$<$ Matrix\+Xf $>$ Inertial\+Sensor\+::get\+Calib\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Implemented in \mbox{\hyperlink{class_magnetometer_aa03e93139a02492eca4e836fce41ca38}{Magnetometer}}.
+
+\Hypertarget{class_inertial_sensor_a1dab08a7ee3e0dda9ddbaff7c87eaf50}\label{class_inertial_sensor_a1dab08a7ee3e0dda9ddbaff7c87eaf50} 
+\index{InertialSensor@{InertialSensor}!getReading@{getReading}}
+\index{getReading@{getReading}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{getReading()}{getReading()}}
+{\footnotesize\ttfamily Vector3f Inertial\+Sensor\+::get\+Reading (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+
+
+Collectes a reading from the connected inertial sensor. This means that calibration and averaging is applied. 
+
+\begin{DoxyReturn}{Returns}
+Vector3f 
+\end{DoxyReturn}
+\Hypertarget{class_inertial_sensor_a9b9f1bd06a7745e1c97b66d38d11f14e}\label{class_inertial_sensor_a9b9f1bd06a7745e1c97b66d38d11f14e} 
+\index{InertialSensor@{InertialSensor}!getSingleSample@{getSingleSample}}
+\index{getSingleSample@{getSingleSample}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{getSingleSample()}{getSingleSample()}}
+{\footnotesize\ttfamily Vector3f Inertial\+Sensor\+::get\+Single\+Sample (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets a single sample from the connected inertial sensor. No calibration or averaging, \"{}raw data\"{} from the sensor. 
+
+\begin{DoxyReturn}{Returns}
+Vector3f 
+\end{DoxyReturn}
+\Hypertarget{class_inertial_sensor_a8cee1bb99050249486e682ee81645dc9}\label{class_inertial_sensor_a8cee1bb99050249486e682ee81645dc9} 
+\index{InertialSensor@{InertialSensor}!load\_calibration\_data@{load\_calibration\_data}}
+\index{load\_calibration\_data@{load\_calibration\_data}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{load\_calibration\_data()}{load\_calibration\_data()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::load\+\_\+calibration\+\_\+data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Loads calibration data and paremeters from non-\/volatile memory. 
+
+\Hypertarget{class_inertial_sensor_ab03acbb078aabaaaf45de3af6e6ed28d}\label{class_inertial_sensor_ab03acbb078aabaaaf45de3af6e6ed28d} 
+\index{InertialSensor@{InertialSensor}!load\_tmp\_calibration\_data@{load\_tmp\_calibration\_data}}
+\index{load\_tmp\_calibration\_data@{load\_tmp\_calibration\_data}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{load\_tmp\_calibration\_data()}{load\_tmp\_calibration\_data()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::load\+\_\+tmp\+\_\+calibration\+\_\+data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Loads non-\/default (temporary) calibration data and paremeters from non-\/volatile memory. 
+
+\Hypertarget{class_inertial_sensor_ab53a97140d28e44909a24abc58f62a18}\label{class_inertial_sensor_ab53a97140d28e44909a24abc58f62a18} 
+\index{InertialSensor@{InertialSensor}!resetCalibration@{resetCalibration}}
+\index{resetCalibration@{resetCalibration}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{resetCalibration()}{resetCalibration()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::reset\+Calibration (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Resets the calibration data in memory. 
+
+\Hypertarget{class_inertial_sensor_aa9cbe225ed4e3ee0a00b1350ca1f123b}\label{class_inertial_sensor_aa9cbe225ed4e3ee0a00b1350ca1f123b} 
+\index{InertialSensor@{InertialSensor}!save\_calibration\_data@{save\_calibration\_data}}
+\index{save\_calibration\_data@{save\_calibration\_data}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{save\_calibration\_data()}{save\_calibration\_data()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::save\+\_\+calibration\+\_\+data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Saves the calibration data and correction paremeters to non-\/volatile memory. 
+
+\Hypertarget{class_inertial_sensor_ad35ff6a578ff85dade74f5b821a89bf7}\label{class_inertial_sensor_ad35ff6a578ff85dade74f5b821a89bf7} 
+\index{InertialSensor@{InertialSensor}!save\_tmp\_calibration\_data@{save\_tmp\_calibration\_data}}
+\index{save\_tmp\_calibration\_data@{save\_tmp\_calibration\_data}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{save\_tmp\_calibration\_data()}{save\_tmp\_calibration\_data()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::save\+\_\+tmp\+\_\+calibration\+\_\+data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Saves calibration data and parameters to non-\/volatile storage in a seperate location This is to allow form calibration data to be generated and discarded if necessary. 
+
+\Hypertarget{class_inertial_sensor_ab7cd0a11c14ca4acb841065743180fa3}\label{class_inertial_sensor_ab7cd0a11c14ca4acb841065743180fa3} 
+\index{InertialSensor@{InertialSensor}!setID@{setID}}
+\index{setID@{setID}!InertialSensor@{InertialSensor}}
+\doxysubsubsection{\texorpdfstring{setID()}{setID()}}
+{\footnotesize\ttfamily void Inertial\+Sensor\+::set\+ID (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{ID }\end{DoxyParamCaption})}
+
+
+
+Sets the device\textquotesingle{}s ID such that calibration data for teh device can be read. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ID} & \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+lib/sensors\+\_\+csd/inertialsensor.\+h\item 
+lib/sensors\+\_\+csd/inertialsensor.\+cpp\end{DoxyCompactItemize}

@@ -1,0 +1,138 @@
+\doxysection{Magnetometer Class Reference}
+\hypertarget{class_magnetometer}{}\label{class_magnetometer}\index{Magnetometer@{Magnetometer}}
+
+
+The \doxylink{class_magnetometer}{Magnetometer} class. This calss inherits from \doxylink{class_inertial_sensor}{Inertial\+Sensor} and provides the additioanly dunctionality available to magnetometer sensors.  
+
+
+
+
+{\ttfamily \#include $<$magnetometer\+\_\+csd.\+h$>$}
+
+Inheritance diagram for Magnetometer\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{class_magnetometer}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_magnetometer_a2c23d85d986148acea98be876d81c964}{Magnetometer}} (\mbox{\hyperlink{class_inertial_sensor_connection}{Inertial\+Sensor\+Connection}} \texorpdfstring{$\ast$}{*}sc)
+\item 
+int \mbox{\hyperlink{class_magnetometer_a7279174d6fb7ff2acd1b1ecbc58905f7}{check\+Calibration\+Progress}} ()
+\item 
+int \mbox{\hyperlink{class_magnetometer_af404abe14cc667bdcaa4e83582a4af21}{get\+Magnetometer\+Index}} (const Vector3f \&sample)
+\item 
+void \mbox{\hyperlink{class_magnetometer_abf86f3a18e4070e445fd76f3c0ef0244}{add\+Calibration\+Data}} ()
+\item 
+Ref$<$ Matrix\+Xf $>$ \mbox{\hyperlink{class_magnetometer_aa03e93139a02492eca4e836fce41ca38}{get\+Calib\+Data}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{class_inertial_sensor}{Inertial\+Sensor}}}
+\begin{DoxyCompactItemize}
+\item 
+bool {\bfseries get\+Calib\+Mode} ()
+\item 
+void {\bfseries set\+Calib\+Mode} (bool mode)
+\item 
+{\bfseries Inertial\+Sensor} (\mbox{\hyperlink{class_inertial_sensor_connection}{Inertial\+Sensor\+Connection}} \texorpdfstring{$\ast$}{*}sc, float \texorpdfstring{$\ast$}{*}ptr, int size)
+\item 
+void \mbox{\hyperlink{class_inertial_sensor_a2be970c7b6aff599228eea5050ebb1dc}{calibrate\+Linear}} ()
+\begin{DoxyCompactList}\small\item\em Linear calibrataes an inertial sensor via ellipsoid fitting. \end{DoxyCompactList}\item 
+Vector3f \mbox{\hyperlink{class_inertial_sensor_a9b9f1bd06a7745e1c97b66d38d11f14e}{get\+Single\+Sample}} ()
+\begin{DoxyCompactList}\small\item\em Gets a single sample from the connected inertial sensor. No calibration or averaging, \"{}raw data\"{} from the sensor. \end{DoxyCompactList}\item 
+virtual Vector3f \mbox{\hyperlink{class_inertial_sensor_a1dab08a7ee3e0dda9ddbaff7c87eaf50}{get\+Reading}} ()
+\begin{DoxyCompactList}\small\item\em Collectes a reading from the connected inertial sensor. This means that calibration and averaging is applied. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ab53a97140d28e44909a24abc58f62a18}{reset\+Calibration}} ()
+\begin{DoxyCompactList}\small\item\em Resets the calibration data in memory. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{class_inertial_sensor_a96234058de3647b76838e8313c45b5e7}{collect\+Alignment\+Sample}} ()
+\item 
+Matrix3f {\bfseries getT} ()
+\item 
+Vector3f {\bfseries geth} ()
+\item 
+virtual Ref$<$ Matrix\+Xf $>$ \mbox{\hyperlink{class_inertial_sensor_a194f0097ff99b3ac3f937b53c325a12e}{get\+Calib\+Data}} ()=0
+\item 
+void \mbox{\hyperlink{class_inertial_sensor_a8cee1bb99050249486e682ee81645dc9}{load\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Loads calibration data and paremeters from non-\/volatile memory. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_aa9cbe225ed4e3ee0a00b1350ca1f123b}{save\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Saves the calibration data and correction paremeters to non-\/volatile memory. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ab03acbb078aabaaaf45de3af6e6ed28d}{load\+\_\+tmp\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Loads non-\/default (temporary) calibration data and paremeters from non-\/volatile memory. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ad35ff6a578ff85dade74f5b821a89bf7}{save\+\_\+tmp\+\_\+calibration\+\_\+data}} ()
+\begin{DoxyCompactList}\small\item\em Saves calibration data and parameters to non-\/volatile storage in a seperate location This is to allow form calibration data to be generated and discarded if necessary. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{class_inertial_sensor_ab7cd0a11c14ca4acb841065743180fa3}{set\+ID}} (const char \texorpdfstring{$\ast$}{*}ID)
+\begin{DoxyCompactList}\small\item\em Sets the device\textquotesingle{}s ID such that calibration data for teh device can be read. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Protected Attributes inherited from \mbox{\hyperlink{class_inertial_sensor}{Inertial\+Sensor}}}
+\begin{DoxyCompactItemize}
+\item 
+Matrix3f {\bfseries calibration\+\_\+matrix}
+\item 
+Vector3f {\bfseries calibration\+\_\+offset}
+\item 
+Vector3f {\bfseries calibrated\+\_\+data}
+\item 
+Vector3f {\bfseries raw\+\_\+data}
+\item 
+\mbox{\hyperlink{class_inertial_sensor_connection}{Inertial\+Sensor\+Connection}} \texorpdfstring{$\ast$}{*} {\bfseries sensor}
+\item 
+bool {\bfseries calibrate\+\_\+with\+\_\+alignment}
+\item 
+int {\bfseries align\+\_\+num}
+\item 
+Eigen\+::\+Map$<$ Matrix$<$ float, 3,-\/1 $>$ $>$ {\bfseries ref\+\_\+calibration\+\_\+data}
+\item 
+bool {\bfseries separate\+\_\+calib}
+\item 
+char {\bfseries device\+\_\+\+ID} \mbox{[}6\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+The \doxylink{class_magnetometer}{Magnetometer} class. This calss inherits from \doxylink{class_inertial_sensor}{Inertial\+Sensor} and provides the additioanly dunctionality available to magnetometer sensors. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{class_magnetometer_a2c23d85d986148acea98be876d81c964}\label{class_magnetometer_a2c23d85d986148acea98be876d81c964} 
+\index{Magnetometer@{Magnetometer}!Magnetometer@{Magnetometer}}
+\index{Magnetometer@{Magnetometer}!Magnetometer@{Magnetometer}}
+\doxysubsubsection{\texorpdfstring{Magnetometer()}{Magnetometer()}}
+{\footnotesize\ttfamily Magnetometer\+::\+Magnetometer (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{class_inertial_sensor_connection}{Inertial\+Sensor\+Connection}} \texorpdfstring{$\ast$}{*}}]{sc }\end{DoxyParamCaption})}
+
+Calibration data matrix 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_magnetometer_abf86f3a18e4070e445fd76f3c0ef0244}\label{class_magnetometer_abf86f3a18e4070e445fd76f3c0ef0244} 
+\index{Magnetometer@{Magnetometer}!addCalibrationData@{addCalibrationData}}
+\index{addCalibrationData@{addCalibrationData}!Magnetometer@{Magnetometer}}
+\doxysubsubsection{\texorpdfstring{addCalibrationData()}{addCalibrationData()}}
+{\footnotesize\ttfamily void Magnetometer\+::add\+Calibration\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Gets the index of a sample in the magnetometer calibration array \Hypertarget{class_magnetometer_a7279174d6fb7ff2acd1b1ecbc58905f7}\label{class_magnetometer_a7279174d6fb7ff2acd1b1ecbc58905f7} 
+\index{Magnetometer@{Magnetometer}!checkCalibrationProgress@{checkCalibrationProgress}}
+\index{checkCalibrationProgress@{checkCalibrationProgress}!Magnetometer@{Magnetometer}}
+\doxysubsubsection{\texorpdfstring{checkCalibrationProgress()}{checkCalibrationProgress()}}
+{\footnotesize\ttfamily int Magnetometer\+::check\+Calibration\+Progress (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Constructor for the \doxylink{class_magnetometer}{Magnetometer} object \Hypertarget{class_magnetometer_aa03e93139a02492eca4e836fce41ca38}\label{class_magnetometer_aa03e93139a02492eca4e836fce41ca38} 
+\index{Magnetometer@{Magnetometer}!getCalibData@{getCalibData}}
+\index{getCalibData@{getCalibData}!Magnetometer@{Magnetometer}}
+\doxysubsubsection{\texorpdfstring{getCalibData()}{getCalibData()}}
+{\footnotesize\ttfamily Ref$<$ Matrix\+Xf $>$ Magnetometer\+::get\+Calib\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}}
+
+Collects a sample and and adds it to the magnetometer calibration Matrix when using standalone calibration 
+
+Implements \mbox{\hyperlink{class_inertial_sensor}{Inertial\+Sensor}}.
+
+\Hypertarget{class_magnetometer_af404abe14cc667bdcaa4e83582a4af21}\label{class_magnetometer_af404abe14cc667bdcaa4e83582a4af21} 
+\index{Magnetometer@{Magnetometer}!getMagnetometerIndex@{getMagnetometerIndex}}
+\index{getMagnetometerIndex@{getMagnetometerIndex}!Magnetometer@{Magnetometer}}
+\doxysubsubsection{\texorpdfstring{getMagnetometerIndex()}{getMagnetometerIndex()}}
+{\footnotesize\ttfamily int Magnetometer\+::get\+Magnetometer\+Index (\begin{DoxyParamCaption}\item[{const Vector3f \&}]{sample }\end{DoxyParamCaption})}
+
+Checks the calibration progress of the magnetometer when using the standalone calibration 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+lib/sensors\+\_\+csd/magnetometer\+\_\+csd.\+h\item 
+lib/sensors\+\_\+csd/magnetometer\+\_\+csd.\+cpp\end{DoxyCompactItemize}

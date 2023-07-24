@@ -1,0 +1,70 @@
+<mxfile host="Electron" modified="2023-07-22T14:40:15.639Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.1 Chrome/112.0.5615.204 Electron/24.6.1 Safari/537.36" etag="BF0lWVw2b2yfBIEmUhkP" version="21.6.1" type="device">
+  <diagram name="Page-1" id="9f46799a-70d6-7492-0946-bef42562c5a5">
+    <mxGraphModel dx="1594" dy="1078" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="-PqQhoVvnRxhIKTyac4U-28">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="210" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="-PqQhoVvnRxhIKTyac4U-25">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="220" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-10" value="InertialSensor" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="160" width="250" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-11" value="InertialSensorConnection" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-10">
+          <mxGeometry x="25" y="120" width="205" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-13" value="Sensor" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-11">
+          <mxGeometry x="36.25" y="100" width="127.5" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-21" value="SensorHandler" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="1">
+          <mxGeometry x="480" y="160" width="590" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-25" value="Magnetometer" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-21">
+          <mxGeometry x="30" y="120" width="250" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-26" value="RM3100SensorConnection" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-25">
+          <mxGeometry x="25" y="75" width="200" height="165" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-27" value="RM3100" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-26">
+          <mxGeometry x="40" y="70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-28" value="Accelerometer" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-21">
+          <mxGeometry x="310" y="120" width="250" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-29" value="SCA3300SensorConnection" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-28">
+          <mxGeometry x="25" y="75" width="200" height="165" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-30" value="SCA3300" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="-PqQhoVvnRxhIKTyac4U-29">
+          <mxGeometry x="40" y="70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="-PqQhoVvnRxhIKTyac4U-29">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="320" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="-PqQhoVvnRxhIKTyac4U-26">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="330" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="-PqQhoVvnRxhIKTyac4U-30">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="320" y="390" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="-PqQhoVvnRxhIKTyac4U-36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" target="-PqQhoVvnRxhIKTyac4U-27">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="320" y="400" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

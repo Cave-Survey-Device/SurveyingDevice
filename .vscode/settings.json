@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "dense": "cpp",
+        "core": "cpp",
+        "sparse": "cpp"
+    },
+    "nrf-connect.toolchain.path": "${nrf-connect.toolchain:2.3.0}",
+    "cmake.configureOnOpen": false
+}

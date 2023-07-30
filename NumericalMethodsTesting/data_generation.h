@@ -28,6 +28,14 @@
 
 using namespace Eigen;
 
+Vector3f Spherical(Vector3f cartesian){
+    Vector3f spherical;
+    spherical << atan2(cartesian(1), cartesian(0)),
+            atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
+            cartesian.norm();
+    return spherical;
+}
+
 MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
 {
 #ifdef DISPERSED_GENERATION
@@ -138,11 +146,17 @@ MatrixXf generateLaserAlignData()
 
     // Calculate value for planar solution e.g. target x {0,1,0} plane
     target_len = target.norm();
-    alpha = COMPOUND_OFFSET;
-    theta = M_PI - alpha;
-    beta = asin(disto_len * sin(theta)/target_len);
-    gamma = alpha-beta;
-    measured_len = sin(gamma) * target_len/sin(theta);
+    theta = COMPOUND_OFFSET;
+    alpha = M_PI - theta;
+    beta = asin(disto_len * sin(alpha)/target_len);
+
+    gamma = theta-beta;
+
+    cout << "theta: " << Rad2Deg(theta) << "\n";
+    cout << "alpha: " << Rad2Deg(alpha) << "\n";
+    cout << "beta: " << Rad2Deg(beta) << "\n";
+    cout << "gamma: " << Rad2Deg(gamma) << "\n";
+
 
     Vector3f initial_disto_tip, disto_tip, disto_error_vec, initial_disto_plane;
 
@@ -157,15 +171,27 @@ MatrixXf generateLaserAlignData()
     laser_vec = y_rotation(Rad2Deg(INCLINATION_OFFSET)) * z_rotation(Rad2Deg(HEADING_OFFSET)) * laser_vec;
     // atan2(y,-z) to calculate angle from -z vector
     disto_err_rotation = atan2(laser_vec(1),-laser_vec(2));
+    cout << "Disto err rotation: " << Rad2Deg(disto_err_rotation) << "\n";
 
     // Rotate disto tip
-    Matrix<float,3,n_rots> out;
+    Matrix<float,3,n_rots> out_disto;
+    Matrix<float,4,n_rots> out_hir;
     for (int i=0;i<n_rots;i++) {
         theta = 2*M_PI / n_rots * i;
         disto_tip = arbitrary_rotation(theta,initial_disto_tip,target);
-        out.col(i) = disto_tip;
+        out_disto.col(i) = disto_tip;
+
+        Vector3f spherical_disto = Spherical(out_disto.col(i));
+        out_hir.col(i) << spherical_disto(0), spherical_disto(1), theta + disto_err_rotation, (out_disto.col(i) - target).norm();
+//        atan2(disto_tip(1),disto_tip(0)),
+//        atan2(disto_tip(2),disto_tip(0)*disto_tip(0) + disto_tip(1)*disto_tip(1)),
+//        theta + disto_err_rotation,
+//        (out_disto.col(i) - target).norm();
+
+//        cout << "Disto tip location   x:" << out_disto.col(i)(0) << "  y: " << out_disto.col(i)(1) << "  z: " << out_disto.col(i)(2) << "\n";
+//        cout << "Disto tip orientation    h:" << out_hir.col(i)(0) << "  i: " << out_hir.col(i)(1) << "  r: " << out_hir.col(i)(2) << "\n\n";
     }
 
-    return out;
+    return out_hir;
 }
 #endif //MAGNETOMETER_CALIBRATION_DATA_GENERATION_H

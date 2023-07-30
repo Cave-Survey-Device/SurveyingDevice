@@ -1,6 +1,7 @@
 #include "mag_cal.h"
 #include "data_generation.h"
 #include "alignment2.h"
+#include "laser_cal.h"
 
 using namespace Eigen;
 #define BOOST_IOSTREAMS_NO_LIB
@@ -140,7 +141,10 @@ MatrixXf runCaliration(MatrixXf samples)
 
 int main()
 {
-    MatrixXf laser_sample_data = generateLaserAlignData();
+    Matrix<float,4,-1> laser_sample_data = generateLaserAlignData();
+    Vector2f data;
+    data = align_laser(laser_sample_data);
+    cout << "Laser alignment data: " << RAD_TO_DEG*data(0) << " " << RAD_TO_DEG*data(1);
     writeToCSVfile("laser_sample_data.txt",laser_sample_data);
     return 0;
 }

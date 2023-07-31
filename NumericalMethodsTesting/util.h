@@ -28,9 +28,9 @@ Matrix3f x_rotation(float deg)
 {
     deg = Deg2Rad(deg);
     Matrix3f R;
-    R << cos(deg), 0., sin(deg),
-            0., 1., 0.,
-            -sin(deg), 0., cos(deg);
+    R << 1., 0., 0.,
+            0., cos(deg), -sin(deg),
+            0., sin(deg), cos(deg);
     return R;
 }
 
@@ -38,9 +38,9 @@ Matrix3f y_rotation(float deg)
 {
     deg = Deg2Rad(deg);
     Matrix3f R;
-    R << 1., 0., 0.,
-            0., cos(deg), -sin(deg),
-            0., sin(deg), cos(deg);
+    R << cos(deg), 0., sin(deg),
+            0., 1., 0.,
+            -sin(deg), 0., cos(deg);
     return R;
 }
 
@@ -54,6 +54,7 @@ Matrix3f z_rotation(float deg)
     return R;
 }
 
+// Rotate vector a about b by theta
 Vector3f arbitrary_rotation(float theta, Vector3f a, Vector3f b)
 {
     // https://math.stackexchange.com/a/1432182

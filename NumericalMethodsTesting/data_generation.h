@@ -168,9 +168,11 @@ MatrixXf generateLaserAlignData()
 
     // Find projection of error on YZ plane + projection of initial plane on XZ plane
     Vector3f laser_vec{1,0,0};
-    laser_vec = y_rotation(Rad2Deg(INCLINATION_OFFSET)) * z_rotation(Rad2Deg(HEADING_OFFSET)) * laser_vec;
+    laser_vec = y_rotation(Rad2Deg(-INCLINATION_OFFSET)) * z_rotation(Rad2Deg(HEADING_OFFSET)) * laser_vec;
     // atan2(y,-z) to calculate angle from -z vector
-    disto_err_rotation = atan2(laser_vec(1),-laser_vec(2));
+    cout << "laser vec: " << laser_vec << "\n";
+
+    disto_err_rotation = atan2(laser_vec(1),laser_vec(2));
     cout << "Disto err rotation: " << Rad2Deg(disto_err_rotation) << "\n";
 
     // Rotate disto tip

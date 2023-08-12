@@ -5,7 +5,7 @@ import transforms3d as t3d
 arbrot = t3d.axangles.axangle2mat
 
 # Define model parameters
-target = np.array([1,0.5,1])
+target = np.array([1,1,1])
 x_ax = np.array([1,0,0])
 y_ax = np.array([0,1,0])
 z_ax = np.array([0,0,1])
@@ -32,30 +32,49 @@ beta = np.arcsin(DISTO_LEN * np.sin(alpha)/target_len);
 gamma = theta-beta
 print("Gamma:", gamma)
 
+
 initial_disto_tip = arbrot(np.cross(target,z_ax),gamma) @ target / (np.linalg.norm(target)) * DISTO_LEN
-print("Initial disto tip:", initial_disto_tip)
-print("Initial laser vec", laser_vec)
+
+
+# # Find contributions of laser
+# laser_vec = target - initial_disto_tip
+# laser_vec = laser_vec/np.linalg.norm(laser_vec)
+# laser_vec = np.array([np.dot(laser_vec,x_ax),np.dot(laser_vec,y_ax),np.dot(laser_vec,z_ax)])
+
+
+print("Initial disto tip: ", initial_disto_tip)
+print("Initial laser vec: ", laser_vec)
+print("Initial laser location: ", x_ax*DISTO_LEN + laser_vec * np.linalg.norm(target - initial_disto_tip)) 
 print()
 
 # Generate rotated data
-for i in range(0,1):
+for i in range(0,N_ROTS):
     theta = i * np.pi/N_ROTS
     disto_tip = arbrot(target,theta) @ initial_disto_tip
     roll = theta + initial_roll
 
-    # Rotate disto into x-axis --- WORKS
-    angle = np.arccos(np.dot(disto_tip,x_ax)/np.linalg.norm(disto_tip))
-    rotated_target = arbrot(np.cross(disto_tip,x_ax),angle) @ target
-    rotated_disto_tip = arbrot(np.cross(disto_tip,x_ax),angle) @ disto_tip
-    roll_corrected_target = arbrot(x_ax,-roll) @ rotated_target
+    # Calculate new axis
+    x_ax_xfrm = disto_tip
+    y_ax_xfrm = np.cross(disto_tip,z_ax)
+    z_ax_xfrm = np.cross(x_ax_xfrm, y_ax_xfrm)
+    x_ax_xfrm = x_ax_xfrm / np.linalg.norm(x_ax_xfrm)
+    y_ax_xfrm = y_ax_xfrm / np.linalg.norm(y_ax_xfrm)
+    z_ax_xfrm = z_ax_xfrm / np.linalg.norm(z_ax_xfrm)
 
-    laser_vec = rotated_target-rotated_disto_tip
-    roll_corr_laser_vec = roll_corrected_target - rotated_disto_tip
-    print("Rotated disto tip: ", rotated_disto_tip)
-    print("Rotated target: ", rotated_target)
-    print("Roll corrected target: ", roll_corrected_target)
-    print("Laser vec: ", laser_vec/np.linalg.norm(laser_vec))
-    print("Roll corrected laser vec: ", roll_corr_laser_vec/np.linalg.norm(roll_corr_laser_vec))
+    # Find laser in terms of each axis
+    laser_vec = target - disto_tip
+    x_cont = np.dot(laser_vec,x_ax_xfrm)
+    y_cont = np.dot(laser_vec,y_ax_xfrm)
+    z_cont = np.dot(laser_vec,z_ax_xfrm)
+
+
+    # Find laser vec
+    laser_vec_new = np.array([x_cont,y_cont,z_cont])
+    laser_vec_rotated = arbrot(x_ax, -roll+np.pi) @ laser_vec_new
+
+    print("New laser vec: ", laser_vec_new/np.linalg.norm(laser_vec_new))
+    print("New rotated laser vec: ", laser_vec_rotated/np.linalg.norm(laser_vec_rotated))
+
     print()
 
 

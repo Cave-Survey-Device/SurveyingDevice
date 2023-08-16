@@ -37,12 +37,12 @@ void generateAndSaveData()
     MatrixXf mag_samples = generateInertialAlignData(mag_true_data, Tm, hm);
     MatrixXf accel_samples = generateInertialAlignData(accel_true_data, Ta, ha);
 
-    MatrixXf laser_samples = generateLaserAlignData();
+//    MatrixXf laser_samples = generateLaserAlignData();
 
     // Save sensor data
     writeToCSVfile("mag_generated_samples.txt", mag_samples.transpose());
     writeToCSVfile("accel_generated_samples.txt", accel_samples.transpose());
-    writeToCSVfile("laser_generated_samples.txt",laser_samples.transpose());
+//    writeToCSVfile("laser_generated_samples.txt",laser_samples.transpose());
 }
 
 void testAlignmentUsingReal()
@@ -141,11 +141,14 @@ MatrixXf runCaliration(MatrixXf samples)
 
 int main()
 {
+    cout << "\n ---------- DATA GENERATION ---------- \n";
     Matrix<float,4,-1> laser_sample_data = generateLaserAlignData();
+
+    cout << "\n ---------- SOLVE LASER ALIGNMENT ---------- \n";
     Vector2f data;
     data = align_laser(laser_sample_data);
     cout << "Laser alignment data: " << RAD_TO_DEG*data(0) << " " << RAD_TO_DEG*data(1);
-    writeToCSVfile("laser_sample_data.txt",laser_sample_data);
+//    writeToCSVfile("laser_sample_data.txt",laser_sample_data);
     return 0;
 }
 //

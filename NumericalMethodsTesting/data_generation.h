@@ -22,19 +22,10 @@
 #define N_SAMPLES 12*5
 #endif
 
-#define INCLINATION_OFFSET 5 * M_PI/180
-#define HEADING_OFFSET -10 * M_PI/180
-#define COMPOUND_OFFSET sqrt(HEADING_OFFSET*HEADING_OFFSET + INCLINATION_OFFSET*INCLINATION_OFFSET)
+#define INCLINATION_OFFSET 0.0872664626
+#define HEADING_OFFSET -0.0436332313
 
 using namespace Eigen;
-
-Vector3f Spherical(Vector3f cartesian){
-    Vector3f spherical;
-    spherical << atan2(cartesian(1), cartesian(0)),
-            atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
-            cartesian.norm();
-    return spherical;
-}
 
 MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
 {
@@ -135,65 +126,63 @@ MatrixXf generateInertialAlignData(MatrixXf true_data, Matrix3f Tm, Vector3f hm)
 
 MatrixXf generateLaserAlignData()
 {
-    // Define n-rotations
+    // ---------------------------------------- Define needed parameters ---------------------------------------
+    float initial_roll, combined_error;
+    Vector3f laser_vec;
+
     const int n_rots = 8;
-    const Vector3f target{1,1,2};
-    const float disto_len = 1;
+    const Vector3f target{1,1,1};
+    const float disto_len = 0.1;
+
+    const Vector3f x_ax = Vector3f(1,0,0);
+    const Vector3f y_ax = Vector3f(0,1,0);
+    const Vector3f z_ax = Vector3f(0,0,1);
+
+    // ---------------------------------------- Find parameters of laser ---------------------------------------
+    laser_vec = Vector3f(1,0,0);
+    laser_vec = arbitrary_rotation(laser_vec, y_ax, INCLINATION_OFFSET);
+    laser_vec = arbitrary_rotation(laser_vec, z_ax, HEADING_OFFSET);
+    combined_error = acos(laser_vec.dot(x_ax));
+    initial_roll = -M_PI_2 + atan2(laser_vec(2),laser_vec(1));
+
+    cout << "Laser vec: " << laser_vec(0) << "  " << laser_vec(1) << "  " << laser_vec(2) << "\n";
+    cout << "Combined error: " << combined_error << "\n";
+    cout << "Initial roll: " <<  Rad2Deg(initial_roll) << "\n";
 
 
-    // Get disto tip locations
-    float alpha, beta, gamma, theta, distance, target_len, measured_len, initial_disto_rotation, disto_err_rotation;
-
-    // Calculate value for planar solution e.g. target x {0,1,0} plane
+    // ------------------------------------ Find initial position of device ------------------------------------
+    float  target_len, alpha, beta, gamma, theta;
+    Vector3f initial_disto_tip;
     target_len = target.norm();
-    theta = COMPOUND_OFFSET;
+    theta = combined_error;
     alpha = M_PI - theta;
     beta = asin(disto_len * sin(alpha)/target_len);
-
     gamma = theta-beta;
-
-    cout << "theta: " << Rad2Deg(theta) << "\n";
-    cout << "alpha: " << Rad2Deg(alpha) << "\n";
-    cout << "beta: " << Rad2Deg(beta) << "\n";
     cout << "gamma: " << Rad2Deg(gamma) << "\n";
 
+    initial_disto_tip = arbitrary_rotation(target/target.norm() * disto_len,target.cross(z_ax),gamma);
 
-    Vector3f initial_disto_tip, disto_tip, disto_error_vec, initial_disto_plane;
 
-    // Find location of disto tip on target X yaxis plane
-    disto_error_vec = y_rotation(Rad2Deg(INCLINATION_OFFSET)) * z_rotation(Rad2Deg(HEADING_OFFSET)) * Vector3f{1,0,0};
-    initial_disto_plane = target.cross(Vector3f{0,0,1});
-    // Rotate vector about normal to plane
-    initial_disto_tip = arbitrary_rotation(gamma, target/target.norm() * disto_len ,initial_disto_plane);
+    // ------------------------------------ Rotate device about target axis ------------------------------------
+    float phi, heading, inclination, roll;
+    Vector3f disto_tip;
+    Matrix<float,4,n_rots> out_hird;
 
-    // Find projection of error on YZ plane + projection of initial plane on XZ plane
-    Vector3f laser_vec{1,0,0};
-    laser_vec = y_rotation(Rad2Deg(-INCLINATION_OFFSET)) * z_rotation(Rad2Deg(HEADING_OFFSET)) * laser_vec;
-    // atan2(y,-z) to calculate angle from -z vector
-    cout << "laser vec: " << laser_vec << "\n";
+    for (int i=0; i<n_rots; i++)
+    {
+        phi = i * 2*M_PI/n_rots;
+        roll = initial_roll + phi;
+        disto_tip = arbitrary_rotation(initial_disto_tip,target,phi);
+        laser_vec = target - disto_tip;
+        cout << "Disto tip: " << disto_tip(0) << "  " << disto_tip(1) << " " << disto_tip(2) << "\n";
 
-    disto_err_rotation = atan2(laser_vec(1),laser_vec(2));
-    cout << "Disto err rotation: " << Rad2Deg(disto_err_rotation) << "\n";
 
-    // Rotate disto tip
-    Matrix<float,3,n_rots> out_disto;
-    Matrix<float,4,n_rots> out_hir;
-    for (int i=0;i<n_rots;i++) {
-        theta = 2*M_PI / n_rots * i;
-        disto_tip = arbitrary_rotation(theta,initial_disto_tip,target);
-        out_disto.col(i) = disto_tip;
-
-        Vector3f spherical_disto = Spherical(out_disto.col(i));
-        out_hir.col(i) << spherical_disto(0), spherical_disto(1), theta + disto_err_rotation, (out_disto.col(i) - target).norm();
-//        atan2(disto_tip(1),disto_tip(0)),
-//        atan2(disto_tip(2),disto_tip(0)*disto_tip(0) + disto_tip(1)*disto_tip(1)),
-//        theta + disto_err_rotation,
-//        (out_disto.col(i) - target).norm();
-
-//        cout << "Disto tip location   x:" << out_disto.col(i)(0) << "  y: " << out_disto.col(i)(1) << "  z: " << out_disto.col(i)(2) << "\n";
-//        cout << "Disto tip orientation    h:" << out_hir.col(i)(0) << "  i: " << out_hir.col(i)(1) << "  r: " << out_hir.col(i)(2) << "\n\n";
+        heading = atan2(disto_tip(1), disto_tip(0));
+        inclination = atan2(pow( pow(disto_tip(0),2) + pow(disto_tip(1),2), 0.5),disto_tip(2));
+//        out_hird.col(i) << disto_tip, 1;
+         out_hird.col(i) << heading , inclination, roll, laser_vec.norm();
     }
 
-    return out_hir;
+    return out_hird;
 }
 #endif //MAGNETOMETER_CALIBRATION_DATA_GENERATION_H

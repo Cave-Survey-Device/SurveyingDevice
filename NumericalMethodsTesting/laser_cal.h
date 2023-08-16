@@ -75,6 +75,10 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
     Vector3f target_vector;
     target_vector = NormalVec(cartesian_calibration_data);
     target_vector = target_vector/target_vector.norm();
+    if (target_vector.dot(cartesian_calibration_data.col(0)) < 0)
+    {
+        target_vector = -target_vector;
+    }
 
     // Calculate averge angle of disto from target
     float avg_gamma = 0;
@@ -104,47 +108,60 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
     Vector3f target_location;
     target_location = target_distance * target_vector * 1/target_vector.norm();
 
-    cout << "Target vector: " << target_location(0) << " " << target_location(1) << " " << target_location(2) << "\n";
+    cout << "Target vector: " << target_location(0) << " " << target_location(1) << " " << target_location(2) << "\n\n";
 
 
     /*************************************************************************************
      * 1. Get the cartesian location of the tip of the disto for each shot
-     * 2. Rotate frame such that disto aligned with {1,0,0}
+     * 2. Rotate each disto tip about the target vector by its roll
      * 3. Rotate target vec about {1,0,0} by -disto roll
      * 4. Find heading and inclination of this new vector
      *************************************************************************************/
     float roll;
     float laser_inclination_alignment = 0;
     float laser_heading_alignment = 0;
-    Vector3f rotated_target;
+    float mean_angle = 0;
+    Vector3f rotated_disto_tip;
     Vector3f current_cal;
     for (calib_num=0; calib_num<N_LASER_CAL; calib_num++)
     {
-        current_cal = cartesian_calibration_data.col(calib_num);
-        roll = current_cal(2);
+        roll = laser_alignment_data.col(calib_num)(2);
 
-        // Find angle between disto and x-axis
-        float angle = acos(    current_cal.dot(Vector3f{1,0,0})  /  (current_cal.norm())    );
-        // Rotate target about normal to x-axis and disto by angle between disto and a-axis
-        rotated_target = arbitrary_rotation(angle,target_location,current_cal.cross(target_location));
-        // Rotate frame-changed target about x-axis by -roll
-        rotated_target = x_rotation(RAD_TO_DEG*-roll) * rotated_target;
+        // Rotate all disto tips is=nto same location
+        rotated_disto_tip = cartesian_calibration_data.col(calib_num);
+        rotated_disto_tip = arbitrary_rotation(rotated_disto_tip,target_vector,roll);
+         cout << "Roll: " << Rad2Deg(roll) << "\t Disto tip: " << rotated_disto_tip(0) << "  " << rotated_disto_tip(1) << " " << rotated_disto_tip(2) << "\n";
 
-        // Extract heading and inclination from target vector
-        laser_heading_alignment += atan2(rotated_target(1),rotated_target(0));
-        laser_inclination_alignment += atan2(rotated_target(2), pow(pow(rotated_target(0),2) + pow(rotated_target(1),2),0.5));
+
+        // Find angle between this vec and the projected z axis
+        Vector3f x_ax_xfrm = target_vector;
+        Vector3f y_ax_xfrm = target_vector.cross(Vector3f(0,0,1));
+        Vector3f z_ax_xfrm = x_ax_xfrm.cross(y_ax_xfrm);
+
+
+        Vector3f ref_point = target_vector * DISTO_LEN * cos(gamma);
+
+        Vector3f disto_target_vec = rotated_disto_tip - ref_point;
+        disto_target_vec = disto_target_vec / disto_target_vec.norm();
+
+        Vector3f ref_vec = z_ax_xfrm / z_ax_xfrm.norm();
+
+        float angle = disto_target_vec.dot(ref_vec);
+        angle = angle/(disto_target_vec.norm() * ref_vec.norm());
+        angle = acos(angle);
+        mean_angle += angle;
     }
-    // Find mean of values
-    laser_heading_alignment = laser_heading_alignment/N_LASER_CAL;
-    laser_inclination_alignment = laser_inclination_alignment/N_LASER_CAL;
+    mean_angle = mean_angle/N_LASER_CAL;
+    cout << "mena angle: " << Rad2Deg(mean_angle) << "\n";
+    Vector3f disto_tip = Vector3f(DISTO_LEN,0,0);
+    Vector3f target = arbitrary_rotation(Vector3f(target_distance,0,0),Vector3f(0,1,0),gamma);
+    Vector3f laser_vec = arbitrary_rotation(target - disto_tip,Vector3f(1,0,0),-mean_angle);
+    laser_vec = laser_vec/laser_vec.norm();
+    cout << "New laser vec: " << laser_vec(0) << " " << laser_vec(1) << " " << laser_vec(2) << "\n";
 
-
-    /****************************************************
-     * 1. Find the mean misalignment matrix
-     * 2. Convert this to spherical coordinates and save
-     ****************************************************/
-    // TODO: Maybe search for and remove erroneous values?
-    misalignement_mean = misalignement_mat.rowwise().mean();
+    cout << "Heading and Inclination error: ";
+    cout << Rad2Deg(atan2(laser_vec(2),laser_vec(0))) << "  ";
+    cout << Rad2Deg(atan2(laser_vec(1),laser_vec(0))) << "\n";
 
     Vector2f out;
     out << laser_inclination_alignment, laser_heading_alignment;

@@ -96,6 +96,14 @@ Vector3d dSpherical(Vector3d cartesian){
     return spherical;
 }
 
+// Anti-clockwise rotation about the given axis when looking aling it
+Matrix3f quatRot(Vector3f ax, float theta)
+{
+    theta = -theta;
+    Quaternionf Q(cos(theta/2),ax(0)*sin(theta/2), ax(1)*sin(theta/2), ax(2)*sin(theta/2));
+    return Q.toRotationMatrix();
+}
+
 // Rotate vector a about b by theta
 Vector3f arbitrary_rotation(Vector3f a, Vector3f b, float theta)
 {

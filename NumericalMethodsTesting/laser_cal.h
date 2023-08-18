@@ -41,7 +41,7 @@ Vector3f NormalVec(const MatrixXf &point_cloud){
 
 // Takes Heading, Incination, Roll, Distance
 const int N_LASER_CAL = 8;
-const float DISTO_LEN = 1;
+const float DISTO_LEN = 0.1;
 Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
 {
     int calib_num = 0;
@@ -93,15 +93,17 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
     // Calculate target distance
     float alpha, beta, gamma, l, target_distance;
     l = mean_calibration_data(3);
-    gamma = avg_gamma;
-    beta = asin(DISTO_LEN * sin(gamma)/l);
-    alpha = M_PI - gamma - beta;
+    cout << "l: " << l << "\n";
+    gamma   = avg_gamma;
+    beta    = asin(DISTO_LEN/l * sin(gamma));
+    alpha   = M_PI - gamma - beta;
     target_distance = l * sin(alpha)/sin(gamma);
+    cout << "target distance: " << target_distance << "\n";
 
-    cout << "theta: " << RAD_TO_DEG*(M_PI - alpha) << "\n";
-    cout << "alpha: " << RAD_TO_DEG*alpha << "\n";
-    cout << "beta: " << RAD_TO_DEG*beta << "\n";
-    cout << "gamma: " << RAD_TO_DEG*gamma << "\n";
+    cout << "theta: "   << RAD_TO_DEG*(M_PI - alpha) << "\n";
+    cout << "alpha: "   << RAD_TO_DEG*alpha << "\n";
+    cout << "beta: "    << RAD_TO_DEG*beta << "\n";
+    cout << "gamma: "   << RAD_TO_DEG*gamma << "\n";
 
 
     // Find location of target
@@ -129,7 +131,7 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
 
         // Rotate all disto tips is=nto same location
         rotated_disto_tip = cartesian_calibration_data.col(calib_num);
-        rotated_disto_tip = arbitrary_rotation(rotated_disto_tip,target_vector,roll);
+        rotated_disto_tip = quatRot(target_vector,roll) * rotated_disto_tip;
          cout << "Roll: " << Rad2Deg(roll) << "\t Disto tip: " << rotated_disto_tip(0) << "  " << rotated_disto_tip(1) << " " << rotated_disto_tip(2) << "\n";
 
 
@@ -154,8 +156,8 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
     mean_angle = mean_angle/N_LASER_CAL;
     cout << "mena angle: " << Rad2Deg(mean_angle) << "\n";
     Vector3f disto_tip = Vector3f(DISTO_LEN,0,0);
-    Vector3f target = arbitrary_rotation(Vector3f(target_distance,0,0),Vector3f(0,1,0),gamma);
-    Vector3f laser_vec = arbitrary_rotation(target - disto_tip,Vector3f(1,0,0),-mean_angle);
+    Vector3f target = quatRot(Vector3f(0,1,0),gamma) * Vector3f(target_distance,0,0);
+    Vector3f laser_vec = quatRot(Vector3f(1,0,0),-mean_angle) * (target - disto_tip);
     laser_vec = laser_vec/laser_vec.norm();
     cout << "New laser vec: " << laser_vec(0) << " " << laser_vec(1) << " " << laser_vec(2) << "\n";
 

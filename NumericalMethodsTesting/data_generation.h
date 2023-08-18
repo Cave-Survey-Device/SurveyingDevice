@@ -140,10 +140,12 @@ MatrixXf generateLaserAlignData()
 
     // ---------------------------------------- Find parameters of laser ---------------------------------------
     laser_vec = Vector3f(1,0,0);
-    laser_vec = arbitrary_rotation(laser_vec, y_ax, INCLINATION_OFFSET);
-    laser_vec = arbitrary_rotation(laser_vec, z_ax, HEADING_OFFSET);
+    // Angles rotated counter-clockwise so -inclination, +ve heading
+    laser_vec = quatRot(y_ax, INCLINATION_OFFSET) * laser_vec;
+    laser_vec = quatRot(z_ax, -HEADING_OFFSET) * laser_vec;
+
     combined_error = acos(laser_vec.dot(x_ax));
-    initial_roll = -M_PI_2 + atan2(laser_vec(2),laser_vec(1));
+    initial_roll = -M_PI_2 - atan2(laser_vec(2),laser_vec(1));
 
     cout << "Laser vec: " << laser_vec(0) << "  " << laser_vec(1) << "  " << laser_vec(2) << "\n";
     cout << "Combined error: " << combined_error << "\n";
@@ -152,15 +154,24 @@ MatrixXf generateLaserAlignData()
 
     // ------------------------------------ Find initial position of device ------------------------------------
     float  target_len, alpha, beta, gamma, theta;
-    Vector3f initial_disto_tip;
+    Vector3f initial_disto_tip, target_vec;
     target_len = target.norm();
+    target_vec = target/target_len;
     theta = combined_error;
     alpha = M_PI - theta;
     beta = asin(disto_len * sin(alpha)/target_len);
     gamma = theta-beta;
     cout << "gamma: " << Rad2Deg(gamma) << "\n";
 
-    initial_disto_tip = arbitrary_rotation(target/target.norm() * disto_len,target.cross(z_ax),gamma);
+    // Generate initial disto tip by rotating ito targex X z_ax plane
+    Vector3f ax;
+    ax = target_vec.cross(z_ax);
+    ax = ax/ax.norm();
+    initial_disto_tip = quatRot(ax,-gamma) * target/target.norm() * disto_len;
+
+//    cout << "Initial rotation: \n" << quatRot(ax,-gamma) << "\n";
+    cout << "Initial disto tip: " << initial_disto_tip(0) << "  " << initial_disto_tip(1) << "  " << initial_disto_tip(2) << "\n";
+
 
 
     // ------------------------------------ Rotate device about target axis ------------------------------------
@@ -172,7 +183,7 @@ MatrixXf generateLaserAlignData()
     {
         phi = i * 2*M_PI/n_rots;
         roll = initial_roll + phi;
-        disto_tip = arbitrary_rotation(initial_disto_tip,target,phi);
+        disto_tip = quatRot(target_vec,-phi) * initial_disto_tip;
         laser_vec = target - disto_tip;
         cout << "Disto tip: " << disto_tip(0) << "  " << disto_tip(1) << " " << disto_tip(2) << "\n";
 

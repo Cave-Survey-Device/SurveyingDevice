@@ -51,6 +51,8 @@ class LDK_2M {
         // Toggle laser
         void toggleLaser();
 
+        void toggleLaser(bool mode);
+
     private:
         // Holds a single character - used for reading single char from UART buffer until start bit received
         char single_char_buffer;

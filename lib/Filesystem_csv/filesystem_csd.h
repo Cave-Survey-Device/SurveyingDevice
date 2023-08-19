@@ -1,10 +1,10 @@
 #ifndef HEADER_FILESYSTEM_CSD
 #define HEADER_FILESYSTEM_CSD
 
-#define ESP32
+#define FILESYSTEM_ESP32
 // #define SEEED
 
-#ifdef ESP32
+#ifdef FILESYSTEM_ESP32
 #include <preferences.h>
 #include <nvs_flash.h>
 #include <ArduinoEigenDense.h>
@@ -12,11 +12,16 @@
 
 static Preferences preferences;
 void write_to_file(const char* fname, const char* name, const float data);
-void write_to_file(const char* fname, const char* name, const double data);
-void write_to_file(const char* fname, const char* name, const int data);
-void write_to_file(const char* fname, const char* name, const String data);
 void read_from_file(const char* fname, const char* name, float& data);
+
+void write_to_file(const char* fname, const char* name, const double data);
+void read_from_file(const char* fname, const char* name, double& data);
+
+void write_to_file(const char* fname, const char* name, const int data);
 void read_from_file(const char* fname, const char* name, int& data);
+
+void write_to_file(const char* fname, const char* name, const String data);
+void read_from_file(const char* fname, const char* name, String& data);
 
 void write_to_file(const char* fname, const char* name, const float* data, int size);
 void read_from_file(const char* fname, const char* name, float* data, int size);
@@ -28,7 +33,7 @@ void read_from_file(const char* fname, const char* name, Ref<MatrixXf> mat);
 
 void erase_flash();
 #else 
-#ifdef SEEED
+#ifdef FILESYSTEM_SEEED
 
 
 #endif

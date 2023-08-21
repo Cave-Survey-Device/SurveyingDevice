@@ -1,5 +1,5 @@
 #include "LDK_2M.h"
-
+#define DEBUG_LDK2M
 // Global laser status flag
 bool laser_on = true;
 bool uart_timeout = false;
@@ -13,12 +13,12 @@ void LDK_2M::flushSerial1()
 
 void LDK_2M::disable()
 {
-    digitalWrite(PIN_LASER_ENA,LOW);
+    digitalWrite(PIN_LASER_ENA,HIGH);
 }
 
 void LDK_2M::enable()
 {
-    digitalWrite(PIN_LASER_ENA,HIGH);
+    digitalWrite(PIN_LASER_ENA,LOW);
 }
 
 void LDK_2M::eraseBuffer()
@@ -53,11 +53,14 @@ void LDK_2M::init()
 {
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
     lidar_received_msg received_msg;
-    
+
+    pinMode(PIN_LASER_ENA, OUTPUT);
+    digitalWrite(PIN_LASER_ENA,HIGH);
+
     Serial1.flush();
 
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Init 1/3) Get software version");
+    Serial.println("LDK2M:    (Init 1/3) Get software version");
     #endif
 
     generateCommand(LIDAR_READ_SOFTWARE_VERSION,generated_command);
@@ -65,7 +68,7 @@ void LDK_2M::init()
     readMsgFromUart(buffer);
 
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Init 2/3) Disable beeper");
+    Serial.println("LDK2M:    (Init 2/3) Disable beeper");
     #endif
 
     generateCommand(LIDAR_DISABLE_BEEPER,generated_command);
@@ -74,37 +77,43 @@ void LDK_2M::init()
     eraseBuffer();
 
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Init 3/3) Finished INIT");
+    Serial.println("LDK2M:    (Init 3/3) Finished INIT");
     #endif
+
+    toggleLaser(false);
 };
 
 bool LDK_2M::readMsgFromUart(char* buffer)
 {
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Read from UART 1/3) Starting timer");
+    Serial.println("LDK2M:    (Read from UART 1/3) Starting timer");
     #endif
-
-    if ( Serial1.readBytesUntil(LIDAR_START_BYTE,&single_char_buffer,1) == 0)
-    {
-        #ifdef DEBUG_LDK2M
-        Serial.print("LDK2M:    (Read from UART 2/3) timer expired, read failed");
-        #endif
-
-        return 0;
-    }
+    // while (Serial1.readBytes(&single_char_buffer,1))
+    // {
+    //     Serial.printf("%X\n",single_char_buffer);
+    // }
+    single_char_buffer = 0x00;
+    if ( Serial1.readBytesUntil(LIDAR_START_BYTE,&single_char_buffer,1)){}
     // Erase buffer
     eraseBuffer();
 
     // Reads bytes until terminator into buffer (not including terminator)
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Read from UART 2/3) Reading data");
+    Serial.println("LDK2M:    (Read from UART 2/3) Reading data");
     #endif
     
     // TODO: check 99 length, it this necessary?
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
+    if (msg_len == 0)
+    {
+        #ifdef DEBUG_LDK2M
+        Serial.println("LDK2M:    (Read from UART 2/3) timer expired, read failed");
+        #endif
+        return 0;
+    }
 
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Read from UART 3/3) Succesfully read data");
+    Serial.println("LDK2M:    (Read from UART 3/3) Succesfully read data");
     #endif
 
     return 1;
@@ -260,7 +269,7 @@ float LDK_2M::getMeasurement()
 
     // Generate lidar single measurement command and send
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Get measurement 1/4) Request single measure");
+    Serial.println("LDK2M:    (Get measurement 1/4) Request single measure");
     #endif
 
     generateCommand(LIDAR_SINGLE_MEAS,generated_command);
@@ -275,7 +284,7 @@ float LDK_2M::getMeasurement()
 
     // Parse resonse
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Get measurement 2/4) Read response");
+    Serial.println("LDK2M:    (Get measurement 2/4) Read response");
     #endif
 
     if (!readMsgFromUart(buffer))
@@ -285,7 +294,7 @@ float LDK_2M::getMeasurement()
 
     // Attempt to parse the message received over UART
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Get measurement 3/4) Parse read response");
+    Serial.println("LDK2M:    (Get measurement 3/4) Parse read response");
     #endif
 
     try {
@@ -294,7 +303,7 @@ float LDK_2M::getMeasurement()
         laser_on = false;
     }
     catch(const char* e ) {
-        Serial.print("LDK2M:    ERROR: ");
+        Serial.println("LDK2M:    ERROR: ");
         Serial.println(e);
         return 0;
     }
@@ -305,7 +314,7 @@ float LDK_2M::getMeasurement()
 
     // Return result
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Get measurement 4/4) Return response");
+    Serial.println("LDK2M:    (Get measurement 4/4) Return response");
     #endif
 
     return distance;
@@ -318,7 +327,7 @@ void LDK_2M::toggleLaser()
     // Generate lidar LASER ON command and send
     // TODO: check whether receive response before changing laser status
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Toggle laser 1/1) Toggle laser");
+    Serial.println("LDK2M:    (Toggle laser 1/1) Toggle laser");
     #endif
     
     if (laser_on)
@@ -339,16 +348,18 @@ void LDK_2M::toggleLaser(bool mode)
     // Generate lidar LASER ON command and send
     // TODO: check whether receive response before changing laser status
     #ifdef DEBUG_LDK2M
-    Serial.print("LDK2M:    (Toggle laser 1/1) Toggle laser");
+    Serial.println("LDK2M:    (Toggle laser 1/2) Toggle laser");
     #endif
     
     if (mode)
     {
-        generateCommand(LIDAR_LASER_OFF,generated_command);
-        laser_on = false;
-    } else {
         generateCommand(LIDAR_LASER_ON,generated_command);
         laser_on = true;
+    } else {
+        generateCommand(LIDAR_LASER_OFF,generated_command);
+        laser_on = false;
     }
     Serial1.write(generated_command);
+    Serial.println("LDK2M:    (Toggle laser 2/2) Send command");
+
 }

@@ -17,13 +17,15 @@ const static int LIDAR_CONT_MEAS = 0x45;
 const static int LIDAR_STOP_CONT_MEAS = 0x46;
 const static int LIDAR_DISABLE_BEEPER = 0x47;
 const static int LIDAR_ENABLE_BEEPER = 0xF0;
+const static int LIDAR_START_BYTE = 0xAA;
+const static int LIDAR_END_BYTE = 0xA8;
+
 const static int LIDAR_SEND_COMMAND_SIZE = 6;
 const static int LIDAR_RECEIVE_DATA_MAX_SIZE = 12;
-const static char LIDAR_START_BYTE = 0xAA;
-const static char LIDAR_END_BYTE = 0xA8;
+
 const static int LIDAR_BUFFER_SIZE = 100;
 const static int LIDAR_MEAS_LEN = 6;
-const static uint8_t PIN_LASER_ENA = 5;
+const static uint8_t PIN_LASER_ENA = 13U;
 
 // Current lidar laser status
 extern bool laser_on;

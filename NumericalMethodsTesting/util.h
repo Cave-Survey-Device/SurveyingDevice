@@ -30,7 +30,7 @@ double Rad2Deg(double rad) {
     return rad * (180.0/M_PI);
 }
 
-Matrix3f x_rotation(float rad)
+Matrix3f xRotation(float rad)
 {
     Matrix3f R;
     R << 1., 0., 0.,
@@ -38,16 +38,8 @@ Matrix3f x_rotation(float rad)
             0., sin(rad), cos(rad);
     return R;
 }
-Matrix3d x_rotation(double rad)
-{
-    Matrix3d R;
-    R << 1., 0., 0.,
-            0., cos(rad), -sin(rad),
-            0., sin(rad), cos(rad);
-    return R;
-}
 
-Matrix3f y_rotation(float rad)
+Matrix3f yRotation(float rad)
 {
     Matrix3f R;
     R << cos(rad), 0., sin(rad),
@@ -55,16 +47,8 @@ Matrix3f y_rotation(float rad)
             -sin(rad), 0., cos(rad);
     return R;
 }
-Matrix3d y_rotation(double rad)
-{
-    Matrix3d R;
-    R << cos(rad), 0., sin(rad),
-            0., 1., 0.,
-            -sin(rad), 0., cos(rad);
-    return R;
-}
 
-Matrix3f z_rotation(float rad)
+Matrix3f zRotation(float rad)
 {
     Matrix3f R;
     R << cos(rad), -sin(rad), 0.,
@@ -72,14 +56,7 @@ Matrix3f z_rotation(float rad)
             0., 0. , 1.;
     return R;
 }
-Matrix3d z_rotation(double rad)
-{
-    Matrix3d R;
-    R << cos(rad), -sin(rad), 0.,
-            sin(rad), cos(rad), 0.,
-            0., 0. , 1.;
-    return R;
-}
+
 
 Vector3f Spherical(Vector3f cartesian){
     Vector3f spherical;
@@ -105,7 +82,7 @@ Matrix3f quatRot(Vector3f ax, float theta)
 }
 
 // Rotate vector a about b by theta
-Vector3f arbitrary_rotation(Vector3f a, Vector3f b, float theta)
+Vector3f arbitraryRotation(Vector3f a, Vector3f b, float theta)
 {
     // https://math.stackexchange.com/a/1432182
     Vector3f aparb = (a.dot(b)/b.dot(b))*b;
@@ -121,7 +98,7 @@ Vector3f arbitrary_rotation(Vector3f a, Vector3f b, float theta)
     return aorthb_rot + aparb;
 
 }
-Vector3d darbitrary_rotation(Vector3d a, Vector3d b, double theta)
+Vector3d darbitraryRotation(Vector3d a, Vector3d b, double theta)
 {
     // https://math.stackexchange.com/a/1432182
     Vector3d aparb = (a.dot(b)/b.dot(b))*b;
@@ -156,7 +133,7 @@ MatrixXf kron(MatrixXf m1, MatrixXf m2)
     return out;
 }
 
-MatrixXf read_from_file(const char* fname)
+MatrixXf readFromFile(const char* fname)
 {
     std::ifstream fin;
     std::vector<float> numbers;

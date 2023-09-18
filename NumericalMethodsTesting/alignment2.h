@@ -151,37 +151,37 @@ Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
     Vector3f gk;
 
     // Step 1
-    std::cout << "Step 1\n";
+//    std::cout << "Step 1\n";
     for (int i=0; i<K; i++)
     {
         mk = m.col(i);
         gk = g.col(i);
         A.row(i) << kron(mk,gk).transpose();
     }
-    std::cout << "A: \n" << A << "\n";
+//    std::cout << "A: \n" << A << "\n";
 
     // Step 2 - solve lstsq
-    std::cout << "Step 2\n";
+//    std::cout << "Step 2\n";
     Matrix3f H = ((A.transpose()*A).inverse() * A.transpose() * MatrixXf::Ones(K,1)).reshaped(3,3);
-    std::cout << "H: \n" << H << "\n";
+//    std::cout << "H: \n" << H << "\n";
 
     // Step 3
-    std::cout << "Step 3\n";
+//    std::cout << "Step 3\n";
     JacobiSVD<MatrixXf> svd(H, ComputeThinU | ComputeThinV);
     Matrix3f U = svd.matrixU();
     Matrix3f V = svd.matrixV();
     Matrix3f Sig = svd.singularValues().asDiagonal();
-    std::cout << "Sig: \n" << Sig << "\n";
+//    std::cout << "Sig: \n" << Sig << "\n";
 
     // Step 4
-    std::cout << "Step 4\n";
+//    std::cout << "Step 4\n";
     Matrix3f Uhat = sign(H.determinant()) * U;
     Matrix3f Rhat = Uhat * V.transpose();
-    std::cout << "Uhat: \n" << Uhat << "\n";
-    std::cout << "Rhat: \n" << Rhat << "\n";
+//    std::cout << "Uhat: \n" << Uhat << "\n";
+//    std::cout << "Rhat: \n" << Rhat << "\n";
 
     // Step 5
-    std::cout << "Step 5\n";
+//    std::cout << "Step 5\n";
     float shat = 0;
     for (int i=0; i<K; i++)
     {
@@ -191,7 +191,7 @@ Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
     }
     shat = shat * 1/K;
 
-    std::cout << "Form out\n";
+//    std::cout << "Form out\n";
     out.segment(0,9) << Rhat.reshaped(9,1);
     out(9) = shat;
 

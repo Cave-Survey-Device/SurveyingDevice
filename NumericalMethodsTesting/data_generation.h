@@ -19,7 +19,7 @@
 #define N_Y 10
 #define N_Z N_SAMPLES/N_Y
 #else
-#define N_SAMPLES 12*5
+#define N_SAMPLES 12*10
 #endif
 
 #define INCLINATION_OFFSET 0.0872664626
@@ -27,6 +27,12 @@
 
 using namespace Eigen;
 
+/**
+ * Generates a set of perfect data from an initial sample. This initial sample is the reference vector (0,0,1 for accelerometers and 1,0,0 for magnetometers) from which a spehrical point cloud is generated.
+ * If DISPERSED_GENERATION is NOT defined, data will be generated according to the MAG.I.CAL calibration schema.
+ * @param true_vec
+ * @return
+ */
 MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
 {
 #ifdef DISPERSED_GENERATION
@@ -62,9 +68,9 @@ MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
 
     for (int n=0; n<12; n++)
     {
-        Rx = x_rotation(x_rots(n));
-        Ry = y_rotation(y_rots(n));
-        Rz = z_rotation(z_rots(n));
+        Rx = xRotation(x_rots(n));
+        Ry = yRotation(y_rots(n));
+        Rz = zRotation(z_rots(n));
         R = Rx * Ry * Rz;
         samples.col(n) = R * true_vec;
     }
@@ -72,6 +78,13 @@ MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
 #endif
 }
 
+/**
+ * Generates data to calibrate the inertial alignment of a sensor given a set of perfect data and misalignment parameters
+ * @param true_data
+ * @param Tm The misalignment matrix from which to generate the data
+ * @param hm The bias vector from which to generate the data
+ * @return
+ */
 MatrixXf generateInertialAlignData(MatrixXf true_data, Matrix3f Tm, Vector3f hm)
 {
     int n = true_data.cols();
@@ -91,40 +104,7 @@ MatrixXf generateInertialAlignData(MatrixXf true_data, Matrix3f Tm, Vector3f hm)
     return samples;
 }
 
-
-//MatrixXf generateLaserAlignData()
-//{
-//    // Define n-rotations
-//    const int n_rots = 8;
-//
-//    // Define characteristics of laser
-//    const int true_distance = 10;
-//    const float disto_len = 0.1;
-//
-//    // Rotate disto
-//    Matrix<float,4,n_rots> out;
-//
-//    std::default_random_engine generator;
-//    std::normal_distribution<float> theta_noise_dist(0,0.0001);
-//    std::normal_distribution<float> distance_noise_dist(0,0.0001);
-//
-//    // Get g vector of the device
-//    float theta = 0;
-//    float alpha, beta, gamma, distance;
-//
-//    alpha = COMPOUND_OFFSET;
-//    gamma = asin((disto_len * sin(alpha)/true_distance));
-//    beta = M_PI - gamma;
-//    distance = (true_distance * sin(beta))/sin(alpha);
-//
-//    for (int i=0;i<n_rots;i++) {
-//        theta = 2*M_PI / n_rots * i + theta_noise_dist(generator);
-//        out.col(i) <<  x_rotation(Rad2Deg(theta)) * y_rotation(Rad2Deg(COMPOUND_OFFSET)) * Vector3f{0, 0, 1}, distance * (1+distance_noise_dist(generator));
-//    }
-//    return out;
-//}
-
-MatrixXf generateLaserAlignData()
+MatrixXf generateLaserAlignData(float inclination_offset, float heading offset)
 {
     // ---------------------------------------- Define needed parameters ---------------------------------------
     float initial_roll, combined_error;
@@ -141,8 +121,8 @@ MatrixXf generateLaserAlignData()
     // ---------------------------------------- Find parameters of laser ---------------------------------------
     laser_vec = Vector3f(1,0,0);
     // Angles rotated counter-clockwise so -inclination, +ve heading
-    laser_vec = quatRot(y_ax, INCLINATION_OFFSET) * laser_vec;
-    laser_vec = quatRot(z_ax, -HEADING_OFFSET) * laser_vec;
+    laser_vec = quatRot(y_ax, inclination_offset) * laser_vec;
+    laser_vec = quatRot(z_ax, -heading_offset) * laser_vec;
 
     combined_error = acos(laser_vec.dot(x_ax));
     initial_roll = -M_PI_2 - atan2(laser_vec(2),laser_vec(1));

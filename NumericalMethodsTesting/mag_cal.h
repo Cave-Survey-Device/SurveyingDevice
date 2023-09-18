@@ -57,7 +57,7 @@ RowVector<float,10> fit_ellipsoid(MatrixXf samples)
 
     // Solve least squares - Eqn(14) and Eqn(15)
     MatrixXf M  = C.inverse() * (S11 - S12*S22.inverse() * S21);
-    std::cout << "Matrix to solve: \n" << M << "\n\n";
+//    std::cout << "Matrix to solve: \n" << M << "\n\n";
     EigenSolver<MatrixXf> es(M);
     Vector<std::complex<float>,6> eigenvalues = es.eigenvalues();
     Matrix<std::complex<float>,6,6> eigenvectors = es.eigenvectors();
@@ -122,8 +122,8 @@ Vector<float,12> calculate_transformation(Matrix3f M, Vector3f n, float d)
     Vector<float,12> V;
     V << v1, v2;
     //A_1 << A_1.inverse();
-    std::cout << "Transformation matrix: \n" << v1.reshaped(3,3) << "\n\n";
-    std::cout << "Bias vector: \n" << v2.reshaped(3,1) << "\n\n";
+//    std::cout << "Transformation matrix: \n" << v1.reshaped(3,3) << "\n\n";
+//    std::cout << "Bias vector: \n" << v2.reshaped(3,1) << "\n\n";
     return V;
 }
 

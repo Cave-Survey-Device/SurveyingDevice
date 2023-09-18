@@ -6,151 +6,175 @@
 using namespace Eigen;
 #define BOOST_IOSTREAMS_NO_LIB
 
-
-void generateAndSaveData()
+void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
+                          Matrix3f &mag_acc_misalign, float &inclination_angle,
+                          MatrixXf &true_mag_data, MatrixXf &true_acc_data, MatrixXf &sample_mag_data, MatrixXf &sample_acc_data)
 {
-    // Define error parameters - taken from JCAA paper
-    Matrix3f Tm;
-    Tm <<  0.462,-0.0293,-0.037,
-    0.0686,0.4379,0.0303,
-    0.0427,-0.0336,0.4369;
+    // ------------------------------ Define magnetometer error parameters ------------------------------
+    Matrix3f Tsf, Tsi, Tcc;
+    Matrix3f Trot, Tscale, Tshear;
 
-    Vector3f hm;
-    hm << -0.176,0.2214,0.0398;
+    // Define scale factor error
+    Tsf <<
+        0.75, 0, 0,
+        0, 0.96, 0,
+        0, 0, 1.23;
 
-    Matrix3f Ta;
-    Ta <<  9.77,0.0018,-0.030,
-    0.0019,9.7032,-0.0011,
-    -0.0087, -0.0013,9.6927;
-    Ta = Ta * 0.1;
+    // Define soft iron errors
+    Trot = xRotation(0.1) * yRotation(0.86) * zRotation(-0.75);
+    Tscale <<
+        0.9, 0, 0,
+        0, 1.1, 0,
+        0, 0, 1.035;
+    Tshear <<
+        1, 0.1, -0.05,
+        -0.13, 1, 0.11,
+        0.059, -0.08, 1;
+    Tsi = Trot * Tscale * Tshear;
 
-    Vector3f ha;
-    ha << -0.01472,-0.0011,-0.01274;
+    // Define cross-coupling error
+    float a, b, y;
+    a = 0.12;
+    b = -0.05;
+    y = 0.67;
+    Tcc <<
+        1, sin(a), -sin(b),
+        0, cos(a), sin(y)*cos(b),
+        0, 0, cos(y)*cos(b);
 
-    // Generate sensor data
-    Vector3f mag_vec = {1.,0.,0.};
-    Vector3f accel_vec = {0.,0.,1.};
+    // Calculate combined error matrix
+    Tm = Tcc * Tsf * Tsi;
 
-    MatrixXf mag_true_data = generateTrueInertialAlignData(mag_vec);
-    MatrixXf accel_true_data = generateTrueInertialAlignData(accel_vec);
 
-    MatrixXf mag_samples = generateInertialAlignData(mag_true_data, Tm, hm);
-    MatrixXf accel_samples = generateInertialAlignData(accel_true_data, Ta, ha);
+    Vector3f hhi, hb;
+    // Define hard iron error
+    hhi << 0.1, 0.2, 0.3;
+    // Define sensor offset error
+    hb << -0.015, 0.13, 0.05;
+    // Calculate combined offset error
+    hm = Tm * hhi + hb;
 
-//    MatrixXf laser_samples = generateLaserAlignData();
 
-    // Save sensor data
-    writeToCSVfile("mag_generated_samples.txt", mag_samples.transpose());
-    writeToCSVfile("accel_generated_samples.txt", accel_samples.transpose());
-//    writeToCSVfile("laser_generated_samples.txt",laser_samples.transpose());
+    // ------------------------------ Define accelerometer error parameters ------------------------------
+    a = -0.068;
+    b = 0.095;
+    y = 0.21;
+    Tcc <<
+        1, sin(a), -sin(b),
+        0, cos(a), sin(y)*cos(b),
+        0, 0, cos(y)*cos(b);
+
+
+    Ta = Tcc * Tsf;
+    ha = hb;
+
+    // ----------------- Apply the misalignment between the sensors ------------------
+    mag_acc_misalign = xRotation(0.1) * yRotation(0.1) * zRotation(0.05);
+    inclination_angle = 1.15;
+
+
+    // ------------------------------ Generate the data ------------------------------
+    true_mag_data = generateTrueInertialAlignData(Vector3f(cos(inclination_angle),0,sin(inclination_angle)));
+    true_acc_data = generateTrueInertialAlignData(Vector3f(0,0,1));
+    sample_mag_data = generateInertialAlignData(true_mag_data,Tm,hm);
+    sample_acc_data = generateInertialAlignData(true_acc_data,Ta,ha);
+
+    sample_mag_data = mag_acc_misalign * sample_mag_data;
+
+
+
+
 }
 
-void testAlignmentUsingReal()
+void calibrateInertialSensors(MatrixXf &sample_mag_data, MatrixXf &sample_acc_data,
+                              Matrix3f &Ra, Matrix3f &Rm,
+                              Vector3f &ba, Vector3f &bm)
 {
-    // Read in data in Nx3 format
-    cout << "Reading accel_samples.txt\n";
-    MatrixXf accel_samples = read_from_file("accel_samples.txt");
-    cout << accel_samples;
-
-    cout << "Reading mag_samples.txt\n";
-    MatrixXf mag_samples = read_from_file("mag_samples.txt");
-    cout << mag_samples;
-
-    cout << "Reading accel_corrections.txt\n";
-    MatrixXf accel_corrections = read_from_file("accel_corrections.txt");
-    cout << "Reading mag_corrections.txt\n";
-    MatrixXf mag_corrections = read_from_file("mag_corrections.txt");
-
-
-    // Data is in Nx3 format but wants to be 3xN
-    accel_samples.transposeInPlace();
-    mag_samples.transposeInPlace();
-    accel_corrections.transposeInPlace();
-    mag_corrections.transposeInPlace();
-
-    // Run calibration
-    // Declare variables
     Matrix<float, 3, 3> M;
     Vector<float, 3> n;
     float d;
     Vector<float, 10> U;
-    Matrix<float, 3, 3> R;
-    Vector<float, 3> b;
+    Vector<float, 12> transformation;
 
-    // Calculate magnetometer calibration
-    U = fit_ellipsoid(mag_samples);
-    std::cout << "Magnetometer U:\n" << U << "\n";
+    // ------------------------------ Calculate magnetometer calibration ------------------------------
+    U = fit_ellipsoid(sample_mag_data);
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
-    Vector<float, 12> mag_transformation = calculate_transformation(M, n, d);
+    transformation = calculate_transformation(M, n, d);
 
-    R << mag_transformation[0], mag_transformation[1], mag_transformation[2], mag_transformation[3], mag_transformation[4], mag_transformation[5], mag_transformation[6], mag_transformation[7], mag_transformation[8];
-    b << mag_transformation[9], mag_transformation[10], mag_transformation[11];
-    mag_corrections = R * (mag_samples.colwise() - b);
+    Rm << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
+    bm << transformation[9], transformation[10], transformation[11];
 
-    // Calculate accelerometer calibration
-    U = fit_ellipsoid(accel_samples);
-    std::cout << "Accelerometer U:\n" << U << "\n";
 
+    // ------------------------------ Calculate accelerometer calibration ------------------------------
+    U = fit_ellipsoid(sample_acc_data);
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
+    transformation = calculate_transformation(M, n, d);
 
-    Vector<float, 12> accel_transformation = calculate_transformation(M, n, d);
-    R << accel_transformation[0], accel_transformation[1], accel_transformation[2], accel_transformation[3], accel_transformation[4], accel_transformation[5], accel_transformation[6], accel_transformation[7], accel_transformation[8];
-    b << accel_transformation[9], accel_transformation[10], accel_transformation[11];
-    accel_corrections = R * (accel_samples.colwise() - b);
-    cout << "Accel corrections " << accel_corrections.rows() << " x " << accel_corrections.cols() << ":\n" << accel_corrections.row(0) << "\n"  << accel_corrections.row(1) << "\n"  << accel_corrections.row(2) << "\n";
-
-    // Run alignment
-    std::cout << "Beginning alignment...\n";
-    Vector<float,10> X;
-    X = Align2(accel_corrections,mag_corrections); //Align(accel_corrections,mag_corrections);
-    std::cout << X;
+    Ra << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
+    ba << transformation[9], transformation[10], transformation[11];
 }
 
-void testAlignmentUsingFake()
+void alignInertialSensors(MatrixXf &mag_corrections, MatrixXf &acc_corrections, Matrix3f &Ralign, float &inclination_angle)
 {
-
+    Vector<float,10> X = Align2(acc_corrections,mag_corrections);
+    Ralign << X.segment(0,9);
+    inclination_angle = X(9);
 }
 
-MatrixXf runCaliration(MatrixXf samples)
+void generateLaserData(Matrix3f &Tm, Matrix3f &Ta, Matrix3f &hm, Matrix3f &ha, Matrix3f &mag_acc_misalign,
+                       Matrix3f &Ra, Matrix3f &Rm, Vector3f &ba, Vector3f &bm, Matrix3f &Ralign)
 {
-    // Declare variables
-    Matrix<float, 3, 3> M;
-    Vector<float, 3> n;
-    float d;
-    Vector<float, 10> U;
-    Matrix<float, 3, 3> R;
-    Vector<float, 3> b;
-
-    // Calculate calibration
-    U = fit_ellipsoid(samples);
-    std::cout << "Magnetometer U:\n" << U << "\n";
-    M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
-    n << U[6], U[7], U[8];
-    d = U[9];
-    Vector<float, 12> transformation = calculate_transformation(M, n, d);
-
-    R << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
-    b << transformation[9], transformation[10], transformation[11];
-    MatrixXf corrections = R * (samples.colwise() - b);
-    return corrections;
 }
+
+void solveLaserAlignment()
+{
+}
+
+
 
 int main()
 {
-    cout << "\n ---------- DATA GENERATION ---------- \n";
-    Matrix<float,4,-1> laser_sample_data = generateLaserAlignData();
+    MatrixXf true_mag_data, true_acc_data, sample_mag_data, sample_acc_data, mag_corrections, acc_corrections;
+    Matrix3f Ra, Rm, Ralign, Tm, Ta, mag_acc_misalign;
+    Vector3f ba, bm, hm, ha;
+    float inclination_angle;
 
-    cout << "\n ---------- SOLVE LASER ALIGNMENT ---------- \n";
-    Vector2f data;
-    data = align_laser(laser_sample_data);
-    cout << "Laser alignment data: " << RAD_TO_DEG*data(0) << " " << RAD_TO_DEG*data(1);
-//    writeToCSVfile("laser_sample_data.txt",laser_sample_data);
-    return 0;
+    generateInertialData(Tm ,Ta, hm,ha,
+                         mag_acc_misalign, inclination_angle,
+                         true_mag_data, true_acc_data, sample_mag_data,sample_acc_data);
+    calibrateInertialSensors(sample_mag_data,sample_acc_data,Ra,Rm,ba,bm);
+
+    mag_corrections = Rm * (sample_mag_data.colwise() - bm);
+    acc_corrections = Ra * (sample_acc_data.colwise() - ba);
+
+    cout << "Tm\n" << Tm << "\n";
+    cout << "Rm inverse\n" << Rm.inverse() << "\n";
+
+    cout << "hm\n" << hm << "\n";
+    cout << "bm\n" << bm << "\n\n";
+
+    cout << "Ta\n" << Ta << "\n";
+    cout << "Ra inverse\n" << Ra.inverse() << "\n";
+
+    cout << "ha\n" << ha << "\n";
+    cout << "ba\n" << ba << "\n\n";
+
+
+    writeToCSVfile("true_mag_data",true_mag_data);
+    writeToCSVfile("true_acc_data",true_acc_data);
+    writeToCSVfile("sample_mag_data",sample_mag_data);
+    writeToCSVfile("sample_acc_data",sample_acc_data);
+    writeToCSVfile("mag_corrections",mag_corrections);
+    writeToCSVfile("acc_corrections",acc_corrections);
+
+    //alignInertialSensors(mag_corrections,acc_corrections,Ralign,inclination_angle);
+
 }
+
 //
 //int main() {
 //

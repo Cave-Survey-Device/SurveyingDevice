@@ -104,7 +104,7 @@ MatrixXf generateInertialAlignData(MatrixXf true_data, Matrix3f Tm, Vector3f hm)
     return samples;
 }
 
-MatrixXf generateLaserAlignData(float inclination_offset, float heading offset)
+MatrixXf generateLaserAlignData(float inclination_offset, float heading_offset)
 {
     // ---------------------------------------- Define needed parameters ---------------------------------------
     float initial_roll, combined_error;

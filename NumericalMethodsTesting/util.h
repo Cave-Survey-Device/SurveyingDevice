@@ -13,20 +13,18 @@
 #include <sstream>
 #include "Eigen/Dense"
 
+#define DEG_TO_RAD 0.017453292519943295769236907684886
+#define RAD_TO_DEG 57.295779513082320876798154814105
+
+
 using namespace std;
 using namespace Eigen;
 
 float Deg2Rad(float degrees) {
     return degrees * (M_PI / 180.0);
 }
-double Deg2Rad(double degrees) {
-    return degrees * (M_PI / 180.0);
-}
 
 float Rad2Deg(float rad) {
-    return rad * (180.0/M_PI);
-}
-double Rad2Deg(double rad) {
     return rad * (180.0/M_PI);
 }
 
@@ -57,21 +55,6 @@ Matrix3f zRotation(float rad)
     return R;
 }
 
-
-Vector3f Spherical(Vector3f cartesian){
-    Vector3f spherical;
-    spherical << atan2(cartesian(1), cartesian(0)),
-            atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
-            cartesian.norm();
-    return spherical;
-}
-Vector3d dSpherical(Vector3d cartesian){
-    Vector3d spherical;
-    spherical << atan2(cartesian(1), cartesian(0)),
-            atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
-            cartesian.norm();
-    return spherical;
-}
 
 // Anti-clockwise rotation about the given axis when looking aling it
 Matrix3f quatRot(Vector3f ax, float theta)
@@ -160,6 +143,45 @@ MatrixXf readFromFile(const char* fname)
     data.transposeInPlace();
 //    cout << "\nData:\n" << data << "\n";
     return data;
+}
+
+Vector3f cartesianToSpherical(Vector3f cartesian){
+    Vector3f spherical;
+    spherical << atan2(cartesian(1), cartesian(0)),
+            atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
+            cartesian.norm();
+    return spherical;
+}
+
+Matrix<float,2,3>  cartesianToInertial(Vector3f xyz)
+{
+    Matrix<float,2,3> inertial;
+    return inertial;
+}
+Matrix<float,2,3> sphericalToInertial(Vector3f hir)
+{
+    Matrix<float,2,3> inertial;
+    return inertial;
+}
+Vector3f inertialToSpherical(Vector3f g, Vector3f m)
+{
+    Vector3f spherical;
+    return spherical;
+}
+
+Vector3f inertialToCartesian(Vector3f g, Vector3f m)
+{
+    Vector3f hir;
+    float heading, inclination, roll;
+
+    inclination = asin(g(0)/g.norm());
+    roll = atan2(g(1),g(2));
+
+    Vector3f m_roll_reversed = yRotation(RAD_TO_DEG*inclination) * xRotation(-RAD_TO_DEG*roll) * m;
+    heading = atan2(m_roll_reversed(1),m_roll_reversed(0)); // asin(m(0)/m.norm());
+
+    hir << RAD_TO_DEG * heading, RAD_TO_DEG * inclination, RAD_TO_DEG * roll;
+    return hir;
 }
 
 const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, "\t", "\n");

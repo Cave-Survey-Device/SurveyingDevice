@@ -16,6 +16,12 @@ using namespace Eigen;
 #define N_grid 5
 #define N_equations N_grid*N_grid+3+1
 
+/**
+ *
+ * @param samples
+ * @return RowVector<float,10> Ellipsoid parameters in the form x2 y2 z2 2yz 2xz 2xy 2x 2y 2x 1
+
+ */
 RowVector<float,10> fit_ellipsoid(MatrixXf samples)
 {
     int N = samples.cols();
@@ -29,10 +35,6 @@ RowVector<float,10> fit_ellipsoid(MatrixXf samples)
 
     D << x.array().pow(2), y.array().pow(2), z.array().pow(2), 2*y.array()*z.array(), 2*x.array()*z.array(), 2*x.array()*y.array(), 2*x.array(), 2*y.array(), 2*z.array(), VectorXf::Ones(N);
     D.transposeInPlace();
-
-    // D seems correct
-    //std::cout << "D: \n" << D << "\n\n";
-
 
     // Apply constraint kJ > I^2
     // The quadratic surface is an ellipse if k = 4
@@ -83,7 +85,7 @@ RowVector<float,10> fit_ellipsoid(MatrixXf samples)
     return U;
 }
 
-Vector<float,12> calculate_transformation(Matrix3f M, Vector3f n, float d)
+Vector<float,12> calculate_transformation(Matrix3f &M, Vector3f &n, float d)
 {
     // Inverse of M
     Matrix3f M_ = M.inverse();
@@ -121,67 +123,96 @@ Vector<float,12> calculate_transformation(Matrix3f M, Vector3f n, float d)
     Map<VectorXf> v2(b.data(), 3);
     Vector<float,12> V;
     V << v1, v2;
-    //A_1 << A_1.inverse();
-//    std::cout << "Transformation matrix: \n" << v1.reshaped(3,3) << "\n\n";
-//    std::cout << "Bias vector: \n" << v2.reshaped(3,1) << "\n\n";
     return V;
 }
 
-float basisFunc(Vector2f data, Vector2f center)
-{
-    float out;
-    float r = (center-data).norm();
-    float alpha = 1;
 
-    out = 1/(1+alpha*r*r);
+float J(MatrixXf &Ya, Matrix3f &Ta, Vector3f &ha, MatrixXf &F)
+{
+    float out = 0;
+    int n = Ya.cols();
+    int i;
+    float lambda = Ta.norm();
+    Vector3f yak, fk;
+    for (i=0; i<n; i++)
+    {
+        yak = Ya.col(i);
+        fk = F.col(i);
+
+        out += pow((yak - Ta*fk - ha).norm(),2);
+        out += lambda * pow(pow(fk.norm(),2) - 1,2);
+    }
     return out;
 }
 
 
-//Vector<float,N_equations> fitRBF(MatrixXf samples)
-//{
-//    Vector<float,N_equations> out;
-//
-//    // Consider using Halton points: https://www.sciencedirect.com/science/article/pii/S0307904X17304717
-//
-////    // Construct grid
-////    Matrix<Vector2f,N_grid,N_grid> grid;
-////    for(int x=0; x < N_grid; x++)
-////    {
-////        for(int y=0; y < N_grid; y++)
-////        {
-////            grid(x,y) << x/N_grid, y/N_grid;
-////        }
-////    }
-//
-//    // Construct design matrix
-//    Matrix<float, -1, N_equations> A(samples.cols(), N_equations);
-//    Vector2f center;
-//    for(int x=0; x < N_grid; x++)
-//    {
-//        for(int y=0; y < N_grid; y++)
-//        {
-//            for (int i=0;i<A.rows();i++)
-//            {
-//
-//                A(i,x*N_grid+y) = basisFunc();
-//            }
-//        }
-//    }
-//    for (int i=0;i<A.rows();i++)
-//    {
-//        A(i,N_equations-3) = samples.col(i)(0);
-//        A(i,N_equations-2) = samples.col(i)(1);
-//        A(i,N_equations-1) = 1;
-//    }
-//
-//
-//
-//
-//
-//
-//
-//    // Construct design matrix
-//
-//}
+Vector<float,12> fit_ellipsoid_MAGICAL(MatrixXf Y)
+{
+    int n = Y.cols();
+    int i;
+    float j = 10;
+    Matrix<float,3,4> L;
+    MatrixXf G(4,n);
+    MatrixXf F = Y;
+    MatrixXf F_ = Y;
+    Vector3f yak,fk,f_k;
+
+    // Initial guesses
+    Matrix3f Ta;
+    Vector3f ha;
+    Ta.setIdentity();
+    ha.setZero();
+
+
+    // Step 1: Initialise Fk
+    for (i=0; i<n; i++)
+    {
+        yak = Y.col(i);
+        F.col(i) = yak/yak.norm();
+    }
+    G.block(0,0,3,n) = F;
+    G.block(3,0,1,n).setOnes();
+
+
+    while (j > 0.01) {
+        // Step 2
+        L = Y * G.transpose() * (G * G.transpose()).inverse();
+
+        // Step 3
+        Ta = L.block(0, 0, 3, 3);
+        ha = L.block(0, 3, 3, 1);
+
+        // Step 4
+        for (i = 0; i < n; i++) {
+            yak = Y.col(i);
+            F_.col(i) = Ta.inverse() * (yak - ha);
+        }
+
+        // Step 5
+        for (i = 0; i < n; i++) {
+            yak = Y.col(i);
+            f_k = F_.col(i);
+            fk = F.col(i);
+            F.col(i) = f_k / fk.norm();
+        }
+        G.block(0, 0, 3, n) = F;
+        G.block(3, 0, 1, n).setOnes();
+
+        // Step 6
+        j = J(Y, Ta, ha, F);
+    }
+
+    cout << "Ta:\n" << Ta << "\n\n";
+    cout << "ha:\n" << ha << "\n\n";
+
+    Vector<float,12> out;
+    out << Ta.reshaped(9,1), ha;
+    return out;
+
+
+
+
+}
+
+
 #endif //MAGNETOMETER_CALIBRATION_MAG_CAL_H

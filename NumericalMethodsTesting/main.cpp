@@ -2,13 +2,18 @@
 #include "data_generation.h"
 #include "alignment2.h"
 #include "laser_cal.h"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
+//namespace plt = matplotlibcpp;
 using namespace Eigen;
 #define BOOST_IOSTREAMS_NO_LIB
 
 void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
                           Matrix3f &mag_acc_misalign, float &inclination_angle,
-                          MatrixXf &true_mag_data, MatrixXf &true_acc_data, MatrixXf &sample_mag_data, MatrixXf &sample_acc_data)
+                          MatrixXf &true_mag_cal_data , MatrixXf &sample_mag_cal_data ,
+                          MatrixXf &true_mag_data,  MatrixXf &true_acc_data,
+                          MatrixXf &sample_mag_data, MatrixXf &sample_acc_data)
 {
     // ------------------------------ Define magnetometer error parameters ------------------------------
     Matrix3f Tsf, Tsi, Tcc;
@@ -21,7 +26,7 @@ void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
         0, 0, 1.23;
 
     // Define soft iron errors
-    Trot = xRotation(0.1) * yRotation(0.86) * zRotation(-0.75);
+    Trot = xRotation(0.1) * yRotation(0.2) * zRotation(-0.3);
     Tscale <<
         0.9, 0, 0,
         0, 1.1, 0,
@@ -36,7 +41,7 @@ void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
     float a, b, y;
     a = 0.12;
     b = -0.05;
-    y = 0.67;
+    y = 0.1;
     Tcc <<
         1, sin(a), -sin(b),
         0, cos(a), sin(y)*cos(b),
@@ -56,34 +61,37 @@ void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
 
 
     // ------------------------------ Define accelerometer error parameters ------------------------------
-    a = -0.068;
-    b = 0.095;
-    y = 0.21;
+    a = 0.01;
+    b = -0.05;
+    y = 0.02;
     Tcc <<
         1, sin(a), -sin(b),
         0, cos(a), sin(y)*cos(b),
         0, 0, cos(y)*cos(b);
 
+    Tsf <<
+        -0.1, 0, 0,
+        0, 0.1, 0,
+        0, 0, 0.035;
 
-    Ta = Tcc * Tsf;
-    ha = hb;
+    Ta = Matrix3f::Identity() + Tcc * Tsf;
+    ha << 0.05, 0.02, -0.0012;
 
     // ----------------- Apply the misalignment between the sensors ------------------
-    mag_acc_misalign = xRotation(0.1) * yRotation(0.1) * zRotation(0.05);
-    inclination_angle = 1.15;
+    mag_acc_misalign = xRotation(0.1) * yRotation(0.01) * zRotation(0.05);
+    inclination_angle = 0;//1.15;
 
 
     // ------------------------------ Generate the data ------------------------------
+    true_mag_cal_data = generateTrueMagData(Vector3f(cos(inclination_angle),0,sin(inclination_angle)));
     true_mag_data = generateTrueInertialAlignData(Vector3f(cos(inclination_angle),0,sin(inclination_angle)));
     true_acc_data = generateTrueInertialAlignData(Vector3f(0,0,1));
+
+    sample_mag_cal_data = generateMagCalSamples(true_mag_cal_data,Tm,hm);
     sample_mag_data = generateInertialAlignData(true_mag_data,Tm,hm);
     sample_acc_data = generateInertialAlignData(true_acc_data,Ta,ha);
 
     sample_mag_data = mag_acc_misalign * sample_mag_data;
-
-
-
-
 }
 
 void calibrateInertialSensors(MatrixXf &sample_mag_data, MatrixXf &sample_acc_data,
@@ -116,18 +124,29 @@ void calibrateInertialSensors(MatrixXf &sample_mag_data, MatrixXf &sample_acc_da
 
     Ra << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
     ba << transformation[9], transformation[10], transformation[11];
+//    Vector<float,12> Xfrm = fit_ellipsoid_MAGICAL(sample_acc_data);
+//    Ra << Xfrm[0], Xfrm[1], Xfrm[2], Xfrm[3], Xfrm[4], Xfrm[5], Xfrm[6], Xfrm[7], Xfrm[8];
+//    ba << Xfrm[9], Xfrm[10], Xfrm[11];
+
 }
 
 void alignInertialSensors(MatrixXf &mag_corrections, MatrixXf &acc_corrections, Matrix3f &Ralign, float &inclination_angle)
 {
     Vector<float,10> X = Align2(acc_corrections,mag_corrections);
-    Ralign << X.segment(0,9);
+    Ralign = X.segment(0,9).reshaped(3,3);
+    inclination_angle = X(9);
+
+    X = Align2_gd(acc_corrections,mag_corrections,Ralign,inclination_angle);
+    Ralign = X.segment(0,9).reshaped(3,3);
     inclination_angle = X(9);
 }
 
 void generateLaserData(Matrix3f &Tm, Matrix3f &Ta, Matrix3f &hm, Matrix3f &ha, Matrix3f &mag_acc_misalign,
-                       Matrix3f &Ra, Matrix3f &Rm, Vector3f &ba, Vector3f &bm, Matrix3f &Ralign)
+                       Matrix3f &Ra, Matrix3f &Rm, Vector3f &ba, Vector3f &bm, Matrix3f &Ralign,
+                       float &inclination_offset, float &heading_offset,
+                       MatrixXf &laser_data_hird)
 {
+    laser_data_hird = generateLaserAlignData(inclination_offset, heading_offset);
 }
 
 void solveLaserAlignment()
@@ -138,18 +157,24 @@ void solveLaserAlignment()
 
 int main()
 {
-    MatrixXf true_mag_data, true_acc_data, sample_mag_data, sample_acc_data, mag_corrections, acc_corrections;
+    MatrixXf true_mag_data, true_mag_cal_data, sample_mag_cal_data, true_acc_data, sample_mag_data, sample_acc_data, mag_corrections, acc_corrections, mag_aligned;
     Matrix3f Ra, Rm, Ralign, Tm, Ta, mag_acc_misalign;
     Vector3f ba, bm, hm, ha;
     float inclination_angle;
 
     generateInertialData(Tm ,Ta, hm,ha,
                          mag_acc_misalign, inclination_angle,
+                         true_mag_cal_data, sample_mag_cal_data,
                          true_mag_data, true_acc_data, sample_mag_data,sample_acc_data);
-    calibrateInertialSensors(sample_mag_data,sample_acc_data,Ra,Rm,ba,bm);
+
+    calibrateInertialSensors(sample_mag_cal_data,sample_acc_data,Ra,Rm,ba,bm);
 
     mag_corrections = Rm * (sample_mag_data.colwise() - bm);
     acc_corrections = Ra * (sample_acc_data.colwise() - ba);
+
+    alignInertialSensors(mag_corrections,acc_corrections,Ralign,inclination_angle);
+
+    mag_aligned = Ralign * mag_corrections;
 
     cout << "Tm\n" << Tm << "\n";
     cout << "Rm inverse\n" << Rm.inverse() << "\n";
@@ -163,6 +188,8 @@ int main()
     cout << "ha\n" << ha << "\n";
     cout << "ba\n" << ba << "\n\n";
 
+    cout << "Ralign\n" << Ralign << "\n\n";
+
 
     writeToCSVfile("true_mag_data",true_mag_data);
     writeToCSVfile("true_acc_data",true_acc_data);
@@ -171,9 +198,105 @@ int main()
     writeToCSVfile("mag_corrections",mag_corrections);
     writeToCSVfile("acc_corrections",acc_corrections);
 
-    //alignInertialSensors(mag_corrections,acc_corrections,Ralign,inclination_angle);
+
+    Vector3f mag_orig_x_ax = Tm * Vector3f(1,0,0);
+    Vector3f mag_orig_y_ax = Tm * Vector3f(0,1,0);
+    Vector3f mag_orig_z_ax = Tm * Vector3f(0,0,1);
+    Vector3f acc_orig_x_ax = Ta * Vector3f(1,0,0);
+    Vector3f acc_orig_y_ax = Ta * Vector3f(0,1,0);
+    Vector3f acc_orig_z_ax = Ta * Vector3f(0,0,1);
+
+    Vector3f mag_corrected_x_ax = Rm * (Tm * Vector3f(1,0,0) + hm - bm);
+    Vector3f mag_corrected_y_ax = Rm * (Tm * Vector3f(0,1,0) + hm - bm);
+    Vector3f mag_corrected_z_ax = Rm * (Tm * Vector3f(0,0,1) + hm - bm);
+    Vector3f acc_corrected_x_ax = Ra * (Ta * Vector3f(1,0,0) + ha - ba);
+    Vector3f acc_corrected_y_ax = Ra * (Ta * Vector3f(0,1,0) + ha - ba);
+    Vector3f acc_corrected_z_ax = Ra * (Ta * Vector3f(0,0,1) + ha - ba);
+
+    Vector3f mag_aligned_x_ax = Ralign * mag_corrected_x_ax;
+    Vector3f mag_aligned_y_ax = Ralign * mag_corrected_y_ax;
+    Vector3f mag_aligned_z_ax = Ralign * mag_corrected_z_ax;
+
+    Vector3f acc_aligned_x_ax = acc_corrected_x_ax;
+    Vector3f acc_aligned_y_ax = acc_corrected_y_ax;
+    Vector3f acc_aligned_z_ax = acc_corrected_z_ax;
+
+    json j;
+    j["mag_true"] = {true_mag_data.row(0).array(),true_mag_data.row(1).array(),true_mag_data.row(2).array()};
+    j["mag_samples"] = {sample_mag_data.row(0).array(),sample_mag_data.row(1).array(),sample_mag_data.row(2).array()};
+    j["mag_corrections"] = {mag_corrections.row(0).array(),mag_corrections.row(1).array(),mag_corrections.row(2).array()};
+    j["mag_align"] = {mag_aligned.row(0).array(),mag_aligned.row(1).array(),mag_aligned.row(2).array()};
+
+    j["Tm"] = {Tm.row(0).array(),Tm.row(1).array(),Tm.row(2).array()};
+    j["hm"] = {hm.array()};
+    j["Rm"] = {Rm.row(0).array(),Rm.row(1).array(),Rm.row(2).array()};
+    j["bm"] = {bm.array()};
+
+    j["acc_true"] = {true_acc_data.row(0).array(),true_acc_data.row(1).array(),true_acc_data.row(2).array()};
+    j["acc_samples"] = {sample_acc_data.row(0).array(),sample_acc_data.row(1).array(),sample_acc_data.row(2).array()};
+    j["acc_corrections"] = {acc_corrections.row(0).array(),acc_corrections.row(1).array(),acc_corrections.row(2).array()};
+    j["Ta"] = {Ta.row(0).array(),Ta.row(1).array(),Ta.row(2).array()};
+    j["ha"] = {ha.array()};
+    j["Ra"] = {Ra.row(0).array(),Ra.row(1).array(),Ra.row(2).array()};
+    j["ba"] = {ba.array()};
+
+
+    j["mag_orig"] = {{"x_ax",mag_orig_x_ax.array()},
+                     {"y_ax",mag_orig_y_ax.array()},
+                     {"z_ax",mag_orig_z_ax.array()},
+                     {"origin",hm.array()}};
+    j["acc_orig"] = {{"x_ax",acc_orig_x_ax.array()},
+                     {"y_ax",acc_orig_y_ax.array()},
+                     {"z_ax",acc_orig_z_ax.array()},
+                     {"origin",ha.array()}};
+
+    j["mag_corrected"] = {{"x_ax",mag_corrected_x_ax.array()},
+                          {"y_ax",mag_corrected_y_ax.array()},
+                          {"z_ax",mag_corrected_z_ax.array()},
+                          {"origin",(Rm*(hm-bm)).array()}};
+    j["acc_corrected"] = {{"x_ax",acc_corrected_x_ax.array()},
+                          {"y_ax",acc_corrected_y_ax.array()},
+                          {"z_ax",acc_corrected_z_ax.array()},
+                          {"origin",(Ra*(ha-ba)).array()}};
+
+    j["mag_aligned"] = {{"x_ax",mag_aligned_x_ax.array()},
+                          {"y_ax",mag_aligned_y_ax.array()},
+                          {"z_ax",mag_aligned_z_ax.array()},
+                          {"origin",(Ralign*Rm*(hm-bm)).array()}};
+    j["acc_aligned"] = {{"x_ax",acc_aligned_x_ax.array()},
+                          {"y_ax",acc_aligned_y_ax.array()},
+                          {"z_ax",acc_aligned_z_ax.array()},
+                          {"origin",(Ra*(ha-ba)).array()}};
+
+    std::ofstream o("plotting.json");
+    o << std::setw(4) << j << std::endl;
+
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //
 //int main() {

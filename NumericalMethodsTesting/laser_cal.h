@@ -6,9 +6,6 @@
 #define NUMERICALMETHODSTESTING_LASER_CAL_H
 #include "util.h"
 
-#define DEG_TO_RAD 0.017453292519943295769236907684886
-#define RAD_TO_DEG 57.295779513082320876798154814105
-
 Vector3f Cartesian(Vector3f spherical)
 {
     Vector3f cartesian;
@@ -19,6 +16,11 @@ Vector3f Cartesian(Vector3f spherical)
     return cartesian;
 }
 
+/**
+ * Given a point cloud, find the vector normal to the best fit plane of the input point-cloud
+ * @param point_cloud
+ * @return normal
+ */
 Vector3f NormalVec(const MatrixXf &point_cloud){
     Vector3f normal;
     MatrixXf left_singular_mat;

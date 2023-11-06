@@ -13,14 +13,12 @@
 #include "util.h"
 
 
-// #define DISPERSED_GENERATION
-#ifdef DISPERSED_GENERATION
-#define N_SAMPLES 100
-#define N_Y 10
-#define N_Z N_SAMPLES/N_Y
-#else
-#define N_SAMPLES 12*10
-#endif
+#define N_MAG_SAMPLES 8000
+#define N_X 20
+#define N_Y 20
+#define N_Z N_MAG_SAMPLES/N_Y/N_X
+
+#define N_SAMPLES 12*25
 
 #define INCLINATION_OFFSET 0.0872664626
 #define HEADING_OFFSET -0.0436332313
@@ -35,48 +33,69 @@ using namespace Eigen;
  */
 MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
 {
-#ifdef DISPERSED_GENERATION
-    // ------------------------------------------
-    int y;
-    int z;
-    int n = 0;
-
-    MatrixXf samples = MatrixXf::Zero(3,N_SAMPLES);
-    Matrix3f R;
-
-    for(y=0;y<n_y;y++)
-    {
-        for(z=0;z<n_z;z++)
-        {
-            R = y_rotation(360.* y/N_Y) * z_rotation(360.* z/N_Z);
-            samples.col(n) = R * true_vec;
-            n++;
-        }
-    }
-
-    return samples;
-#else
     VectorXf x_rots(12);
     x_rots << 0, 0 , 180, 180, 270, 270, 270, 90 , 0  , 0  , 0  , 0;
     VectorXf y_rots(12);
-    y_rots << 0, 0 , 90 , 90 , 0  , 0  , 180, 0  , 270, 270, 90 , 90;
+    y_rots << 0, 0 , 0,   0,   0  , 0  , 180, 0  , 270, 270, 90 , 90;
     VectorXf z_rots(12);
-    z_rots << 0, 90, 0  , 45 , 270, 0  , 0  , 225, 90 , 180, 180, 225;
+    z_rots << 0, 90, 90,  135, 270, 0  , 0  , 225, 90 , 180, 180, 225;
 
     Matrix3f Rx, Ry, Rz, R;
     MatrixXf samples = MatrixXf::Zero(3,12);
 
     for (int n=0; n<12; n++)
     {
-        Rx = xRotation(x_rots(n));
-        Ry = yRotation(y_rots(n));
-        Rz = zRotation(z_rots(n));
-        R = Rx * Ry * Rz;
+        Rx = xRotation(DEG_TO_RAD*x_rots(n));
+        Ry = yRotation(DEG_TO_RAD*y_rots(n));
+        Rz = zRotation(DEG_TO_RAD*z_rots(n));
+        R = Rz * Ry * Rx;
         samples.col(n) = R * true_vec;
     }
     return samples;
-#endif
+//#endif
 }
+
+/**
+ * Generates a set of perfect data from an initial sample. This initial sample is the reference vector (0,0,1 for accelerometers and 1,0,0 for magnetometers) from which a spehrical point cloud is generated.
+ * If DISPERSED_GENERATION is NOT defined, data will be generated according to the MAG.I.CAL calibration schema.
+ * @param true_vec
+ * @return
+ */
+MatrixXf generateTrueMagData(Vector3f true_vec)
+{
+    // ------------------------------------------
+    int x,y,z;
+    int n = 0;
+
+    MatrixXf samples = MatrixXf::Zero(3,N_MAG_SAMPLES);
+    Matrix3f R;
+
+    for(x=0;x<N_X;x++)
+    {
+        for(y=0;y<N_Y;y++)
+        {
+            for(z=0;z<N_Z;z++) {
+                R = xRotation(2 * M_PI * x / N_X) * yRotation(2 * M_PI * y / N_Y) * zRotation(2 * M_PI * z / N_Z);
+                samples.col(n) = R * true_vec;
+                n++;
+            }
+        }
+    }
+    return samples;
+}
+
+MatrixXf generateMagCalSamples(MatrixXf true_data, Matrix3f Tm, Vector3f hm) {
+    MatrixXf samples = MatrixXf::Zero(3, N_MAG_SAMPLES);
+    std::default_random_engine generator;
+    std::normal_distribution<float> distribution(0, 0.005);
+    Vector3f noise;
+    for (int i = 0; i < N_MAG_SAMPLES; i++) {
+        noise << distribution(generator), distribution(generator), distribution(generator);
+        samples.col(i) = Tm * true_data.col(i) + hm + noise;
+    }
+    return samples;
+}
+
 
 /**
  * Generates data to calibrate the inertial alignment of a sensor given a set of perfect data and misalignment parameters
@@ -85,25 +104,31 @@ MatrixXf generateTrueInertialAlignData(Vector3f true_vec)
  * @param hm The bias vector from which to generate the data
  * @return
  */
+
 MatrixXf generateInertialAlignData(MatrixXf true_data, Matrix3f Tm, Vector3f hm)
 {
     int n = true_data.cols();
     MatrixXf samples = MatrixXf::Zero(3,N_SAMPLES);
     std::default_random_engine generator;
-    std::normal_distribution<float> distribution(0,0.01);
+    std::normal_distribution<float> distribution(0,0.005);
     Vector3f noise;
     for(int i=0;i<n;i++)
     {
-        for(int j=0;j<(int)(N_SAMPLES/12);j++)
+        for(int j=0;j<(int)(N_SAMPLES/n);j++)
         {
             noise << distribution(generator),distribution(generator),distribution(generator);
             //std::cout << "i: " << i << "\n" << true_data.col(i) << "\n\n";
-            samples.col(i*N_SAMPLES/12+j) = Tm * true_data.col(i) + hm + noise;
+            samples.col(i*N_SAMPLES/n+j) = Tm * true_data.col(i) + hm + noise;
         }
     }
     return samples;
 }
-
+/**
+ * Generates data used to calibrate a laser sensor. This takes into account alignment of inertial sensors too.
+ * @param inclination_offset
+ * @param heading_offset
+ * @return
+ */
 MatrixXf generateLaserAlignData(float inclination_offset, float heading_offset)
 {
     // ---------------------------------------- Define needed parameters ---------------------------------------

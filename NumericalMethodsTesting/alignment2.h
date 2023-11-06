@@ -12,6 +12,7 @@
 
 using namespace Eigen;
 
+
 Vector<float, 9> dJ_dvecR (const MatrixXf &g, const MatrixXf &m, const Vector<float, 10> &X)
 {
     int K = m.cols();
@@ -90,8 +91,8 @@ Vector<float,10> Align2_gd(const MatrixXf &g, const MatrixXf &m, const Matrix3f 
     std::cout << "Beginning GD\n";
     Vector<float,10> X;
     Vector<float,10> dx;
-    float alpha = 0.1; // Loss scaling parameter (how much smaller does next step have to be compared to current step?)
-    float beta = 0.75; // Line search scaling parameter
+    float alpha = 0.05; // Loss scaling parameter (how much smaller does next step have to be compared to current step?)
+    float beta = 0.9; // Line search scaling parameter
     float t  = 1; // Step size scale
     float cost;
     int i = 0;
@@ -124,13 +125,14 @@ Vector<float,10> Align2_gd(const MatrixXf &g, const MatrixXf &m, const Matrix3f 
         std::cout << "Cost: " << cost << "\n";
 
         // If timestep too small
-        if(t < 0.00000001 || i > 300)
+        if(t < 0.000000001 || i > 300)
         {
             break;
         }
     }
     return X;
 }
+
 int sign(float f)
 {
     if (f>=0)
@@ -142,46 +144,49 @@ int sign(float f)
 }
 
 Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
-    int K = m.cols();
-    Vector<float,10> out;
-    RowVector<float,9> vecR;
+    /**************************************************************
+     * Given a set of calibrated magnetometer and accelerometer data, this function
+     * finds the least squares best fit for the alignment of the sensor axis and outputs
+     * a rotation matrix for correcting the magnetometer and the magnetic inclination at
+     * the location of measurement.
+     *
+     * 1. Calculate the design matirx, A
+     * 2. Solve Ax=b with least squares
+     * 3. Find SVD of least squares solution
+     * 4. Calculate U_hat and R_hat
+     * 5. Calculate s_hat
+    */
+    int K = g.cols();
+    static MatrixXf A(K,9);
+    static Vector<float,10> out;
+    static RowVector<float,9> vecR;
 
-    MatrixXf A(K,9);
+
     Vector3f mk;
     Vector3f gk;
 
-    // Step 1
-//    std::cout << "Step 1\n";
+    // Step 1 - Form the design matrix, A
     for (int i=0; i<K; i++)
     {
         mk = m.col(i);
         gk = g.col(i);
         A.row(i) << kron(mk,gk).transpose();
     }
-//    std::cout << "A: \n" << A << "\n";
 
-    // Step 2 - solve lstsq
-//    std::cout << "Step 2\n";
+    // Step 2 - Form H
     Matrix3f H = ((A.transpose()*A).inverse() * A.transpose() * MatrixXf::Ones(K,1)).reshaped(3,3);
-//    std::cout << "H: \n" << H << "\n";
-
-    // Step 3
-//    std::cout << "Step 3\n";
+    ;
+    // Step 3 - Solve lstsq
     JacobiSVD<MatrixXf> svd(H, ComputeThinU | ComputeThinV);
     Matrix3f U = svd.matrixU();
     Matrix3f V = svd.matrixV();
     Matrix3f Sig = svd.singularValues().asDiagonal();
-//    std::cout << "Sig: \n" << Sig << "\n";
 
     // Step 4
-//    std::cout << "Step 4\n";
     Matrix3f Uhat = sign(H.determinant()) * U;
     Matrix3f Rhat = Uhat * V.transpose();
-//    std::cout << "Uhat: \n" << Uhat << "\n";
-//    std::cout << "Rhat: \n" << Rhat << "\n";
 
     // Step 5
-//    std::cout << "Step 5\n";
     float shat = 0;
     for (int i=0; i<K; i++)
     {
@@ -191,13 +196,10 @@ Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
     }
     shat = shat * 1/K;
 
-//    std::cout << "Form out\n";
     out.segment(0,9) << Rhat.reshaped(9,1);
     out(9) = shat;
 
-    // std::cout << "Begin Align2_gd\n";
-    // out = Align2_gd(g,m,Rhat,shat);
-
+    cout << "Cost function: " << J2(g,m,out) << "\n\n";
     return out;
 }
 

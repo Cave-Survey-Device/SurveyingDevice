@@ -20,6 +20,20 @@
 using namespace std;
 using namespace Eigen;
 
+//class Frame
+//{
+//public:
+//    Vector3f update(const Vector3f &g, const Vector3f &m);
+//    Vector3f getXYZ();
+//    Vector3f getHIR();
+//private:
+//    Vector3f XYZ;
+//    float HIR;
+//};
+
+
+
+
 float Deg2Rad(float degrees) {
     return degrees * (M_PI / 180.0);
 }
@@ -145,42 +159,41 @@ MatrixXf readFromFile(const char* fname)
     return data;
 }
 
-Vector3f cartesianToSpherical(Vector3f cartesian){
-    Vector3f spherical;
-    spherical << atan2(cartesian(1), cartesian(0)),
-            atan2(pow( pow(cartesian(0),2) + pow(cartesian(1),2), 0.5),cartesian(2)),
-            cartesian.norm();
-    return spherical;
+Vector3f cardanToCartesian(Vector3f cardan)
+{
+    Vector3f cartesian;
+    cartesian << cardan(2)*(sin(cardan(1))*cos(cardan(0))),
+            cardan(2)*(sin(cardan(1))*sin(cardan(0))),
+            cardan(2)*(cos(cardan(1)));
+    return cartesian;
 }
 
-Matrix<float,2,3>  cartesianToInertial(Vector3f xyz)
+Matrix<float,3,2>  cartesianToInertial(Vector3f xyz)
 {
-    Matrix<float,2,3> inertial;
+    Matrix<float,3,2> inertial;
     return inertial;
 }
-Matrix<float,2,3> sphericalToInertial(Vector3f hir)
+
+Vector3f inertialToCardan(Vector3f g, Vector3f m)
 {
-    Matrix<float,2,3> inertial;
-    return inertial;
-}
-Vector3f inertialToSpherical(Vector3f g, Vector3f m)
-{
-    Vector3f spherical;
-    return spherical;
+    float heading, inclination, roll;
+    Vector3f hir;
+
+    inclination = asin(g(0)/g.norm());
+    roll = - atan2(g(1),g(2));
+
+    Vector3f m_roll_reversed = yRotation(-inclination) * xRotation(-roll) * m;
+    cout << "\nm roll reversed: " << m_roll_reversed << "\n\n";
+    heading = atan2(m_roll_reversed(1),m_roll_reversed(0)); // asin(m(0)/m.norm());
+
+    hir << heading, inclination, roll;
+    return hir;
 }
 
 Vector3f inertialToCartesian(Vector3f g, Vector3f m)
 {
     Vector3f hir;
-    float heading, inclination, roll;
-
-    inclination = asin(g(0)/g.norm());
-    roll = atan2(g(1),g(2));
-
-    Vector3f m_roll_reversed = yRotation(RAD_TO_DEG*inclination) * xRotation(-RAD_TO_DEG*roll) * m;
-    heading = atan2(m_roll_reversed(1),m_roll_reversed(0)); // asin(m(0)/m.norm());
-
-    hir << RAD_TO_DEG * heading, RAD_TO_DEG * inclination, RAD_TO_DEG * roll;
+    hir = cardanToCartesian(inertialToCardan(g,m));
     return hir;
 }
 

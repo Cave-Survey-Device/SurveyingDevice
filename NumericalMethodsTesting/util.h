@@ -69,12 +69,11 @@ Matrix3f zRotation(float rad)
     return R;
 }
 
-
 // Anti-clockwise rotation about the given axis when looking aling it
-Matrix3f quatRot(Vector3f ax, float theta)
+Matrix3f quatRot(Vector3f ax, float rads)
 {
-    theta = -theta;
-    Quaternionf Q(cos(theta/2),ax(0)*sin(theta/2), ax(1)*sin(theta/2), ax(2)*sin(theta/2));
+    rads = -rads;
+    Quaternionf Q(cos(rads/2),ax(0)*sin(rads/2), ax(1)*sin(rads/2), ax(2)*sin(rads/2));
     return Q.toRotationMatrix();
 }
 
@@ -111,8 +110,6 @@ Vector3d darbitraryRotation(Vector3d a, Vector3d b, double theta)
     return aorthb_rot + aparb;
 
 }
-
-
 MatrixXf kron(MatrixXf m1, MatrixXf m2)
 {
     int m = m1.rows();
@@ -162,16 +159,10 @@ MatrixXf readFromFile(const char* fname)
 Vector3f cardanToCartesian(Vector3f cardan)
 {
     Vector3f cartesian;
-    cartesian << cardan(2)*(sin(cardan(1))*cos(cardan(0))),
-            cardan(2)*(sin(cardan(1))*sin(cardan(0))),
-            cardan(2)*(cos(cardan(1)));
+    cartesian << (cos(cardan(1))*cos(cardan(0))),
+            (cos(cardan(1))*sin(cardan(0))),
+            (sin(cardan(1)));
     return cartesian;
-}
-
-Matrix<float,3,2>  cartesianToInertial(Vector3f xyz)
-{
-    Matrix<float,3,2> inertial;
-    return inertial;
 }
 
 Vector3f inertialToCardan(Vector3f g, Vector3f m)
@@ -179,12 +170,14 @@ Vector3f inertialToCardan(Vector3f g, Vector3f m)
     float heading, inclination, roll;
     Vector3f hir;
 
-    inclination = asin(g(0)/g.norm());
-    roll = - atan2(g(1),g(2));
+    roll = -atan2(g(1),g(2));
+    inclination = atan2(g(0),pow(pow(g(1),2)+pow(g(2),2),0.5));
 
-    Vector3f m_roll_reversed = yRotation(-inclination) * xRotation(-roll) * m;
-    cout << "\nm roll reversed: " << m_roll_reversed << "\n\n";
-    heading = atan2(m_roll_reversed(1),m_roll_reversed(0)); // asin(m(0)/m.norm());
+    Vector3f m_roll_reversed = xRotation(-roll) * m;
+    m_roll_reversed(0) = m_roll_reversed(0) / cos(inclination);
+
+    // Heading is -ve of tan as m is in opposite direction to m
+    heading = -atan2(m_roll_reversed(1),m_roll_reversed(0)); // asin(m(0)/m.norm());
 
     hir << heading, inclination, roll;
     return hir;

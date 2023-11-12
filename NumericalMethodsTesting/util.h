@@ -128,8 +128,7 @@ float getHeading(Vector3f m)
 Vector3f inertialToCardan(Vector3f g, Vector3f m) {
     float heading, inclination, roll;
     Vector3f hir;
-//    roll = atan(g(1)/pow(pow(g(0),2)+pow(g(2),2),0.5));
-    roll = atan(-g(1) / pow(pow(g(0), 2) + pow(g(2), 2), 0.5));
+    roll = atan(-g(1) / abs(g(2)));
     if (g(2) > 0)
     {
         roll = M_PI - roll;
@@ -140,9 +139,6 @@ Vector3f inertialToCardan(Vector3f g, Vector3f m) {
     // Rotate roll (roll on device mirrored by roll in measurements)
     Vector3f m_roll_reversed = quatRot(Vector3f(1, 0, 0), roll) * m;
     m_roll_reversed(0) = m_roll_reversed(0) / cos(inclination);
-
-//    cout << "m_roll_reversed: " << m_roll_reversed.reshaped(1,3) << "\n";
-
     heading =  atan2(-m_roll_reversed(1),m_roll_reversed(0)); //getHeading(m_roll_reversed);
 
     hir << heading, inclination, roll;
@@ -155,6 +151,28 @@ Vector3f inertialToCartesian(Vector3f g, Vector3f m)
     hir = cardanToCartesian(inertialToCardan(g,m));
     return hir;
 }
+
+Matrix<float,2,3> toInertial(Vector3f XYZ, float roll) {
+    Matrix<float,2,3> gm;
+    Vector3f x,y,z;
+
+    x = XYZ.normalized();
+
+    // Cross product follow Right-Hand-Rule so MUST have correct order
+    y = x.cross(Vector3f(0, 0, -1));
+    z = x.cross(y);
+
+    y = quatRot(x, roll) * y;
+    z = quatRot(x, roll) * z;
+    y.normalize();
+    z.normalize();
+
+    gm.row(0) << Vector3f(0, 0, -1).dot(x), Vector3f(0, 0, -1).dot(y), Vector3f(0, 0, -1).dot(z);
+    gm.row(1) << Vector3f(1, 0, 0).dot(x), Vector3f(1, 0, 0).dot(y), Vector3f(1, 0, 0).dot(z);
+
+    return gm;
+}
+
 
 const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, "\t", "\n");
 

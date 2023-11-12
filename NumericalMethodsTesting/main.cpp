@@ -79,7 +79,13 @@ void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
 
     // ----------------- Apply the misalignment between the sensors ------------------
     mag_acc_misalign = xRotation(0.1) * yRotation(0.01) * zRotation(0.05);
-    inclination_angle = 0;//1.15;
+    inclination_angle = 1.15;
+
+    // TEST DATA
+//    Tm.setIdentity();
+//    Ta.setIdentity();
+//    hm.setZero();
+//    ha.setZero();
 
 
     // ------------------------------ Generate the data ------------------------------
@@ -136,9 +142,9 @@ void alignInertialSensors(MatrixXf &mag_corrections, MatrixXf &acc_corrections, 
     Ralign = X.segment(0,9).reshaped(3,3);
     inclination_angle = X(9);
 
-    X = Align2_gd(acc_corrections,mag_corrections,Ralign,inclination_angle);
-    Ralign = X.segment(0,9).reshaped(3,3);
-    inclination_angle = X(9);
+//    X = Align2_gd(acc_corrections,mag_corrections,Ralign,inclination_angle);
+//    Ralign = X.segment(0,9).reshaped(3,3);
+//    inclination_angle = X(9);
 }
 
 void generateLaserData(Matrix3f &Tm, Matrix3f &Ta, Matrix3f &hm, Matrix3f &ha, Matrix3f &mag_acc_misalign,
@@ -146,7 +152,7 @@ void generateLaserData(Matrix3f &Tm, Matrix3f &Ta, Matrix3f &hm, Matrix3f &ha, M
                        float &inclination_offset, float &heading_offset,
                        MatrixXf &laser_data_hird)
 {
-    laser_data_hird = generateLaserAlignData(inclination_offset, heading_offset);
+//    laser_data_hird = generateLaserAlignData(inclination_offset, heading_offset);
 }
 
 void solveLaserAlignment()
@@ -154,9 +160,72 @@ void solveLaserAlignment()
 }
 
 
-
-int main()
+void testConversions()
 {
+    float error;
+    Vector3f x, y, z, m, g;
+    int nx, ny, nroll;
+    float roll = 1.28349;
+    for  (nroll=0; nroll<8; nroll++) {
+        for (nx = 0; nx < 4; nx++) {
+            for (ny = 0; ny < 4; ny++) {
+                roll = nroll * 2*M_PI/8;
+                x << nx - 2, ny - 2, 0;
+                x.normalize();
+
+                // Cross product follow Right-Hand-Rule so MUST have correct order
+                y = x.cross(Vector3f(0, 0, -1));
+                z = x.cross(y);
+
+                y = quatRot(x, roll) * y;
+                z = quatRot(x, roll) * z;
+                y.normalize();
+                z.normalize();
+
+                g << Vector3f(0, 0, -1).dot(x), Vector3f(0, 0, -1).dot(y), Vector3f(0, 0, -1).dot(z);
+                m << Vector3f(1, 0, 0).dot(x), Vector3f(1, 0, 0).dot(y), Vector3f(1, 0, 0).dot(z);
+
+                //            cout << "\nRotated axise\n";
+                //            cout << "x:\t" << x.reshaped(1,3) << "\n";
+                //            cout << "y:\t" << y.reshaped(1,3) << "\n";
+                //            cout << "z:\t" << z.reshaped(1,3) << "\n";
+                //
+                //            cout << "\nCalculate g and m vectors\n";
+                //            cout << "g:\t" << g.reshaped(1,3) << "\n";
+                //            cout << "m:\t" << m.reshaped(1,3) << "\n";
+                //
+                //            cout << "Cardan_orig: " << atan2(x(1),x(0)) << " " << asin(x(2)) << " " << roll << "\n";
+                //            cout << "Cardan_calc: " << inertialToCardan(g,m).reshaped(1,3) << "\n";
+                //
+                //            cout << "Disto tip:\t" << x.reshaped(1,3) << "\n";
+                //            cout << "Cartesian:\t" << cardanToCartesian(inertialToCardan(g,m)).reshaped(1,3) << "\n";
+
+
+                // cout << "Error: " << (x - cardanToCartesian(inertialToCardan(g, m))).reshaped(1, 3) << "\n";
+                error = (x - cardanToCartesian(inertialToCardan(g, m))).norm();
+                if (error > 1e-5)
+                {
+                    cout << "\nCalculate g and m vectors\n";
+                    cout << "g:\t" << g.reshaped(1,3) << "\n";
+                    cout << "m:\t" << m.reshaped(1,3) << "\n";
+
+                    cout << "Cardan_orig: " << atan2(x(1),x(0)) << " " << asin(x(2)) << " " << roll << "\n";
+                    cout << "Cardan_calc: " << inertialToCardan(g,m).reshaped(1,3) << "\n";
+
+                    cout << "Disto tip:\t" << x.reshaped(1,3) << "\n";
+                    cout << "Cartesian:\t" << cardanToCartesian(inertialToCardan(g,m)).reshaped(1,3) << "\n";
+                }
+
+            }
+        }
+    }
+}
+
+
+int main() {
+    testConversions();
+}
+/*
     MatrixXf true_mag_data, true_mag_cal_data, sample_mag_cal_data, true_acc_data, sample_mag_data, sample_acc_data, mag_corrections, acc_corrections, mag_aligned;
     Matrix3f Ra, Rm, Ralign, Tm, Ta, mag_acc_misalign;
     Vector3f ba, bm, hm, ha;
@@ -170,49 +239,33 @@ int main()
     calibrateInertialSensors(sample_mag_cal_data,sample_acc_data,Ra,Rm,ba,bm);
 
     mag_corrections = Rm * (sample_mag_data.colwise() - bm);
+    mag_corrections.colwise().normalize();
     acc_corrections = Ra * (sample_acc_data.colwise() - ba);
+    acc_corrections.colwise().normalize();
 
-    alignInertialSensors(mag_corrections,acc_corrections,Ralign,inclination_angle);
 
     mag_aligned = Ralign * mag_corrections;
 
-    cout << "Tm\n" << Tm << "\n";
-    cout << "Rm inverse\n" << Rm.inverse() << "\n";
-
-    cout << "hm\n" << hm << "\n";
-    cout << "bm\n" << bm << "\n\n";
-
-    cout << "Ta\n" << Ta << "\n";
-    cout << "Ra inverse\n" << Ra.inverse() << "\n";
-
-    cout << "ha\n" << ha << "\n";
-    cout << "ba\n" << ba << "\n\n";
-
-    cout << "Ralign\n" << Ralign << "\n\n";
-
-
-    writeToCSVfile("true_mag_data",true_mag_data);
-    writeToCSVfile("true_acc_data",true_acc_data);
-    writeToCSVfile("sample_mag_data",sample_mag_data);
-    writeToCSVfile("sample_acc_data",sample_acc_data);
-    writeToCSVfile("mag_corrections",mag_corrections);
-    writeToCSVfile("acc_corrections",acc_corrections);
-
-
-    Vector3f mag_orig_x_ax = Tm * Vector3f(1,0,0);
-    Vector3f mag_orig_y_ax = Tm * Vector3f(0,1,0);
-    Vector3f mag_orig_z_ax = Tm * Vector3f(0,0,1);
+    // Generate plotting data for inertial correction
+    Vector3f mag_orig_x_ax = mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(1,0,0);
+    Vector3f mag_orig_y_ax = mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(0,1,0);
+    Vector3f mag_orig_z_ax = mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(0,0,1);
     Vector3f acc_orig_x_ax = Ta * Vector3f(1,0,0);
     Vector3f acc_orig_y_ax = Ta * Vector3f(0,1,0);
     Vector3f acc_orig_z_ax = Ta * Vector3f(0,0,1);
 
-    Vector3f mag_corrected_x_ax = Rm * (Tm * Vector3f(1,0,0) + hm - bm);
-    Vector3f mag_corrected_y_ax = Rm * (Tm * Vector3f(0,1,0) + hm - bm);
-    Vector3f mag_corrected_z_ax = Rm * (Tm * Vector3f(0,0,1) + hm - bm);
+    Vector3f mag_corrected_x_ax = Rm * (mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(1,0,0) + hm - bm);
+    Vector3f mag_corrected_y_ax = Rm * (mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(0,1,0) + hm - bm);
+    Vector3f mag_corrected_z_ax = Rm * (mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(0,0,1) + hm - bm);
     Vector3f acc_corrected_x_ax = Ra * (Ta * Vector3f(1,0,0) + ha - ba);
     Vector3f acc_corrected_y_ax = Ra * (Ta * Vector3f(0,1,0) + ha - ba);
     Vector3f acc_corrected_z_ax = Ra * (Ta * Vector3f(0,0,1) + ha - ba);
 
+
+    // Align sensors
+    alignInertialSensors(mag_corrections,acc_corrections,Ralign,inclination_angle);
+
+    // Generate plotting data for aligned sensors
     Vector3f mag_aligned_x_ax = Ralign * mag_corrected_x_ax;
     Vector3f mag_aligned_y_ax = Ralign * mag_corrected_y_ax;
     Vector3f mag_aligned_z_ax = Ralign * mag_corrected_z_ax;
@@ -221,6 +274,12 @@ int main()
     Vector3f acc_aligned_y_ax = acc_corrected_y_ax;
     Vector3f acc_aligned_z_ax = acc_corrected_z_ax;
 
+    // Perform laser data generation
+    MatrixXf hird;
+    generateLaserAlignData(0.25, -0.1,Ta, ha, Tm, hm, Ra, ba, Rm, bm, Ralign, inclination_angle);
+
+
+    // Dump data to JSON
     json j;
     j["mag_true"] = {true_mag_data.row(0).array(),true_mag_data.row(1).array(),true_mag_data.row(2).array()};
     j["mag_samples"] = {sample_mag_data.row(0).array(),sample_mag_data.row(1).array(),sample_mag_data.row(2).array()};
@@ -273,8 +332,7 @@ int main()
 
 
 }
-
-
+*/
 
 
 

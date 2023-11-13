@@ -117,9 +117,12 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
 
     /*************************************************************************************
      * 1. Get the cartesian location of the tip of the disto for each shot
-     * 2. Rotate each disto tip about the target vector by its roll
-     * 3. Rotate target vec about {1,0,0} by -disto roll
-     * 4. Find heading and inclination of this new vector
+     * 2. Rotate each disto tip about the target vector by its roll to find an average disto position
+     * 3. Find the the Z axis of the frame where X = Vtarget, Y = Vtarget X (0,0,-1)
+     * 4. Find the vector from Psaple,avg t0 Vtarget
+     * 5. Find the angle between this and the new calculated Z axis
+     * 6. Find new_target by yRoatation(gamma) * (target_len,0,0), new_disto by (disto_len,0,0)
+     * 7. Find laser vec by xRotation(angle in 5.) * (new_target-disto_tip)
      *************************************************************************************/
     float roll;
     float laser_inclination_alignment = 0;
@@ -131,10 +134,10 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
     {
         roll = laser_alignment_data.col(calib_num)(2);
 
-        // Rotate all disto tips is=nto same location
+        // Rotate all disto tips into the same location
         rotated_disto_tip = cartesian_calibration_data.col(calib_num);
         rotated_disto_tip = quatRot(target_vector,roll) * rotated_disto_tip;
-         cout << "Roll: " << Rad2Deg(roll) << "\t Disto tip: " << rotated_disto_tip(0) << "  " << rotated_disto_tip(1) << " " << rotated_disto_tip(2) << "\n";
+         cout << "Roll: " << RAD_TO_DEG * (roll) << "\t Disto tip: " << rotated_disto_tip(0) << "  " << rotated_disto_tip(1) << " " << rotated_disto_tip(2) << "\n";
 
 
         // Find angle between this vec and the projected z axis
@@ -156,7 +159,7 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
         mean_angle += angle;
     }
     mean_angle = mean_angle/N_LASER_CAL;
-    cout << "mena angle: " << Rad2Deg(mean_angle) << "\n";
+    cout << "mena angle: " << RAD_TO_DEG * (mean_angle) << "\n";
     Vector3f disto_tip = Vector3f(DISTO_LEN,0,0);
     Vector3f target = quatRot(Vector3f(0,1,0),gamma) * Vector3f(target_distance,0,0);
     Vector3f laser_vec = quatRot(Vector3f(1,0,0),-mean_angle) * (target - disto_tip);
@@ -164,8 +167,8 @@ Vector2f align_laser(Matrix<float,4,-1> laser_alignment_data)
     cout << "New laser vec: " << laser_vec(0) << " " << laser_vec(1) << " " << laser_vec(2) << "\n";
 
     cout << "Heading and Inclination error: ";
-    cout << Rad2Deg(atan2(laser_vec(2),laser_vec(0))) << "  ";
-    cout << Rad2Deg(atan2(laser_vec(1),laser_vec(0))) << "\n";
+    cout << RAD_TO_DEG * (atan2(laser_vec(2),laser_vec(0))) << "  ";
+    cout << RAD_TO_DEG * (atan2(laser_vec(1),laser_vec(0))) << "\n";
 
     Vector2f out;
     out << laser_inclination_alignment, laser_heading_alignment;

@@ -16,81 +16,27 @@ void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
                           MatrixXf &sample_mag_data, MatrixXf &sample_acc_data)
 {
     // ------------------------------ Define magnetometer error parameters ------------------------------
-    Matrix3f Tsf, Tsi, Tcc;
-    Matrix3f Trot, Tscale, Tshear;
+    Tm <<  0.462,-0.0293,-0.037,
+            0.0686,0.4379,0.0303,
+            0.0427,-0.0336,0.4369;
 
-    // Define scale factor error
-    Tsf <<
-        0.75, 0, 0,
-        0, 0.96, 0,
-        0, 0, 1.23;
+    hm << -0.176,0.2214,0.0398;
 
-    // Define soft iron errors
-    Trot = xRotation(0.1) * yRotation(0.2) * zRotation(-0.3);
-    Tscale <<
-        0.9, 0, 0,
-        0, 1.1, 0,
-        0, 0, 1.035;
-    Tshear <<
-        1, 0.1, -0.05,
-        -0.13, 1, 0.11,
-        0.059, -0.08, 1;
-    Tsi = Trot * Tscale * Tshear;
+    Ta <<  9.77,0.0018,-0.030,
+            0.0019,9.7032,-0.0011,
+            -0.0087, -0.0013,9.6927;
+    Ta = Ta * 0.1;
 
-    // Define cross-coupling error
-    float a, b, y;
-    a = 0.12;
-    b = -0.05;
-    y = 0.1;
-    Tcc <<
-        1, sin(a), -sin(b),
-        0, cos(a), sin(y)*cos(b),
-        0, 0, cos(y)*cos(b);
-
-    // Calculate combined error matrix
-    Tm = Tcc * Tsf * Tsi;
-
-
-    Vector3f hhi, hb;
-    // Define hard iron error
-    hhi << 0.1, 0.2, 0.3;
-    // Define sensor offset error
-    hb << -0.015, 0.13, 0.05;
-    // Calculate combined offset error
-    hm = Tm * hhi + hb;
-
-
-    // ------------------------------ Define accelerometer error parameters ------------------------------
-    a = 0.01;
-    b = -0.05;
-    y = 0.02;
-    Tcc <<
-        1, sin(a), -sin(b),
-        0, cos(a), sin(y)*cos(b),
-        0, 0, cos(y)*cos(b);
-
-    Tsf <<
-        -0.1, 0, 0,
-        0, 0.1, 0,
-        0, 0, 0.035;
-
-    Ta = Matrix3f::Identity() + Tcc * Tsf;
-    ha << 0.05, 0.02, -0.0012;
+    ha << -0.01472,-0.0011,-0.01274;
 
     // ----------------- Apply the misalignment between the sensors ------------------
-    mag_acc_misalign = xRotation(0.1) * yRotation(0.01) * zRotation(0.05);
-    inclination_angle = 1.15;
-
-    // TEST DATA
-//    Tm.setIdentity();
-//    Ta.setIdentity();
-//    hm.setZero();
-//    ha.setZero();
+    mag_acc_misalign = Matrix3f::Identity(); //xRotation(0.1) * yRotation(-0.1) * zRotation(0.15);
+    inclination_angle = 1.1;
 
 
     // ------------------------------ Generate the data ------------------------------
-    true_mag_cal_data = generateTrueMagData(Vector3f(cos(inclination_angle),0,sin(inclination_angle)));
-    true_mag_data = generateTrueInertialAlignData(Vector3f(cos(inclination_angle),0,sin(inclination_angle)));
+    true_mag_cal_data = generateTrueMagData(Vector3f(cos(inclination_angle),0,-sin(inclination_angle)));
+    true_mag_data = generateTrueInertialAlignData(Vector3f(cos(inclination_angle),0,-sin(inclination_angle)));
     true_acc_data = generateTrueInertialAlignData(Vector3f(0,0,1));
 
     sample_mag_cal_data = generateMagCalSamples(true_mag_cal_data,Tm,hm);
@@ -98,6 +44,7 @@ void generateInertialData(Matrix3f &Tm ,Matrix3f &Ta, Vector3f &hm,Vector3f &ha,
     sample_acc_data = generateInertialAlignData(true_acc_data,Ta,ha);
 
     sample_mag_data = mag_acc_misalign * sample_mag_data;
+    sample_mag_cal_data = mag_acc_misalign * sample_mag_cal_data;
 }
 
 void calibrateInertialSensors(MatrixXf &sample_mag_data, MatrixXf &sample_acc_data,
@@ -115,10 +62,17 @@ void calibrateInertialSensors(MatrixXf &sample_mag_data, MatrixXf &sample_acc_da
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
+//    cout << "\nMag ellipsoid data: " << U.reshaped(1,10) << "\n";
+
     transformation = calculate_transformation(M, n, d);
 
     Rm << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
     bm << transformation[9], transformation[10], transformation[11];
+
+//    Vector<float,12> Xfrm = fit_ellipsoid_MAGICAL(sample_mag_data);
+//    Rm << Xfrm[0], Xfrm[1], Xfrm[2], Xfrm[3], Xfrm[4], Xfrm[5], Xfrm[6], Xfrm[7], Xfrm[8];
+//    bm << Xfrm[9], Xfrm[10], Xfrm[11];
+
 
 
     // ------------------------------ Calculate accelerometer calibration ------------------------------
@@ -126,10 +80,12 @@ void calibrateInertialSensors(MatrixXf &sample_mag_data, MatrixXf &sample_acc_da
     M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
     n << U[6], U[7], U[8];
     d = U[9];
+//    cout << "\nAcc ellipsoid data: " << U.reshaped(1,10) << "\n";
     transformation = calculate_transformation(M, n, d);
 
     Ra << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
     ba << transformation[9], transformation[10], transformation[11];
+
 //    Vector<float,12> Xfrm = fit_ellipsoid_MAGICAL(sample_acc_data);
 //    Ra << Xfrm[0], Xfrm[1], Xfrm[2], Xfrm[3], Xfrm[4], Xfrm[5], Xfrm[6], Xfrm[7], Xfrm[8];
 //    ba << Xfrm[9], Xfrm[10], Xfrm[11];
@@ -142,9 +98,7 @@ void alignInertialSensors(MatrixXf &mag_corrections, MatrixXf &acc_corrections, 
     Ralign = X.segment(0,9).reshaped(3,3);
     inclination_angle = X(9);
 
-//    X = Align2_gd(acc_corrections,mag_corrections,Ralign,inclination_angle);
-//    Ralign = X.segment(0,9).reshaped(3,3);
-//    inclination_angle = X(9);
+//
 }
 
 void generateLaserData(Matrix3f &Tm, Matrix3f &Ta, Matrix3f &hm, Matrix3f &ha, Matrix3f &mag_acc_misalign,
@@ -164,58 +118,58 @@ void testConversions()
 {
     float error;
     Vector3f x, y, z, m, g;
-    int nx, ny, nroll;
+    int nx, ny, nz, nroll;
     float roll = 1.28349;
     for  (nroll=0; nroll<8; nroll++) {
         for (nx = 0; nx < 4; nx++) {
             for (ny = 0; ny < 4; ny++) {
-                roll = nroll * 2*M_PI/8;
-                x << nx - 2, ny - 2, 0;
-                x.normalize();
+                for (nz = 0; nz < 4; nz++) {
+                    roll = nroll * 2*M_PI/8;
+                    x << nx - 2, ny - 2, nz - 2;
+                    x.normalize();
 
-                // Cross product follow Right-Hand-Rule so MUST have correct order
-                y = x.cross(Vector3f(0, 0, -1));
-                z = x.cross(y);
+                    // Cross product follow Right-Hand-Rule so MUST have correct order
+                    y = x.cross(Vector3f(0, 0, -1));
+                    z = x.cross(y);
 
-                y = quatRot(x, roll) * y;
-                z = quatRot(x, roll) * z;
-                y.normalize();
-                z.normalize();
+                    y = quatRot(x, roll) * y;
+                    z = quatRot(x, roll) * z;
+                    y.normalize();
+                    z.normalize();
 
-                g << Vector3f(0, 0, -1).dot(x), Vector3f(0, 0, -1).dot(y), Vector3f(0, 0, -1).dot(z);
-                m << Vector3f(1, 0, 0).dot(x), Vector3f(1, 0, 0).dot(y), Vector3f(1, 0, 0).dot(z);
+                    g << Vector3f(0, 0, -1).dot(x), Vector3f(0, 0, -1).dot(y), Vector3f(0, 0, -1).dot(z);
+                    m << Vector3f(1, 0, 0).dot(x), Vector3f(1, 0, 0).dot(y), Vector3f(1, 0, 0).dot(z);
 
-                //            cout << "\nRotated axise\n";
-                //            cout << "x:\t" << x.reshaped(1,3) << "\n";
-                //            cout << "y:\t" << y.reshaped(1,3) << "\n";
-                //            cout << "z:\t" << z.reshaped(1,3) << "\n";
-                //
-                //            cout << "\nCalculate g and m vectors\n";
-                //            cout << "g:\t" << g.reshaped(1,3) << "\n";
-                //            cout << "m:\t" << m.reshaped(1,3) << "\n";
-                //
-                //            cout << "Cardan_orig: " << atan2(x(1),x(0)) << " " << asin(x(2)) << " " << roll << "\n";
-                //            cout << "Cardan_calc: " << inertialToCardan(g,m).reshaped(1,3) << "\n";
-                //
-                //            cout << "Disto tip:\t" << x.reshaped(1,3) << "\n";
-                //            cout << "Cartesian:\t" << cardanToCartesian(inertialToCardan(g,m)).reshaped(1,3) << "\n";
+                    //            cout << "\nRotated axise\n";
+                    //            cout << "x:\t" << x.reshaped(1,3) << "\n";
+                    //            cout << "y:\t" << y.reshaped(1,3) << "\n";
+                    //            cout << "z:\t" << z.reshaped(1,3) << "\n";
+                    //
+                    //            cout << "\nCalculate g and m vectors\n";
+                    //            cout << "g:\t" << g.reshaped(1,3) << "\n";
+                    //            cout << "m:\t" << m.reshaped(1,3) << "\n";
+                    //
+                    //            cout << "Cardan_orig: " << atan2(x(1),x(0)) << " " << asin(x(2)) << " " << roll << "\n";
+                    //            cout << "Cardan_calc: " << inertialToCardan(g,m).reshaped(1,3) << "\n";
+                    //
+                    //            cout << "Disto tip:\t" << x.reshaped(1,3) << "\n";
+                    //            cout << "Cartesian:\t" << cardanToCartesian(inertialToCardan(g,m)).reshaped(1,3) << "\n";
 
 
-                // cout << "Error: " << (x - cardanToCartesian(inertialToCardan(g, m))).reshaped(1, 3) << "\n";
-                error = (x - cardanToCartesian(inertialToCardan(g, m))).norm();
-                if (error > 1e-5)
-                {
-                    cout << "\nCalculate g and m vectors\n";
-                    cout << "g:\t" << g.reshaped(1,3) << "\n";
-                    cout << "m:\t" << m.reshaped(1,3) << "\n";
+                    // cout << "Error: " << (x - cardanToCartesian(inertialToCardan(g, m))).reshaped(1, 3) << "\n";
+                    error = (x - cardanToCartesian(inertialToCardan(g, m))).norm();
+                    if (error > 1e-5) {
+                        cout << "\nCalculate g and m vectors\n";
+                        cout << "g:\t" << g.reshaped(1, 3) << "\n";
+                        cout << "m:\t" << m.reshaped(1, 3) << "\n";
 
-                    cout << "Cardan_orig: " << atan2(x(1),x(0)) << " " << asin(x(2)) << " " << roll << "\n";
-                    cout << "Cardan_calc: " << inertialToCardan(g,m).reshaped(1,3) << "\n";
+                        cout << "Cardan_orig: " << atan2(x(1), x(0)) << " " << asin(x(2)) << " " << roll << "\n";
+                        cout << "Cardan_calc: " << inertialToCardan(g, m).reshaped(1, 3) << "\n";
 
-                    cout << "Disto tip:\t" << x.reshaped(1,3) << "\n";
-                    cout << "Cartesian:\t" << cardanToCartesian(inertialToCardan(g,m)).reshaped(1,3) << "\n";
+                        cout << "Disto tip:\t" << x.reshaped(1, 3) << "\n";
+                        cout << "Cartesian:\t" << cardanToCartesian(inertialToCardan(g, m)).reshaped(1, 3) << "\n";
+                    }
                 }
-
             }
         }
     }
@@ -223,9 +177,9 @@ void testConversions()
 
 
 int main() {
-    testConversions();
-}
-/*
+//    testConversions();
+//}
+///*
     MatrixXf true_mag_data, true_mag_cal_data, sample_mag_cal_data, true_acc_data, sample_mag_data, sample_acc_data, mag_corrections, acc_corrections, mag_aligned;
     Matrix3f Ra, Rm, Ralign, Tm, Ta, mag_acc_misalign;
     Vector3f ba, bm, hm, ha;
@@ -239,12 +193,9 @@ int main() {
     calibrateInertialSensors(sample_mag_cal_data,sample_acc_data,Ra,Rm,ba,bm);
 
     mag_corrections = Rm * (sample_mag_data.colwise() - bm);
-    mag_corrections.colwise().normalize();
     acc_corrections = Ra * (sample_acc_data.colwise() - ba);
-    acc_corrections.colwise().normalize();
 
 
-    mag_aligned = Ralign * mag_corrections;
 
     // Generate plotting data for inertial correction
     Vector3f mag_orig_x_ax = mag_acc_misalign * Tm * yRotation(inclination_angle) * Vector3f(1,0,0);
@@ -265,6 +216,11 @@ int main() {
     // Align sensors
     alignInertialSensors(mag_corrections,acc_corrections,Ralign,inclination_angle);
 
+    mag_aligned = Ralign * mag_corrections;
+    cout << "Ralign: \n" << Ralign << "\n";
+    cout << "Inclination angle: " << asin(inclination_angle) << "\n";
+
+
     // Generate plotting data for aligned sensors
     Vector3f mag_aligned_x_ax = Ralign * mag_corrected_x_ax;
     Vector3f mag_aligned_y_ax = Ralign * mag_corrected_y_ax;
@@ -274,9 +230,12 @@ int main() {
     Vector3f acc_aligned_y_ax = acc_corrected_y_ax;
     Vector3f acc_aligned_z_ax = acc_corrected_z_ax;
 
+    // Correct final axis alignment
+
+
     // Perform laser data generation
-    MatrixXf hird;
-    generateLaserAlignData(0.25, -0.1,Ta, ha, Tm, hm, Ra, ba, Rm, bm, Ralign, inclination_angle);
+//    MatrixXf hird;
+//    generateLaserAlignData(0.25, -0.1,Ta, ha, Tm, hm, Ra, ba, Rm, bm, Ralign, inclination_angle);
 
 
     // Dump data to JSON
@@ -326,13 +285,18 @@ int main() {
                           {"y_ax",acc_aligned_y_ax.array()},
                           {"z_ax",acc_aligned_z_ax.array()},
                           {"origin",(Ra*(ha-ba)).array()}};
+    j["mag_sample_norm"] = {sample_mag_data.colwise().norm().array()};
+    j["acc_sample_norm"] = {sample_acc_data.colwise().norm().array()};
+    j["mag_calib_norm"] = {mag_corrections.colwise().norm().array()};
+    j["acc_calib_norm"] = {acc_corrections.colwise().norm().array()};
+
 
     std::ofstream o("plotting.json");
     o << std::setw(4) << j << std::endl;
 
 
 }
-*/
+//*/
 
 
 

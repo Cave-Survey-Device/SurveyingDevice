@@ -173,8 +173,9 @@ Vector<float,12> fit_ellipsoid_MAGICAL(MatrixXf Y)
     G.block(0,0,3,n) = F;
     G.block(3,0,1,n).setOnes();
 
-
-    while (j > 0.01) {
+    int count = 0;
+    while (j > 0.01 && count < 150) {
+        count ++;
         // Step 2
         L = Y * G.transpose() * (G * G.transpose()).inverse();
 

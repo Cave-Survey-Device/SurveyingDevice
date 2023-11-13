@@ -106,7 +106,7 @@ Vector<float,10> Align2_gd(const MatrixXf &g, const MatrixXf &m, const Matrix3f 
     std::cout << "Cost: " << cost << "\n";
 
     std::cout << "Entering loop\n";
-    while (cost > 0.05)
+    while (cost > 0.005)
     {
         i++;
         // Calculate dJ
@@ -143,7 +143,7 @@ int sign(float f)
     }
 }
 
-Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
+Vector<float,10> Align2(const MatrixXf &g_in, const MatrixXf &m_in) {
     /**************************************************************
      * Given a set of calibrated magnetometer and accelerometer data, this function
      * finds the least squares best fit for the alignment of the sensor axis and outputs
@@ -156,6 +156,11 @@ Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
      * 4. Calculate U_hat and R_hat
      * 5. Calculate s_hat
     */
+    MatrixXf m = m_in;
+    MatrixXf g = g_in;
+    m.normalize();
+    g.normalize();
+
     int K = g.cols();
     static MatrixXf A(K,9);
     static Vector<float,10> out;
@@ -182,6 +187,11 @@ Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
     Matrix3f V = svd.matrixV();
     Matrix3f Sig = svd.singularValues().asDiagonal();
 
+//    // From single step paper...
+//    float shat = pow(3/(Sig(0)*Sig(0)+Sig(1)*Sig(1)+Sig(2)*Sig(2)),0.5);
+//    Matrix3f Rhat = sign(H.determinant())*U*V.transpose();
+
+
     // Step 4
     Matrix3f Uhat = sign(H.determinant()) * U;
     Matrix3f Rhat = Uhat * V.transpose();
@@ -199,7 +209,16 @@ Vector<float,10> Align2(const MatrixXf &g, const MatrixXf &m) {
     out.segment(0,9) << Rhat.reshaped(9,1);
     out(9) = shat;
 
+
+    for (int i=0; i<K; i++)
+    {
+        cout << g.col(i).transpose()*Rhat*m.col(i);
+    }
+
+
     cout << "Cost function: " << J2(g,m,out) << "\n\n";
+    cout << "sin(delta): " << shat << "\n";
+    cout << "delta: " << asin(shat) << "\n";
     return out;
 }
 

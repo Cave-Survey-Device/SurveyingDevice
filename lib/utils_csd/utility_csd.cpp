@@ -173,7 +173,7 @@ void debugf(debug_type mode, const char *format, ...)
 }
 
 
-Vector3f Cartesian(Vector3f spherical)
+Vector3f Cart esian(Vector3f spherical)
 {
     Vector3f cartesian;
     // Serial.printf("Heading: %f   Inclination: %f\n", spherical(0), spherical(1));

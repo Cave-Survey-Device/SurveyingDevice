@@ -21,15 +21,15 @@ class SensorHandler
 {
 protected:
     Matrix<float,3,N_LASER_CAL> laser_alignment_data; /** Alignment data, heading, inclination, distance */
-    float laser_inclination_alignment; /** Value to be ADDED to value of sensors to align laser and inertial sensors */
-    float laser_heading_alignment; /** Value to be ADDED to value of sensors to align laser and inertial sensors */
+    Vector3f laser_vec; /** True vector of the laser from the device located along the x-axis with zero roll*/
     int laser_alignment_progress; /** Current progress in alignment of laser */
 
     Matrix3f laser_alignment_mat; /** Alignment matrix to correctly align the laser with the body frame*/
     Matrix3f inertial_alignment_mat /** Alignment matrix, R, to align the magnetometer with the accelerometer*/;
     float inclination_angle; /** Magnetic inclination angle calculated from calibration*/
 
-
+    bool mag_combined_calib; /** Calibrate magnetometer seperately to alignment?*/
+    bool acc_combined_calib; /** Calibrate accelerometer seperately to alignment?*/
 
     Vector3f mag_data; /** Data collected from the magnetometer*/
     Vector3f accel_data; /** Data collected from the accelerometer*/
@@ -78,7 +78,7 @@ public:
      * @return true if 12 orientations have been sampled.
      * @return false if less than 12 orientations have been sampled.
      */
-    int collectCalibration(); 
+    uint16_t collectCalibration(); 
 
     /**
      * @brief Runs a one-off calibration of the inertial sensors using the stored calibration data in each InertialSensor respectively.
@@ -100,6 +100,8 @@ public:
      */
     void resetCalibration();
 
+    void saveInertialCalib(InertialSensor* sens);
+    void loadInertialCalib(InertialSensor* sens);
 
     // -------------------------------------------------- Laser Calibration Functions -------------------------------------------------- //
     /**
@@ -110,10 +112,8 @@ public:
     /**
      * @brief Collects one shot of laser alignment data.
      * 
-     * @return true if all alignment shots HAVE been collected
-     * @return false if all alignment shots HAVE NOT been collected
      */
-    bool collectAlignment();
+    uint16_t collectAlignment();
        
     /**
      * @brief Loads alignment data from file

@@ -24,7 +24,7 @@ MatrixXf kron(MatrixXf m1, MatrixXf m2);
  * @brief Given a point cloud, calculate the best fit ellipsoid (linear least squares), returning the quadratic ellipsoid parameters
  * 
  * @param samples Samples to
- * @return RowVector<float,10> Ellipsoid parameters
+ * @return RowVector<float,10> Ellipsoid parameters in the form x2 y2 z2 2yz 2xz 2xy 2x 2y 2x 1
  */
 RowVector<float,10> fit_ellipsoid(const MatrixXf &samples, int n_samples = -1);
 

@@ -38,6 +38,7 @@ Vector3f SensorHandler::update()
     // debugf(DEBUG_SENSORHANDLER, "SensorHandler::getReading()");
     mag_data = this->magnetometer->getReading();
     accel_data = this->accelerometer->getReading();    
+    
     device_orientation << Orientation(accel_data, mag_data);
 
     return device_orientation;
@@ -45,8 +46,21 @@ Vector3f SensorHandler::update()
 
 Vector3f SensorHandler::takeShot()
 {
+    debug(DEBUG_SENSORHANDLER, "SensorHandler::takeShot()\n");
     shot_data = update();
-    shot_data(2) = this->laser->getMeasurement();
+    float measured_len = this->laser->getMeasurement();
+    
+    
+    // Calculate location of target
+    Vector3f disto_tip = Cartesian(Vector3f(shot_data(0), shot_data(1), DISTO_LEN));
+    Vector3f target = disto_tip + laser_vec * measured_len;
+
+    shot_data = Spherical(target);
+    float x, y, z;
+    printf("Disto location: \t%f \t%f \t%f \n", disto_tip(0), disto_tip(1), disto_tip(2));
+    printf("Measured distance: \t%f \n", measured_len);
+    printf("Target location: \t%f \t%f \t%f \n", target(0), target(1), target(2));
+
     return shot_data;
 }
 
@@ -55,16 +69,18 @@ Vector3f SensorHandler::getShotData()
     return shot_data;
 }
 
-bool SensorHandler::collectAlignment()
+uint16_t SensorHandler::collectAlignment()
 {
-    debugf(DEBUG_SENSORHANDLER, "SensorHandler::collectAlignment()");
-    this->laser_alignment_data.col(this->laser_alignment_progress) = takeShot();
-    this->laser_alignment_progress++;
-    if (this->laser_alignment_progress == N_LASER_CAL)
+    if (laser_alignment_progress < N_LASER_CAL)
     {
+        debugf(DEBUG_SENSORHANDLER, "SensorHandler::collectAlignment()");
+        this->laser_alignment_data.col(this->laser_alignment_progress) = takeShot();
+        this->laser_alignment_progress++;
+        return 0;
+    } else {
         return 1;
     }
-    return 0;
+
 }
 
 void SensorHandler::align()
@@ -162,9 +178,7 @@ void SensorHandler::align()
 
 
     // get heading and inclination corrections by converting back to polar coordinates
-    this->laser_inclination_alignment = atan2(y,x);
-    this->laser_heading_alignment = asin(z/pow(pow(x,2) + pow(y,2) + pow(z,2),0.5));
-    debugf(DEBUG_SENSORHANDLER,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->laser_inclination_alignment,this->laser_heading_alignment);
+    // debugf(DEBUG_SENSORHANDLER,"Spherical coordinates for misalignment vector: Heading: %f, Inclination: %f\n",this->laser_inclination_alignment,this->laser_heading_alignment);
 
 }
 
@@ -185,7 +199,7 @@ void SensorHandler::resetAlignment()
     this->laser_alignment_mat.setZero();
 }
 
-int SensorHandler::collectCalibration()
+uint16_t SensorHandler::collectCalibration()
 {
     debug(DEBUG_SENSORHANDLER,"SensorHandler::collectCalibration()");
     /************************************************************
@@ -223,8 +237,8 @@ int SensorHandler::collectCalibration()
     // 4. Collect SAMPLES_PER_ORIENTATION samples
     for(int i=0; i<SAMPLES_PER_ORIENTATION; i++)
     {
-        calibrated = this->magnetometer->collectAlignmentSample();
-        calibrated = calibrated * this->accelerometer->collectAlignmentSample();
+        calibrated = this->magnetometer->addCalibData();
+        calibrated = calibrated * this->accelerometer->addCalibData();
         if (calibrated)
         {
             return 1;
@@ -248,11 +262,11 @@ void SensorHandler::calibrate()
     *********************************************************************************************/
    debug(DEBUG_SENSORHANDLER,"SensorHandler::calibrate()");
     // 1. Calibrate if not already calibrated. Uses alignment data
-    if (magnetometer->getCalibMode() == false)
+    if (mag_combined_calib == true)
     {
         magnetometer->calibrateLinear();
     }
-    if (accelerometer->getCalibMode() == false)
+    if (acc_combined_calib == true)
     {
         accelerometer->calibrateLinear();
     }
@@ -273,8 +287,8 @@ void SensorHandler::calibrate()
 
     // 3. Calculate corrections and modift calibration data
     debug(DEBUG_SENSORHANDLER,"Calculating corrections...");
-    accelerometer->getCalibData() = accelerometer->getT() * (accelerometer->getCalibData().colwise() - accelerometer->geth());
-    magnetometer->getCalibData() = magnetometer->getT() * (magnetometer->getCalibData().colwise() - magnetometer->geth());
+    accelerometer->getCalibData() = accelerometer->getCalibMat() * (accelerometer->getCalibData().colwise() - accelerometer->getCalibBias());
+    magnetometer->getCalibData() = magnetometer->getCalibMat() * (magnetometer->getCalibData().colwise() - magnetometer->getCalibBias());
 
     #ifdef SENSORHANDLER_EXTENDED_DEBUG
     Serial << "Accelerometer correction data";
@@ -310,34 +324,58 @@ void SensorHandler::disableLaser()
     this->laser->toggleLaser(false);
 }
 
+void SensorHandler::saveInertialCalib(InertialSensor *sens)
+{
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::save_calibration_data()");
+    //write_to_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    write_to_file(sens->getID(),"calib_data",sens->getCalibData());
+    write_to_file(sens->getID(),"calib_mat",sens->getCalibMat());
+    write_to_file(sens->getID(),"calib_off",sens->getCalibBias());
+}
+
+void SensorHandler::loadInertialCalib(InertialSensor *sens)
+{
+    debug(DEBUG_INERTIALSENSOR,"InertialSensor::load_calibration_data()");
+    //read_from_file("calib_data",device_ID,&ref_calibration_data(0),ref_calibration_data.size());
+    read_from_file(sens->getID(),"calib_data",sens->getCalibData());
+
+    Matrix3f mat_buffer;
+    Vector3f bias_buffer;
+    read_from_file(sens->getID(),"calib_mat",mat_buffer);
+    read_from_file(sens->getID(),"calib_off",bias_buffer);
+    sens->setCalibMat(mat_buffer);
+    sens->setCalibBias(bias_buffer);
+
+}
+
+void SensorHandler::loadCalibration()
+{
+    debug(DEBUG_SENSORHANDLER,"SensorHandler::loadCalibration()");
+    read_from_file("senshandlr","inalign_R",inertial_alignment_mat);
+    read_from_file("senshandlr","inalign_d",inclination_angle);
+    loadInertialCalib(accelerometer);
+    loadInertialCalib(magnetometer);
+}
 
 void SensorHandler::saveCalibration()
 {
     debug(DEBUG_SENSORHANDLER,"SensorHandler::saveCalibration()");
     write_to_file("senshandlr","inalign_R",inertial_alignment_mat);
     write_to_file("senshandlr","inalign_d",inclination_angle);
-    accelerometer->save_calibration_data();
-    magnetometer->save_calibration_data();
-}
-void SensorHandler::loadCalibration()
-{
-    debug(DEBUG_SENSORHANDLER,"SensorHandler::loadCalibration()");
-    read_from_file("senshandlr","inalign_R",inertial_alignment_mat);
-    read_from_file("senshandlr","inalign_d",inclination_angle);
-    magnetometer->load_calibration_data();
-    accelerometer->load_calibration_data();
+    saveInertialCalib(accelerometer);
+    saveInertialCalib(magnetometer);
 }
 
 void SensorHandler::saveAlignment()
 {
     debug(DEBUG_SENSORHANDLER,"SensorHandler::saveAlignment()");
-    write_to_file("senshandlr","lasalign_h",laser_heading_alignment);
+    write_to_file("senshandlr","lasalign_h",laser_vec);
     write_to_file("senshandlr","lasalign_i",inclination_angle);
 }
 void SensorHandler::loadAlignment()
 {
     debug(DEBUG_SENSORHANDLER,"SensorHandler::loadAlignment()");
-    read_from_file("senshandlr","lasalign_h",laser_heading_alignment);
+    read_from_file("senshandlr","lasalign_h",laser_vec);
     read_from_file("senshandlr","lasalign_i",inclination_angle);
 }
 

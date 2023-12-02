@@ -15,4 +15,4 @@ z = test_data(3,:);
 figure;
 scatter3(x,y,z);
 hold on;
-scatter3(1,1,2);
+line([0,0.2],[0,0.2],[0,0.2]);

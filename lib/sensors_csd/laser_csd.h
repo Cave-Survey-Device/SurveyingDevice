@@ -8,7 +8,7 @@ public:
      * @brief Initialise laser module
      * 
      */
-    virtual void init()=0;
+    virtual void begin()=0;
 
     /**
      * @brief Get laser mesaurement

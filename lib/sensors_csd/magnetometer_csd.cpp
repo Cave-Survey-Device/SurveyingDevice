@@ -8,7 +8,7 @@ Magnetometer::Magnetometer(InertialSensorConnection* sc) : InertialSensor(sc, &c
     setID("mag");
 }
 
-void Magnetometer::addCalibrationData(){
+void Magnetometer::addCloudCalidData(){
     int index;
     Vector3f sample = getSingleSample();
     index = this->getMagnetometerIndex(sample);

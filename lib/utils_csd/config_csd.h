@@ -3,11 +3,10 @@
 
 #include "Arduino.h"
 // Board config
-#define ESP32
-#ifdef ESP32
-#define PIN_LASER_ENA (uint8_t)13U
-#define PIN_BUTTON1 (uint8_t)12U
-#define PIN_BUTTON2 (uint8_t)27U
+#define MCU_ESP32
+#ifdef MCU_ESP32
+const uint8_t PIN_BUTTON1 = 12U;
+const uint8_t PIN_BUTTON2 = 27U;
 #else
 #ifdef SEEED_XIAO_SENSE
 #define PIN_LASER_ENA PIN_A1
@@ -17,10 +16,11 @@
 #endif
 
 
+// Global constants
+const float DISTO_LEN = 0.1;
 
 
-const static float DISTO_LEN = 0.1;
-
+// Constanst local to this file
 const static bool DEBUG = true;
 
 const static bool DEBUG_FILE_ENA = false;

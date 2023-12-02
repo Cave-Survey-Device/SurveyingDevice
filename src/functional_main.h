@@ -238,7 +238,7 @@ void stateIdle(){
         {
             mag.setCalibMode(true);
         }
-        mag.addCalibrationData();
+        mag.addCalibData();
         next_mode = MODE_CALIBRATE_MAG;
         // TODO: Display calibration amount...
         break;

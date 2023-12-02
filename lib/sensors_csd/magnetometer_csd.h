@@ -43,7 +43,7 @@ public:
    * @brief Collects a sample and and adds it to the magnetometer calibration Matrix when using standalone calibration
    * 
    */
-  void addCalibrationData(); 
+  void addCloudCalidData(); 
 
   /**
    * @brief Gets the matrix of calibration data

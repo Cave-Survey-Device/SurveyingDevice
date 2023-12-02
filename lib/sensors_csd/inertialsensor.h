@@ -14,19 +14,18 @@ public:
 class InertialSensor
 {
 protected:
-    Matrix3f calibration_matrix; /** R, matrix used to calibrate the sensor to the body frame of the device*/
-    Vector3f calibration_offset; /** h, the offset used to remove bias error*/
-    Vector3f calibrated_data; /** Calibrated version of the raw_data*/
-    Vector3f raw_data; /** Raw data from the sensor connection*/
+    Eigen::Matrix3f calibration_matrix; /** R, matrix used to calibrate the sensor to the body frame of the device*/
+    Eigen::Vector3f calibration_offset; /** h, the offset used to remove bias error*/
+    Eigen::Vector3f calibrated_data; /** Calibrated version of the raw_data*/
+    Eigen::Vector3f raw_data; /** Raw data from the sensor connection*/
 
     InertialSensorConnection* sensor; /** Connected sensor*/
 
-    bool calibrate_with_alignment; /** Calibrate this sensor at the same time as the alignment?*/
-    int align_num; /** Stage of alignment process*/
-
     Eigen::Map<Matrix<float,3,-1>> ref_calibration_data; /** Reference object to the calibration data of the sensor. This uses the child's instantiation of calibration data to allow for different sizings for different sensors*/
-    bool separate_calib; /** Does this sensor need calibration seperately?*/
     char device_ID[6]; /** Device's ID for saving calibration data */
+
+    uint16_t calib_num; /** Current number of calibration*/
+    uint16_t calib_max; /** Size of the calibraion matrix*/
 
 public:
 
@@ -42,23 +41,7 @@ public:
     InertialSensor(InertialSensorConnection* sc, float* ptr, int size);
 
     /**
-     * @brief Get the calibration mode of the sensor
-     * 
-     * @return true if separate calibration
-     * @return false if joint calibrtion
-     */
-    bool getCalibMode();
-
-    /**
-     * @brief Sets the calibration mode of the sensor
-     * 
-     * @param mode 
-     */
-    void setCalibMode(bool mode);
-
-
-    /**
-     * @brief Linear calibrataes an inertial sensor via ellipsoid fitting.
+     * @brief Linear calibration of an inertial sensor via ellipsoid fitting.
      * 1. Sorts all zero-valued columns of the calibration data to the end of the matrix
      * 2. Performs ellipsoid fit with first n elements of sorted matrix where n is the numer of non-zero values
      * 
@@ -85,55 +68,44 @@ public:
      */
     void resetCalibration();
 
-    /**
-     * @brief Collects a sample for inertial sensor axis alignment
-     * 
-     * @return true 
-     * @return false 
-     */
-    bool collectAlignmentSample();
+    void setCalibMat(Matrix3f mat);
+    void setCalibBias(Vector3f vec);
 
     /**
      * @brief Gets the transformation matrix for the sensor calibration
      * 
      * @return Matrix3f 
      */
-    Matrix3f getT();
+    Matrix3f getCalibMat();
 
     /**
      * @brief Gets the bias vector for the sensor calibration
      * 
      * @return Matrix3f 
      */
-    Vector3f geth();
+    Vector3f getCalibBias();
 
+
+    /**
+     * @brief Get the Calib Data object - This is a reference to the actual data
+     * 
+     * @return Ref<MatrixXf> 
+     */
     virtual Ref<MatrixXf> getCalibData()=0;
 
     /**
-     * @brief Loads calibration data and paremeters from non-volatile memory
+     * @brief Sets the calibration data 
      * 
      */
-    void load_calibration_data();
+    void setCalibrationData();
 
     /**
-     * @brief Saves the calibration data and correction paremeters to non-volatile memory
+     * @brief Adds a single value into the calibration data of the inertial sensor
      * 
      */
-    void save_calibration_data();
+    bool addCalibData();
 
-    /**
-     * @brief Loads non-default (temporary) calibration data and paremeters from non-volatile memory
-     * 
-     */
-    void load_tmp_calibration_data();
-
-    /**
-     * @brief Saves calibration data and parameters to non-volatile storage in a seperate location
-     * This is to allow form calibration data to be generated and discarded if necessary.
-     * 
-     */
-    void save_tmp_calibration_data();
-    
+    uint16_t getCalibProgress();
 
     /**
      * @brief Sets the device's ID such that calibration data for teh device can be read
@@ -141,6 +113,9 @@ public:
      * @param ID 
      */
     void setID(const char* ID);
+
+    const char* getID();
+
 };
 
 #endif

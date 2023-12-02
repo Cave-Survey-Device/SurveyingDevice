@@ -2,35 +2,33 @@
 % Data must be stored in a CSV of Nx3
 
 % Configure sources
-function plot_data( FILE_real_samples, FILE_real_corrections, ...
-                    FILE_test_samples, FILE_test_corrections, name)
+function plot_data( FILE_samples, FILE_corrections, name)
     
     % Import data
-    real_samples =      importdata(FILE_real_samples);
-    real_corrections =  importdata(FILE_real_corrections);
-    test_samples =      importdata(FILE_test_samples);
-    test_corrections =  importdata(FILE_test_corrections);
+    samples =      importdata(FILE_samples);
+    corrections =  importdata(FILE_corrections);
     
     % Calculate normal vector of data
-    real_sam_norm =     vecnorm(real_samples');
-    real_corr_norm =    vecnorm(real_corrections');
-    test_sam_norm =     vecnorm(test_samples');
-    test_corr_norm =    vecnorm(test_corrections');
+    if size(samples,2) > size(samples,1)
+        sam_norm =     vecnorm(samples);
+        corr_norm =    vecnorm(corrections);
+    else
+        sam_norm =     vecnorm(samples');
+        corr_norm =    vecnorm(corrections');
+    end
+    
+
+    mean_error = mean(abs(corr_norm-1))
     
     % Plot data
+    len = size(sam_norm,2);
     figure;
-    plot(0:1:59,real_sam_norm,'r');
+    plot(0:1:len-1,sam_norm,'r');
     hold on
-    plot(0:1:59,real_corr_norm,'g');
-    legend(name + ' samples','Corrected ' + name + ' data')
-    title("Sensor data norm")
-    ylim([0 1.25])
-    
-    figure;
-    plot(0:1:59,test_sam_norm,'r');
-    hold on
-    plot(0:1:59,test_corr_norm,'g');
-    legend('Test ' + name + ' samples','Corrected test ' + name + ' data')
-    title("Test data norm")
-    ylim([0 1.25])
+    plot(0:1:len-1,corr_norm,'g');
+    legend(name + ' samples','Corrected ' + name + ' data',location="southeast")
+    title("Sensor data norm for " + name + newline + "Mean absolute error after correction = " + mean_error)
+    ylabel("||x||^2 norm of sensor data");
+    xlabel("Sample number");
+    ylim([0 max(sam_norm)*1.1])
 end

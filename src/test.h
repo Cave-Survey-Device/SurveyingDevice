@@ -1,25 +1,26 @@
-// #ifndef HEADER_TEST
-// #define HEADER_TEST
+#ifndef HEADER_TEST
+#define HEADER_TEST
 
-// #include <Arduino.h>
+#include <Arduino.h>
 
-// #include <ArduinoEigenDense.h>
+#include <ArduinoEigenDense.h>
 
-// #include <sensors_csd.h>
-// #include <utility_csd.h>
-// #include <NumericalMethods_csd.h>
-// #include <RM3100.h>
-// #include <random>
-// #include <math.h>
+#include <inertialsensor.h>
+#include <sensorhandler.h>
+#include <laser_csd.h>
 
-// #include <SPI.h>
-// #include <SCA3300.h>
-// #define _USE_MATH_DEFINES
+
+#include <utility_csd.h>
+#include <NumericalMethods_csd.h>
+#include <random>
+#include <math.h>
+
+#include <SPI.h>
+#include <SCA3300.h>
+#define _USE_MATH_DEFINES
 
 
 // using namespace Eigen;  
-
-
 
 // class TestInertialSensor: public InertialSensor
 // {
@@ -180,4 +181,4 @@
 //     delay(10000);
 //     }
 // }
-// #endif
+#endif

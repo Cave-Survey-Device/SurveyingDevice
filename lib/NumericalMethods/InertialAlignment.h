@@ -1,3 +1,5 @@
+#include "utils.h"
+
 /**
  * @brief Given a set of calibrated magnetometer and accelerometer data, this function
      * finds the least squares best fit for the alignment of the sensor axis and outputs
@@ -8,7 +10,7 @@
  * @param m_in 
  * @return Vector<float,10> 
  */
-Vector<float,10> alignMagAcc(const Matrix<float,3,12> &g_in, const Matrix<float,3,12> &m_in) {
+Vector<float,10> alignMagAcc(const Matrix<float,3,N_ALIGN_MAG_ACC> &g_in, const Matrix<float,3,N_ALIGN_MAG_ACC> &m_in) {
     /************************************************************************************
      * Given a set of calibrated magnetometer and accelerometer data, this function
      * finds the least squares best fit for the alignment of the sensor axis and outputs
@@ -25,9 +27,9 @@ Vector<float,10> alignMagAcc(const Matrix<float,3,12> &g_in, const Matrix<float,
     ************************************************************************************/
 
     // Used MAG.I.CAL alignment so only 12 inputs
-    static int K = 12;
-    static Matrix<float,12,9> A;
-    static Matrix<float,12,3> m, g;
+    static int K = N_ALIGN_MAG_ACC;
+    static Matrix<float,N_ALIGN_MAG_ACC,9> A;
+    static Matrix<float,3,N_ALIGN_MAG_ACC> m, g;
 
     m = m_in;
     g = g_in;

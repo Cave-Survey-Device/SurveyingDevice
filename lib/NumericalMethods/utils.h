@@ -14,6 +14,8 @@
 #endif
 #endif
 
+#include "config.h"
+
 /**
  * @brief Finds the rotation matrix correcponding to a quaternion rotation about a normalised axis by an angle of rads
  * 

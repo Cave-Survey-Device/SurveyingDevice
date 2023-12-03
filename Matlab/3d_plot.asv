@@ -1,4 +1,0 @@
-% Configure sources
-function plot_data( FILE_samples, FILE_corrections, name)
-    
-end

@@ -6,13 +6,36 @@
 // MUST include ArduinoEigenExtension if using ArduinoEigen
 
 /**
+ * Given a point cloud, find the vector normal to the best fit plane of the input point-cloud
+ * @param point_cloud
+ * @return normal
+ */
+Vector3f normalVec(const MatrixXf &point_cloud){
+    Vector3f normal;
+    MatrixXf left_singular_mat;
+
+    // Subtract mean from each point otherwise its wrong XD
+    // https://www.ltu.se/cms_fs/1.51590!/svd-fitting.pdf
+    MatrixXf mean_adj_point_cloud = point_cloud;
+    mean_adj_point_cloud = mean_adj_point_cloud.colwise()-mean_adj_point_cloud.rowwise().mean();
+
+    JacobiSVD<MatrixXf> svd(mean_adj_point_cloud, ComputeThinU | ComputeThinV);
+    left_singular_mat = svd.matrixU();
+    // U_cols = left_singular_mat.cols();
+    // 3rd col of U contains normal vec
+    normal << left_singular_mat(0,2), left_singular_mat(1,2), left_singular_mat(2,2);
+
+    return normal;
+};
+
+/**
  * @brief Given a point cloud, find the best fit ellipsoid to fit these values and return a vector of the ellipsoid parameters
  * @todo Add sources for calculations
  *
  * @param samples 
  * @return RowVector<float,10> 
  */
-RowVector<float,10> fit_ellipsoid(const MatrixXf &samples)
+RowVector<float,10> fitEllipsoid(const MatrixXf &samples)
 {
     // Uses ~400 floats
     static Matrix<float,6,6> C;
@@ -118,7 +141,7 @@ RowVector<float,10> fit_ellipsoid(const MatrixXf &samples)
  * @param d 
  * @return Vector<float,12> 
  */
-Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, float d)
+Vector<float,12> calculateEllipsoidTransformation(Matrix3f &M, Vector3f &n, float d)
 {
     /*
     * Statics are not used here as the fit_ellipsoid function executing will ensure that there is enough memory left on the stack.
@@ -173,7 +196,7 @@ Vector<float,12> calculate_ellipsoid_transformation(Matrix3f &M, Vector3f &n, fl
  * @param U Unformatted ellipsoid parameters
  * @return Vector<float,12> 
  */
-Vector<float,12> calculate_ellipsoid_transformation(const RowVector<float,10> &U)
+Vector<float,12> calculateEllipsoidTransformation(const RowVector<float,10> &U)
 {
     /*
     * Statics are not used here as the fit_ellipsoid function executing will ensure that there is enough memory left on the stack.

@@ -1,6 +1,3 @@
- // Allocated extra data as static as size will never change between calls
-#define ALIGN_MAG_ACC_FIXED_SIZE
-
 /**
  * @brief Given a set of calibrated magnetometer and accelerometer data, this function
      * finds the least squares best fit for the alignment of the sensor axis and outputs
@@ -11,7 +8,7 @@
  * @param m_in 
  * @return Vector<float,10> 
  */
-Vector<float,10> AlignMagAcc(const MatrixXf &g_in, const MatrixXf &m_in) {
+Vector<float,10> AlignMagAcc(const Matrix<float,3,12> &g_in, const Matrix<float,3,12> &m_in) {
     /************************************************************************************
      * Given a set of calibrated magnetometer and accelerometer data, this function
      * finds the least squares best fit for the alignment of the sensor axis and outputs
@@ -27,23 +24,10 @@ Vector<float,10> AlignMagAcc(const MatrixXf &g_in, const MatrixXf &m_in) {
      * R_hat and s_hat could then be used for an iterative approach but this is not used
     ************************************************************************************/
 
-    // Normalise inout data - required assumption
-    // This is not very emmory efficient, consider changing...
-
-
-
-    // To increase efficieny these use a directive to check whether the input will be the same
-    // size as is likely in an embedded system. This is set with the ALIGN_MAG_ACC_FIXED_SIZE directive
-    #ifdef ALIGN_MAG_ACC_FIXED_SIZE
-        static int K = g.cols();
-        static MatrixXf A(K,9);
-        static MatrixXf m = m_in;
-        static MatrixXf g = m_in;
-    #else
-        int K = g.cols();
-        MatrixXf A(K,9);
-        MatrixXf m, g;
-    #endif
+    // Used MAG.I.CAL alignment so only 12 inputs
+    static int K = 12;
+    static Matrix<float,12,9> A;
+    static Matrix<float,12,3> m, g;
 
     m = m_in;
     g = g_in;
@@ -68,15 +52,10 @@ Vector<float,10> AlignMagAcc(const MatrixXf &g_in, const MatrixXf &m_in) {
     H = ((A.transpose()*A).inverse() * A.transpose() * MatrixXf::Ones(K,1)).reshaped(3,3);
 
     // Step 3 - Solve lstsq
-    JacobiSVD<MatrixXf> svd(H, ComputeThinU | ComputeThinV);
+    JacobiSVD<Matrix3f> svd(H, ComputeThinU | ComputeThinV);
     U = svd.matrixU();
     V = svd.matrixV();
     Sig = svd.singularValues().asDiagonal();
-
-//    // From single step paper...
-//    float shat = pow(3/(Sig(0)*Sig(0)+Sig(1)*Sig(1)+Sig(2)*Sig(2)),0.5);
-//    Matrix3f Rhat = sign(H.determinant())*U*V.transpose();
-
 
     // Step 4
     Uhat = sign(H.determinant()) * U;

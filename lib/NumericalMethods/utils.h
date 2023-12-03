@@ -175,5 +175,20 @@ Matrix<float,3,2> toInertial(const Vector3f &XYZ, const float &roll) {
     return gm;
 }
 
+/**
+ * @brief Returns the sign of the given float
+ * 
+ * @param f 
+ * @return int 
+ */
+int sign(const float &f)
+{
+    if (f>=0)
+    {
+        return 1;
+    } else {
+        return -1;
+    }
+}
 
 #endif

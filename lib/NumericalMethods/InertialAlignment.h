@@ -8,7 +8,7 @@
  * @param m_in 
  * @return Vector<float,10> 
  */
-Vector<float,10> AlignMagAcc(const Matrix<float,3,12> &g_in, const Matrix<float,3,12> &m_in) {
+Vector<float,10> alignMagAcc(const Matrix<float,3,12> &g_in, const Matrix<float,3,12> &m_in) {
     /************************************************************************************
      * Given a set of calibrated magnetometer and accelerometer data, this function
      * finds the least squares best fit for the alignment of the sensor axis and outputs

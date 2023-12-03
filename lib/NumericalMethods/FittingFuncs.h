@@ -211,6 +211,6 @@ Vector<float,12> calculateEllipsoidTransformation(const RowVector<float,10> &U)
     n << U[6], U[7], U[8];
     d = U[9];
 
-    return calculate_ellipsoid_transformation(M,n,d);
+    return calculateEllipsoidTransformation(M,n,d);
 }
 #endif

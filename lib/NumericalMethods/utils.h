@@ -108,7 +108,7 @@ Vector3f inertialToCardan(const Vector3f &g, const Vector3f &m) {
     }
 
     // Find inclination of the device
-    inclination = atan(-g(0) / pow(pow(g(1), 2) + pow(g(2), 2), 0.5));
+    inclination = -atan(-g(0) / pow(pow(g(1), 2) + pow(g(2), 2), 0.5));
 
     // Rotate device by the roll and scale of inclination to provide accurate heading
     Vector3f m_roll_reversed = quatRot(Vector3f(1, 0, 0), roll) * m;
@@ -130,9 +130,22 @@ Vector3f cardanToCartesian(Vector3f cardan)
     Vector3f cartesian;
     cartesian << (cos(cardan(1))*cos(cardan(0))),
             (cos(cardan(1))*sin(cardan(0))),
-            (sin(cardan(1)));
+            (-sin(cardan(1)));
     return cartesian;
 }
+
+Vector2f cartesianToCardan(const Vector3f &XYZ)
+{
+    Vector2f cardan;
+    float heading, inclination;;
+
+    heading = atan2(XYZ(1),XYZ(0) / cos(inclination));
+    inclination = -asin(XYZ(2)/XYZ.norm());
+    cardan << heading, inclination;
+    return cardan;
+}
+  
+
 
 /**
  * @brief Convert inertial readings into a cartesian direction of the device
@@ -192,5 +205,11 @@ int sign(const float &f)
         return -1;
     }
 }
+
+float stDev(const VectorXf &vec)
+{
+    return sqrt((vec.array() - vec.mean()).square().sum()/(vec.size()-1));
+}
+
 
 #endif

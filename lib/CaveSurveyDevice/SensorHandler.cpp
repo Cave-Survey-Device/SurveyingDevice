@@ -5,7 +5,7 @@ Vector3f SensorHandler::getAccData() { return acc_data; }
 Vector3f SensorHandler::getMagData() { return mag_data; }
 Vector3f SensorHandler::getLasData() { return las_data; }
 
-int SensorHandler::takeShot()
+int SensorHandler::takeShot(const bool laser_reading)
 {
     // Wait until device is steady
     Vector<float,N_STABILISATION> norm_buffer;
@@ -35,27 +35,9 @@ int SensorHandler::takeShot()
     mag_data /= N_SHOT_SMAPLES;
     acc_data /= N_SHOT_SMAPLES;
 
-    las_data = las.getReading();
+    if (laser_reading) { las_data = las.getReading(); }
+
     return 0;
-}
-
-int SensorHandler::collectMagCalibData()
-{
-    // Collect data
-    static Vector2i index;
-    mag_data = mag.getSingleSample();
-    index = getMagCalIndex(mag_data);
-    mag_calib_data.row(index(0)).col(index(1)) = mag_data;
-    mag_calib_data_filled_indices.row(index(0)).col(index(1)) = 1;
-    return nFilledMagCalibIndices();
-}
-int SensorHandler::collectMagAccAlignData()
-{
-
-}
-int SensorHandler::collectLaserAlignData()
-{
-    
 }
 
 Vector2i SensorHandler::getMagCalIndex(const Vector3f &m)
@@ -72,3 +54,38 @@ int SensorHandler::nFilledMagCalibIndices()
 {
     return mag_calib_data_filled_indices.array().sum();
 }
+
+int SensorHandler::collectMagCalibData()
+{
+    // Collect data
+    static Vector2i index;
+    mag_data = mag.getSingleSample();
+    index = getMagCalIndex(mag_data);
+
+    mag_calib_data.col(index(0)*N_MAG_CAL_INCLINATION+index(1)) = mag_data;
+    mag_calib_data_filled_indices(index(0),index(1)) = 1;
+
+    return nFilledMagCalibIndices();
+}
+
+int SensorHandler::collectMagAccAlignData()
+{
+    takeShot(false);
+    mag_align_data.col(mag_acc_align_progress) = getMagData();
+    acc_align_data.col(mag_acc_align_progress) = getAccData();
+    mag_acc_align_progress++;
+    return mag_acc_align_progress;
+
+}
+int SensorHandler::collectLaserAlignData()
+{
+    if (!takeShot()) {
+        Serial.print("Shot timed out! Try again.");
+        return las_align_progress;
+    }
+    
+    laser_align_data.col(las_align_progress) << inertialToCardan(acc_data,mag_data), las_data;
+    las_align_progress++;
+    return las_align_progress;
+}
+

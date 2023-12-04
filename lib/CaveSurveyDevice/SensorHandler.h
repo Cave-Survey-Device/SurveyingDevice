@@ -24,10 +24,12 @@ struct DeviceCalibrationParameters
 class SensorHandler
 {
 private:
-    const static int N_SHOT_SMAPLES = 25;
-    const static float STDEV_LIMIT = 0.1;
-    const static int N_STABILISATION = 5;  
-    static bool MAG_COMBINED_CAL; // Calibrate magnetometer separately to alignment
+    static const int N_SHOT_SMAPLES = 25;
+    static const float STDEV_LIMIT = 0.1;
+    static const int N_STABILISATION = 5;  
+    bool MAG_COMBINED_CAL; // Calibrate magnetometer separately to alignment
+
+    int mag_acc_align_progress, las_align_progress;
 
     // Sensor objects
     Accelerometer acc;
@@ -35,12 +37,12 @@ private:
     Laser las;
 
     // Calibration and alignment data
-    Matrix<float,N_MAG_CAL_HEADING,N_MAG_CAL_INCLINATION,3> mag_calib_data;
+    Matrix<float,3,N_MAG_CAL_HEADING*N_MAG_CAL_INCLINATION> mag_calib_data; //Heading is rows, inclination is columns
     Matrix<float,N_MAG_CAL_HEADING,N_MAG_CAL_INCLINATION> mag_calib_data_filled_indices;
 
     Matrix<float,3,N_ALIGN_MAG_ACC> mag_align_data;
     Matrix<float,3,N_ALIGN_MAG_ACC> acc_align_data;
-    Matrix<float,3,N_LASER_CAL> laser_align_data;
+    Matrix<float,4,N_LASER_CAL> laser_align_data;
 
     // Calibration parameters
     DeviceCalibrationParameters calib_parms;
@@ -61,7 +63,7 @@ public:
     Vector3f getCartesian();
 
     // Returns Heading, Inclination, Distance
-    int takeShot();
+    int takeShot(const bool laser_reading = true);
 
     /**
      * @brief Collects a sample for the magnetometer's calibration.

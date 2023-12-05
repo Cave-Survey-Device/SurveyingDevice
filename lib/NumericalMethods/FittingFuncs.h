@@ -4,13 +4,16 @@
 #include "utils.h"
 
 // MUST include ArduinoEigenExtension if using ArduinoEigen
-
 /**
  * Given a point cloud, find the vector normal to the best fit plane of the input point-cloud
  * @param point_cloud
  * @return normal
  */
-Vector3f normalVec(const Matrix<float> &point_cloud){
+template <typename Derived>
+Vector3f normalVec(const MatrixBase<Derived> &point_cloud){
+    static_assert(Derived::RowsAtCompileTime == 3, "Must have exactly THREE rows!");
+    static_assert((std::is_same<typename Derived::Scalar,float>::value == 1), "Data type must be float!");
+    
     Vector3f normal;
     MatrixXf left_singular_mat;
 
@@ -28,9 +31,6 @@ Vector3f normalVec(const Matrix<float> &point_cloud){
     return normal;
 };
 
-
-
-
 /**
  * @brief Given a point cloud, find the best fit ellipsoid to fit these values and return a vector of the ellipsoid parameters
  * @todo Add sources for calculations
@@ -38,8 +38,12 @@ Vector3f normalVec(const Matrix<float> &point_cloud){
  * @param samples 
  * @return RowVector<float,10> 
  */
-RowVector<float,10> fitEllipsoid(const Matrix<float> samples)
+template <typename Derived>
+RowVector<float,10> fitEllipsoid(const MatrixBase<Derived> samples)
 {
+    static_assert(Derived::RowsAtCompileTime == 3, "Must have exactly THREE rows!");
+    static_assert((std::is_same<typename Derived::Scalar,float>::value == 1), "Data type must be float!");
+
     // Uses ~400 floats
     static Matrix<float,6,6> C;
     static Matrix<float,10,10> S;
@@ -135,8 +139,12 @@ RowVector<float,10> fitEllipsoid(const Matrix<float> samples)
     return U;
 }
 
-void fitEllipsoid(const Matrix<float> &samples, Matrix3f &M, Vector3f &n, float d)
+template <typename Derived>
+void fitEllipsoid(const MatrixBase<Derived> &samples, Matrix3f &M_out, Vector3f &n_out, float d_out)
 {
+    static_assert(Derived::RowsAtCompileTime == 3, "Must have exactly THREE rows!");
+    static_assert((std::is_same<typename Derived::Scalar,float>::value == 1), "Data type must be float!");
+
     // Uses ~400 floats
     static Matrix<float,6,6> C;
     static Matrix<float,10,10> S;
@@ -229,11 +237,10 @@ void fitEllipsoid(const Matrix<float> &samples, Matrix3f &M, Vector3f &n, float 
     U << u1, u2;
 
     // Form output vector
-    M << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
-    n << U[6], U[7], U[8];
-    d = U[9];
+    M_out << U[0], U[5], U[4], U[5], U[1], U[3], U[4], U[3], U[2];
+    n_out << U[6], U[7], U[8];
+    d_out = U[9];
 }
-
 
 
 /**
@@ -313,20 +320,20 @@ Vector<float,12> calculateEllipsoidTransformation(const RowVector<float,10> &U)
     return calculateEllipsoidTransformation(M,n,d);
 }
 
-void calculateEllipsoidTransformation(const RowVector<float,10> &U, Matrix3f &R, Vector3f b)
+void calculateEllipsoidTransformation(const RowVector<float,10> &U, Matrix3f &R_out, Vector3f b_out)
 {
    Vector<float,12> V = calculateEllipsoidTransformation(U);
 
-    R << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
-    b << transformation[9], transformation[10], transformation[11];
+    R_out << V[0], V[1], V[2], V[3], V[4], V[5], V[6], V[7], V[8];
+    b_out << V[9], V[10], V[11];
 }
 
-void calculateEllipsoidTransformation(const Matrix3f &M, const Vector3f &n, const float &d, Matrix3f &R, Vector3f b)
+void calculateEllipsoidTransformation(const Matrix3f &M, const Vector3f &n, const float &d, Matrix3f &R_out, Vector3f b_out)
 {
    Vector<float,12> V = calculateEllipsoidTransformation(M,n,d);
 
-    R << transformation[0], transformation[1], transformation[2], transformation[3], transformation[4], transformation[5], transformation[6], transformation[7], transformation[8];
-    b << transformation[9], transformation[10], transformation[11];
+    R_out << V[0], V[1], V[2], V[3], V[4], V[5], V[6], V[7], V[8];
+    b_out << V[9], V[10], V[11];
 }
 
 #endif

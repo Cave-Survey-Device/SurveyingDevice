@@ -15,7 +15,7 @@ int SensorHandler::takeShot(const bool laser_reading)
     }
 
     int i = 0;
-    while (stDev(norm_buffer) > STDEV_LIMIT)
+    while (NumericalMethods::stDev(norm_buffer) > STDEV_LIMIT)
     {
         norm_buffer(i%N_STABILISATION) = acc.getReading().norm();
         i++;
@@ -43,7 +43,7 @@ int SensorHandler::takeShot(const bool laser_reading)
 Vector2i SensorHandler::getMagCalIndex(const Vector3f &m)
 {
     static Vector2i index;
-    index << (RAD_TO_DEG * cartesianToCardan(m)).array().floor();
+    index << (RAD_TO_DEG * NumericalMethods::cartesianToCardan(m)).array().floor();
 
     // Heading ranges from 0 to 360 and inclination from -90 to 90
     index << floor(index(0) * (N_MAG_CAL_HEADING-1)/360), floor((index(0)+90) * (N_MAG_CAL_INCLINATION-1)/180);
@@ -70,6 +70,8 @@ int SensorHandler::collectMagCalibData()
 
 int SensorHandler::collectMagAccAlignData()
 {
+    if (mag_acc_align_progress >= N_ALIGN_MAG_ACC) { return -1; }
+
     takeShot(false);
     mag_align_data.col(mag_acc_align_progress) = getMagData();
     acc_align_data.col(mag_acc_align_progress) = getAccData();
@@ -77,15 +79,48 @@ int SensorHandler::collectMagAccAlignData()
     return mag_acc_align_progress;
 
 }
+
 int SensorHandler::collectLaserAlignData()
 {
+    if (mag_acc_align_progress >= N_LASER_CAL) { return -1; }
+
     if (!takeShot()) {
         Serial.print("Shot timed out! Try again.");
         return las_align_progress;
     }
-    
-    laser_align_data.col(las_align_progress) << inertialToCardan(acc_data,mag_data), las_data;
+
+    laser_align_data.col(las_align_progress) << NumericalMethods::inertialToCardan(acc_data,mag_data), las_data;
     las_align_progress++;
     return las_align_progress;
 }
 
+int SensorHandler::calibrateMagnetometer()
+{
+    Vector<float,10> U = NumericalMethods::fitEllipsoid(mag_calib_data);
+    NumericalMethods::calculateEllipsoidTransformation(U, calib_parms.Rm, calib_parms.bm);
+}
+
+int SensorHandler::alignInertial()
+{
+    if (MAG_COMBINED_CAL)
+    {
+        Vector<float,10> Um = NumericalMethods::fitEllipsoid(mag_align_data);
+        NumericalMethods::calculateEllipsoidTransformation(Um, calib_parms.Rm, calib_parms.bm);
+    }
+
+    Vector<float,10> Ua = NumericalMethods::fitEllipsoid(acc_align_data);
+    NumericalMethods::calculateEllipsoidTransformation(Ua, calib_parms.Ra, calib_parms.ba);
+
+    NumericalMethods::alignMagAcc(acc_align_data, mag_align_data,calib_parms.Ralign,calib_parms.inclination_angle);
+
+    return 0;
+}
+
+int SensorHandler::alignLaser()
+{
+    Vector2f V = NumericalMethods::alignLaser(laser_align_data);
+    calib_parms.laser_heading = V(0);
+    calib_parms.laser_inclination = V(1);
+
+    return 0;
+}

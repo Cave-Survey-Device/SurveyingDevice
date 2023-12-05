@@ -3,6 +3,9 @@
 
 #include "utils.h"
 
+
+namespace NumericalMethods {
+
 // MUST include ArduinoEigenExtension if using ArduinoEigen
 /**
  * Given a point cloud, find the vector normal to the best fit plane of the input point-cloud
@@ -336,4 +339,5 @@ void calculateEllipsoidTransformation(const Matrix3f &M, const Vector3f &n, cons
     b_out << V[9], V[10], V[11];
 }
 
+}
 #endif

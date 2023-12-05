@@ -16,6 +16,8 @@
 
 #include "config.h"
 
+namespace NumericalMethods {
+
 /**
  * @brief Finds the rotation matrix correcponding to a quaternion rotation about a normalised axis by an angle of rads
  * 
@@ -212,4 +214,9 @@ float stDev(const VectorXf &vec)
 }
 
 
+// TODO: Implement remove null values
+
+
 #endif
+
+}

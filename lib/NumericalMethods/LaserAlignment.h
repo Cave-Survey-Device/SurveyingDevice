@@ -1,6 +1,11 @@
+#ifndef NUMERICAL_METHODS_LASER_ALIGNMENT_H
+#define NUMERICAL_METHODS_LASER_ALIGNMENT_H
+
 #include "utils.h"
 #include "FittingFuncs.h"
 
+namespace NumericalMethods{
+    
 // Takes Heading, Incination, Roll, Distance
 /**
  * @brief 
@@ -138,3 +143,7 @@ Vector2f alignLaser(const Matrix<float,4,N_LASER_CAL> &laser_alignment_data)
     out << -laser_cardan(0), laser_cardan(1);
     return out;
 }
+
+}
+
+#endif

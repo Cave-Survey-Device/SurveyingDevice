@@ -39,7 +39,7 @@ Vector3f normalVec(const MatrixBase<Derived> &point_cloud){
  * @return RowVector<float,10> 
  */
 template <typename Derived>
-RowVector<float,10> fitEllipsoid(const MatrixBase<Derived> samples)
+RowVector<float,10> fitEllipsoid(const MatrixBase<Derived> &samples)
 {
     static_assert(Derived::RowsAtCompileTime == 3, "Must have exactly THREE rows!");
     static_assert((std::is_same<typename Derived::Scalar,float>::value == 1), "Data type must be float!");

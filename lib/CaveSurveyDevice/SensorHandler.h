@@ -11,13 +11,13 @@ using namespace Eigen;
 
 const int N_MAG_CAL_HEADING = 25; // Size of magnetometer calibration matrix
 const int N_MAG_CAL_INCLINATION = 15; // Size of magnetometer calibration matrix
-
+const int N_MAG_CAL = N_MAG_CAL_HEADING * N_MAG_CAL_INCLINATION;
 
 struct DeviceCalibrationParameters
 {
     Matrix3f Ra, Rm , Ralign;
     Vector3f ba, bm;
-    float laser_inclination, laser_heading;
+    float laser_inclination, laser_heading, inclination_angle;
 };
 
 
@@ -62,7 +62,13 @@ public:
     Vector3f getCardan();
     Vector3f getCartesian();
 
-    // Returns Heading, Inclination, Distance
+    /**
+     * @brief Take shot using laser by default.
+     * Returns 0 if success, anything else is an error.
+     * 
+     * @param laser_reading 
+     * @return int 
+     */
     int takeShot(const bool laser_reading = true);
 
     /**
@@ -80,7 +86,19 @@ public:
      * @return int 
      */
     int collectMagAccAlignData();
+
+    /**
+     * @brief Collects a sample of alignment data for laser alignment.
+     * Returns the current progress out of N_LASER_CAL, -1 if complete.
+     * 
+     * @return int 
+     */
     int collectLaserAlignData();
+
+    int calibrateMagnetometer();
+    int alignInertial();
+    int alignLaser();
+
 
     DeviceCalibrationParameters getCalibParms();
     void setCalibParms(const DeviceCalibrationParameters &parms);

@@ -1,6 +1,13 @@
 #include "SensorHandler.h"
 #include <queue>
 
+SensorHandler::SensorHandler(Accelerometer &a, Magnetometer &m, Laser &l)
+{
+    acc = a;
+    mag = m;
+    las = l;
+}
+
 Vector3f SensorHandler::getAccData() { return acc_data; }
 Vector3f SensorHandler::getMagData() { return mag_data; }
 Vector3f SensorHandler::getLasData() { return las_data; }

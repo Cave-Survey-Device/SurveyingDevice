@@ -55,6 +55,8 @@ private:
     int nFilledMagCalibIndices();
 
 public:
+    SensorHandler(Accelerometer &a, Magnetometer &m, Laser &l);
+
     Vector3f getAccData();
     Vector3f getMagData();
     Vector3f getLasData();

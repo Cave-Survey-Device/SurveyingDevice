@@ -96,7 +96,8 @@ int SensorHandler::collectLaserAlignData()
 
 int SensorHandler::calibrateMagnetometer()
 {
-    Vector<float,10> U = NumericalMethods::fitEllipsoid(mag_calib_data);
+    int n_zeros = NumericalMethods::removeNullData(mag_calib_data);
+    Vector<float,10> U = NumericalMethods::fitEllipsoid(mag_calib_data.block(0,0,3,N_MAG_CAL - n_zeros));
     NumericalMethods::calculateEllipsoidTransformation(U, calib_parms.Rm, calib_parms.bm);
 }
 

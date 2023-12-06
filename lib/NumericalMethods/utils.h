@@ -214,8 +214,68 @@ float stDev(const VectorXf &vec)
 }
 
 
-// TODO: Implement remove null values
+/**
+ * @brief Iterates through a matrix shifting all non-zero columns to the start of the matrix.
+ * This has the effect of moving all zero values to the end of the matrix.
+ * Returns the number of zeros in the matrix.
+ * 
+ * @tparam Derived 
+ * @param mat 
+ * @return int 
+ */
+template <typename Derived>
+int removeNullData(MatrixBase<Derived> &mat)
+{
+    // Initialise blank cols mat to -1
+    VectorXi blank_cols(mat.cols());
+    blank_cols.setOnes();
+    blank_cols *= -1;
+    int index = 0;
+    int n_zeros = 0; // Number of zeroes found
 
+    int i;
+    // Index zero values in reverse order
+    for (int i=mat.cols()-1; i>-1; i--)
+    {
+        if (mat.col(i).norm() == 0)
+        {
+            blank_cols(index) = i;
+            index++;
+        }
+    }
+    n_zeros = index;
+
+    // Push index back due to index++ happening AFTER assignment
+    index--;
+    if (index == -1)
+    {
+        // No zeroes found
+        return 0;
+    }
+
+    // Iterate in reverse through matrix, replacing zero valued sections with non-zero valued elements nearest the end of the matrix, replacing those with zero
+    for (int i=mat.cols()-1; i>-1; i--)
+    {
+        // Check if value is non-zero
+        if (mat.col(i).norm() > 0)
+        {
+            // Replace zero value closest to start or matrix with non-zero value
+            mat.col(blank_cols(index)) = mat.col(i);
+            // Replace non-zero value with zero
+            mat.col(i) << 0, 0, 0;
+            // Decrease index
+            index--;
+
+            // If all zero-valued sections have been replaced, break
+            if (index < 0)
+            {
+                break;
+            }
+        }
+    }
+
+    return n_zeros;
+}
 
 #endif
 

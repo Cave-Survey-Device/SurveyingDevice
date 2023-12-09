@@ -7,21 +7,25 @@ using namespace Eigen;
 class Accelerometer
 {
 public:
-    Vector3f getReading();
-    Vector3f getSingleSample();
+    virtual Vector3f getMeasurement()=0;
+    virtual void init()=0;
+
 };
 
 class Magnetometer
 {
 public:
-    Vector3f getReading();
-    Vector3f getSingleSample();
+    virtual Vector3f getMeasurement()=0;
+    virtual void init()=0;
 };
 
 class Laser
 {
 public:
-    Vector3f getReading();
+    virtual float getMeasurement()=0;
+    virtual void toggleLaser()=0;
+    virtual void toggleLaser(bool mode)=0;
+    virtual void init()=0;
 };
 
 #endif

@@ -12,6 +12,9 @@ using namespace Eigen;
 const int N_MAG_CAL_HEADING = 25; // Size of magnetometer calibration matrix
 const int N_MAG_CAL_INCLINATION = 15; // Size of magnetometer calibration matrix
 const int N_MAG_CAL = N_MAG_CAL_HEADING * N_MAG_CAL_INCLINATION;
+const int N_SHOT_SMAPLES = 25;
+const float STDEV_LIMIT = 0.1;
+const int N_STABILISATION = 5;
 
 struct DeviceCalibrationParameters
 {
@@ -24,17 +27,14 @@ struct DeviceCalibrationParameters
 class SensorHandler
 {
 private:
-    static const int N_SHOT_SMAPLES = 25;
-    static const float STDEV_LIMIT = 0.1;
-    static const int N_STABILISATION = 5;  
     bool MAG_COMBINED_CAL; // Calibrate magnetometer separately to alignment
 
     int mag_acc_align_progress, las_align_progress;
 
     // Sensor objects
-    Accelerometer acc;
-    Magnetometer mag;
-    Laser las;
+    Accelerometer &acc;
+    Magnetometer &mag;
+    Laser &las;
 
     // Calibration and alignment data
     Matrix<float,3,N_MAG_CAL_HEADING*N_MAG_CAL_INCLINATION> mag_calib_data; //Heading is rows, inclination is columns
@@ -48,7 +48,8 @@ private:
     DeviceCalibrationParameters calib_parms;
 
     // Data collected from sensors
-    Vector3f acc_data, mag_data, las_data;
+    Vector3f acc_data, mag_data;
+    float las_data;
     Vector4f shot_data; // HIRD
 
     Vector2i getMagCalIndex(const Vector3f &m);
@@ -57,12 +58,20 @@ private:
 public:
     SensorHandler(Accelerometer &a, Magnetometer &m, Laser &l);
 
+    void init();
+
     Vector3f getAccData();
     Vector3f getMagData();
-    Vector3f getLasData();
+    float getLasData();
 
     Vector3f getCardan();
     Vector3f getCartesian();
+    Vector3f getFinalMeasurement();
+
+
+    void resetCalibration();
+    void saveCalibration();
+    void loadCalibration();
 
     /**
      * @brief Take shot using laser by default.
@@ -100,6 +109,8 @@ public:
     int calibrateMagnetometer();
     int alignInertial();
     int alignLaser();
+
+    Vector2f getDirection();
 
 
     DeviceCalibrationParameters getCalibParms();

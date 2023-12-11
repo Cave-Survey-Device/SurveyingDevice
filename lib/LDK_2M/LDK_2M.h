@@ -88,7 +88,7 @@ class LDK_2M {
         void generateCommand(int type, char command_arr[LIDAR_SEND_COMMAND_SIZE]);
 
         // Pack received lidar message into lidar msg struct
-        void parseResponse(char raw_data[], lidar_received_msg* receivec_msg);
+        int parseResponse(char raw_data[], lidar_received_msg* receivec_msg);
 
 };
 

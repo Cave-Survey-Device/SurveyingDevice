@@ -33,7 +33,7 @@ void LDK_2M::eraseBuffer()
 float LDK_2M::toDistance(char* data)
 {
     float d;
-    sscanf(data, "%lf", &d);
+    d = std::stof(data);
     d = d/1000.0;
     return d;
 }
@@ -41,16 +41,18 @@ float LDK_2M::toDistance(char* data)
 // Main functions
 LDK_2M::LDK_2M()
 {   
+
+}
+
+void LDK_2M::init()
+{
     // Using UART1
     Serial1.setTimeout(SERIAL1_TIMEOUT_MS);
     Serial1.begin(9600);
     single_char_buffer = { 0x00 };
     *buffer = { 0x00 };
     laser_on = false;
-}
 
-void LDK_2M::init()
-{
     char generated_command[LIDAR_SEND_COMMAND_SIZE];
     lidar_received_msg received_msg;
 
@@ -65,7 +67,12 @@ void LDK_2M::init()
 
     generateCommand(LIDAR_READ_SOFTWARE_VERSION,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
+
+    flushSerial1();
+    eraseBuffer();
     readMsgFromUart(buffer);
+    parseResponse(buffer, &received_msg);
+    Serial.printf("Version: %s\n", received_msg.data);
 
     #ifdef DEBUG_LDK2M
     Serial.println("LDK2M:    (Init 2/3) Disable beeper");
@@ -205,7 +212,7 @@ void LDK_2M::generateCommand(int type, char command_packet[LIDAR_SEND_COMMAND_SI
     #endif
 };
 
-void LDK_2M::parseResponse(char raw_message[], lidar_received_msg* msg)
+int LDK_2M::parseResponse(char raw_message[], lidar_received_msg* msg)
 {
     int i;
 
@@ -256,14 +263,16 @@ void LDK_2M::parseResponse(char raw_message[], lidar_received_msg* msg)
         Serial.printf("LDK2M:    Checksum Invaid! %X != %X\n",calculated_checksum,(unsigned int)checksum);
         #endif
 
-        throw ("LDK2M:    Checksum invalid!");
+        Serial.println("LDK2M:    Checksum invalid!");
+        return 1;
     }
+    return 0;
 }
 
 float LDK_2M::getMeasurement()
 {
     
-    float distance = 0.0; // Distance returned by LIDAR
+    float distance = -1.0; // Distance returned by LIDAR
     char generated_command[LIDAR_SEND_COMMAND_SIZE]; // Command to send to LIDAR
     lidar_received_msg received_msg;
 
@@ -297,20 +306,15 @@ float LDK_2M::getMeasurement()
     Serial.println("LDK2M:    (Get measurement 3/4) Parse read response");
     #endif
 
-    try {
-        parseResponse(buffer,&received_msg);
-        distance = toDistance(received_msg.data);
-        laser_on = false;
-    }
-    catch(const char* e ) {
-        Serial.println("LDK2M:    ERROR: ");
-        Serial.println(e);
-        return 0;
-    }
-    catch (...)
+    
+    if (!parseResponse(buffer,&received_msg))
     {
-        return 0;
+        distance = toDistance(received_msg.data);
+    } else {
+        Serial.println("Parsing failed!");
+        return -1;
     }
+    
 
     // Return result
     #ifdef DEBUG_LDK2M

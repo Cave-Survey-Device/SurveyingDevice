@@ -50,6 +50,7 @@ void RM3100::begin(){
   
   changeCycleCount(initialCC); //change the cycle count; default = 200 (lower cycle count = higher data rates but lower resolution)
   
+  
   cycleCount = readReg(RM3100_CCX1_REG);
   cycleCount = (cycleCount << 8) | readReg(RM3100_CCX0_REG);
 
@@ -167,8 +168,7 @@ void RM3100::update() {
 
 }
 
-RM3100::RM3100()
-{}
+RM3100::RM3100(){}
 
 float RM3100::getX()
 {

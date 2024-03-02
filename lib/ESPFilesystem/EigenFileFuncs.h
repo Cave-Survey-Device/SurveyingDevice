@@ -5,24 +5,23 @@
 #include <nvs_flash.h>
 #include <ArduinoEigen.h>
 #include "FileFuncs.h"
+using namespace Eigen;
 
 namespace EigenFileFuncs
 {
 using namespace FileFuncs;
 
-template<typename Derived>
-void writeToFile(const char* fname, const char* name, const MatrixBase<Derived> &mat)
+inline void writeToFile(const char* fname, const char* name, const Ref<const MatrixXf> &mat)
 {
   preferences.begin(fname, false);
-  preferences.putBytes(name,mat.data(),mat.size()*sizeof(Derived::Scalar));
+  preferences.putBytes(name,mat.data(),mat.size()*sizeof(float));
   preferences.end();
 }
 
-template<typename Derived>
-void read_from_file(const char* fname, const char* name, MatrixBase<Derived> &mat)
+inline void readFromFile(const char* fname, const char* name, Ref<MatrixXf> mat)
 {
   preferences.begin(fname, false);
-  preferences.getBytes(name,mat.data(),mat.size()*sizeof(Derived::Scalar));
+  preferences.getBytes(name,mat.data(),mat.size()*sizeof(float));
   preferences.end();
 }
 

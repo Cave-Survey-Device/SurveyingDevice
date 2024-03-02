@@ -4,6 +4,8 @@
 #include <ArduinoEigen.h>
 #include <NumericalMethods.h>
 #include "Sensors.h"
+#include <EigenFileFuncs.h>
+
 
 using namespace Eigen;
 
@@ -12,24 +14,39 @@ using namespace Eigen;
 const int N_MAG_CAL_HEADING = 25; // Size of magnetometer calibration matrix
 const int N_MAG_CAL_INCLINATION = 15; // Size of magnetometer calibration matrix
 const int N_MAG_CAL = N_MAG_CAL_HEADING * N_MAG_CAL_INCLINATION;
-const int N_SHOT_SMAPLES = 25;
-const float STDEV_LIMIT = 0.1;
-const int N_STABILISATION = 5;
+const int N_SHOT_SMAPLES = 100;
+const int N_UPDATE_SAMPLES = 25;
+const float STDEV_LIMIT = 0.05;
+const int N_STABILISATION = 10;
 
 struct DeviceCalibrationParameters
 {
-    Matrix3f Ra, Rm , Ralign;
-    Vector3f ba, bm;
-    float laser_inclination, laser_heading, inclination_angle;
+    Matrix3f Ra_cal, Rm_cal, Ra_las, Rm_las, Rm_align;
+    Vector3f ba_cal, bm_cal;
+    float inclination_angle;
 };
 
+struct LaserCalibrationData{
+    Matrix<float,3,N_LASER_CAL> mag_data;
+    Matrix<float,3,N_LASER_CAL> acc_data;
+};
+
+struct StaticCalibrationData{
+    Matrix<float,3,N_ALIGN_MAG_ACC> mag_data;
+    Matrix<float,3,N_ALIGN_MAG_ACC> acc_data;
+};
+
+struct ShotData{
+    Vector3f m,g;
+    float d;
+};
 
 class SensorHandler
 {
 private:
-    bool MAG_COMBINED_CAL; // Calibrate magnetometer separately to alignment
+    bool MAG_COMBINED_CAL = true; // Calibrate magnetometer separately to alignment
 
-    int mag_acc_align_progress, las_align_progress;
+    int static_calib_progress, las_calib_progress;
 
     // Sensor objects
     Accelerometer &acc;
@@ -37,23 +54,16 @@ private:
     Laser &las;
 
     // Calibration and alignment data
-    Matrix<float,3,N_MAG_CAL_HEADING*N_MAG_CAL_INCLINATION> mag_calib_data; //Heading is rows, inclination is columns
-    Matrix<float,N_MAG_CAL_HEADING,N_MAG_CAL_INCLINATION> mag_calib_data_filled_indices;
-
-    Matrix<float,3,N_ALIGN_MAG_ACC> mag_align_data;
-    Matrix<float,3,N_ALIGN_MAG_ACC> acc_align_data;
-    Matrix<float,4,N_LASER_CAL> laser_align_data;
+    LaserCalibrationData laser_calib_data;
+    StaticCalibrationData static_calib_data;
 
     // Calibration parameters
     DeviceCalibrationParameters calib_parms;
 
     // Data collected from sensors
+    ShotData shot_data;
     Vector3f acc_data, mag_data;
     float las_data;
-    Vector4f shot_data; // HIRD
-
-    Vector2i getMagCalIndex(const Vector3f &m);
-    int nFilledMagCalibIndices();
 
 public:
     SensorHandler(Accelerometer &a, Magnetometer &m, Laser &l);
@@ -64,11 +74,20 @@ public:
     Vector3f getMagData();
     float getLasData();
 
+    const StaticCalibrationData &getStaticCalibData();
+    const LaserCalibrationData &getLaserCalibData();
+    const DeviceCalibrationParameters &getCalibParms();
+
+    void update();
     Vector3f getCardan();
     Vector3f getCartesian();
     Vector3f getFinalMeasurement();
 
+    void eraseFlash();
+    void getFlashStats();
 
+    void correctData();
+    
     void resetCalibration();
     void saveCalibration();
     void loadCalibration();
@@ -80,15 +99,7 @@ public:
      * @param laser_reading 
      * @return int 
      */
-    int takeShot(const bool laser_reading = true);
-
-    /**
-     * @brief Collects a sample for the magnetometer's calibration.
-     * Returns the number of separate segments with calibrated values
-     * 
-     * @return int 
-     */
-    int collectMagCalibData();
+    int takeShot(const bool laser_reading = true, const bool use_stabilisation = true);
 
     /**
      * @brief Collects a sample of alignment data for joint accelerometer and magnetometer alignment.
@@ -96,7 +107,7 @@ public:
      * 
      * @return int 
      */
-    int collectMagAccAlignData();
+    int collectStaticCalibData();
 
     /**
      * @brief Collects a sample of alignment data for laser alignment.
@@ -104,16 +115,15 @@ public:
      * 
      * @return int 
      */
-    int collectLaserAlignData();
+    int collectLaserCalibData();
 
-    int calibrateMagnetometer();
-    int alignInertial();
-    int alignLaser();
+    int calibrate();
+    int align();
+    int staticAlign();
 
     Vector2f getDirection();
 
 
-    DeviceCalibrationParameters getCalibParms();
     void setCalibParms(const DeviceCalibrationParameters &parms);
 };
 #endif

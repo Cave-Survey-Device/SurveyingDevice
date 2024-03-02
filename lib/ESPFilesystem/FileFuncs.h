@@ -4,6 +4,7 @@
 #include <preferences.h>
 #include <nvs_flash.h>
 
+
 namespace FileFuncs
 {
 
@@ -24,7 +25,7 @@ void writeToFile(const char* fname, const char* vname, const float* data, int si
 void readFromFile(const char* fname, const char* vname, float* data, int size);
 
 void erase_flash();
-
+void getStatus();
 }
 
 

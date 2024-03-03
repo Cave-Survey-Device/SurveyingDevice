@@ -16,6 +16,14 @@ namespace NumericalMethods{
  */
 Vector<float,10> alignMagAcc(const Matrix<float,3,N_ALIGN_MAG_ACC> &g_in, const Matrix<float,3,N_ALIGN_MAG_ACC> &m_in);
 
+/**
+ * @brief Finds the matrix required to align the magnetometer and accelerometer with the principal laser axis
+ * 
+ * @param g_in Input gravitational data
+ * @param m_in Input magnetometer data
+ * @param R_align Output correction matrix
+ * @param inclination_angle Calculated inclination angle
+ */
 void alignMagAcc(const Matrix<float,3,N_ALIGN_MAG_ACC> &g_in, const Matrix<float,3,N_ALIGN_MAG_ACC> &m_in, 
                             Matrix3f &R_align, float &inclination_angle);
 

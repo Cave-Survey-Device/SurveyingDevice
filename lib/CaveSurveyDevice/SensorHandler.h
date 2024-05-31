@@ -122,6 +122,7 @@ public:
     int staticAlign();
 
     Vector2f getDirection();
+    ShotData getShotData();
 
 
     void setCalibParms(const DeviceCalibrationParameters &parms);

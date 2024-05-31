@@ -68,6 +68,10 @@ Vector3f SensorHandler::getFinalMeasurement()
     return out;
 }
 
+ShotData SensorHandler::getShotData()
+{
+    return shot_data;
+}
 
 int SensorHandler::takeShot(const bool laser_reading, const bool use_stabilisation)
 {

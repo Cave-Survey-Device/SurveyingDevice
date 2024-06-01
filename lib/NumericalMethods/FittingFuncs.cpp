@@ -42,7 +42,8 @@ RowVector<float,10> fitEllipsoid(const Ref<const MatrixXf> &samples)
     static Vector<float,4> u2;
     static Vector<float,10> U;
 
-    static int n_samples = samples.cols();
+    static int n_samples;
+    n_samples = samples.cols();
 
     const VectorXf &x = samples.row(0).segment(0,n_samples);
     const VectorXf &y = samples.row(1).segment(0,n_samples);
@@ -98,10 +99,11 @@ RowVector<float,10> fitEllipsoid(const Ref<const MatrixXf> &samples)
     float max_eval = eval[0];
     for (int i=0;i<6;i++)
     {
-        if(eval[i] > max_eval) {
+        if(eval[i] >= max_eval) {
             max_eval = eval[i];
             u1 = evec.col(i);
         } else if (i == 5) {
+            Serial.println("No Eigenvalues Found!");
             // No eigenvalues found
             // TODO: Add error throw that is safe with ESP
         }

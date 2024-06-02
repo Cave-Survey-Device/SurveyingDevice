@@ -73,7 +73,7 @@ MatrixXf kron(const MatrixXf &m1, const MatrixXf &m2);
  * @param ENU East-Noth-UP matrix
  * @return Matrix3f East-Noth-UP matrix
  */
-Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g, Matrix3f &ENU);
+Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g);
 /**
  * @brief Given a set of inetial data, return a vector representing the x-axis in the world frame
  * 
@@ -82,7 +82,7 @@ Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g, Matrix3f &ENU);
  * @param V Output vector
  * @return Vector3f Output vector
  */
-Vector3f inertialToVector(const Vector3f &m, const Vector3f &g, Vector3f &V);
+Vector3f inertialToVector(const Vector3f &m, const Vector3f &g);
 /**
  * @brief Given a set of inetial data, return a vector containing the device angles in teh form of Heading-Inclination-Roll
  * 
@@ -91,7 +91,7 @@ Vector3f inertialToVector(const Vector3f &m, const Vector3f &g, Vector3f &V);
  * @param HIR Output Vector Heading-Inclination-Roll
  * @return Vector3f Output Vector Heading-Inclination-Roll
  */
-Vector3f inertialToCardan(const Vector3f &m, const Vector3f &g, Vector3f &HIR);
+Vector3f inertialToCardan(const Vector3f &m, const Vector3f &g);
 
 /**
  * @brief Returns the sign of the given float

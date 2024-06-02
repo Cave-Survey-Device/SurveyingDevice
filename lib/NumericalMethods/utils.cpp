@@ -46,8 +46,10 @@ MatrixXf kron(const MatrixXf &m1, const MatrixXf &m2)
     return out;
 }
 
-Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g, Matrix3f &ENU)
+Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g)
 {
+    Matrix3f ENU;
+    
     // Use cross product to generate set of real world axis in body frame
     Vector3f E, N, U;
     E = g.cross(m);
@@ -58,20 +60,20 @@ Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g, Matrix3f &ENU)
     return ENU;
 }
 
-Vector3f inertialToVector(const Vector3f &m, const Vector3f &g, Vector3f &V)
+Vector3f inertialToVector(const Vector3f &m, const Vector3f &g)
 {
-    Matrix3f ENU;
-    inertialToENU(m, g, ENU);
+    Vector3f V;
+    Matrix3f ENU = inertialToENU(m, g);
 
     // Extract the x values of each axis to find the x-axis in the world frame
     V << ENU(0,0), ENU(1,0), ENU(2,0);
     return V;
 }
 
-Vector3f inertialToCardan(const Vector3f &m, const Vector3f &g, Vector3f &HIR)
+Vector3f inertialToCardan(const Vector3f &m, const Vector3f &g)
 {
-    Matrix3f ENU;
-    inertialToENU(m, g, ENU);
+    Vector3f HIR;
+    Matrix3f ENU = inertialToENU(m, g);
 
     // atan2(Ex,Nx) -> atan2 of north and east components of  sensor x-axis in world frame
     HIR(0) = atan2(ENU(0,0),ENU(1,0));

@@ -102,11 +102,10 @@ RowVector<float,10> fitEllipsoid(const Ref<const MatrixXf> &samples)
         if(eval[i] >= max_eval) {
             max_eval = eval[i];
             u1 = evec.col(i);
-        } else if (i == 5) {
-            Serial.println("No Eigenvalues Found!");
-            // No eigenvalues found
-            // TODO: Add error throw that is safe with ESP
-        }
+    }
+    if (max_eval < 0.0)
+    {
+        Serial.println("No positive eigenvalues found!");
     }
 
     // To preserve stabikity of calculations. Use pseudoinverse it determinant too small

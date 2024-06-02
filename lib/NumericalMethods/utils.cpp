@@ -46,89 +46,49 @@ MatrixXf kron(const MatrixXf &m1, const MatrixXf &m2)
     return out;
 }
 
-Vector3f inertialToCardan(const Vector3f &g_in, const Vector3f &m_in) {
-    static Vector3f g, m;
-    g = g_in.normalized();
-    m = m_in.normalized();
-    float heading, inclination, roll;
-    Vector3f hir, m_roll_reversed;
-
-    // Find roll of the device
-    roll = atan(-g(1) / abs(g(2)));
-    if (g(2) > 0)
-    {
-        roll = M_PI - roll;
-    }
-
-    // // Find inclination of the device
-    // inclination = -atan(-g(0) / pow(pow(g(1), 2) + pow(g(2), 2), 0.5));
-
-    // // Rotate device by the roll and scale of inclination to provide accurate heading
-    // Vector3f m_roll_reversed = quatRot(Vector3f(1, 0, 0), roll) * m;
-    // m_roll_reversed(0) = m_roll_reversed(0) / cos(inclination);
-    // heading =  atan2(-m_roll_reversed(1),m_roll_reversed(0)); //getHeading(m_roll_reversed);
-
-    inclination = asin(g(0)/g.norm());
-    m_roll_reversed = quatRot(Vector3f(1, 0, 0), roll) * m;
-    m_roll_reversed = quatRot(Vector3f(0, 1, 0),inclination) * m_roll_reversed;
-    // Serial.printf("M roll reversed: %f %f %f\n", m_roll_reversed(0), m_roll_reversed(1), m_roll_reversed(2));
-    // Serial.printf("M: %f %f %f          G: %f %f %f\n", m(0), m(1), m(2), g(0), g(1), g(2));
-
-    // Serial.printf("M_roll_reversed: %f %f %f\n",m_roll_reversed(0),m_roll_reversed(1),m_roll_reversed(2));
-
-    heading =  -atan2(m_roll_reversed(1),m_roll_reversed(0));
-
-    hir << heading, inclination, roll;
-    return hir;
-}
-
-Vector3f cardanToCartesian(Vector3f cardan)
+Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g, Matrix3f &ENU)
 {
-    Vector3f cartesian;
-    cartesian << (cos(cardan(1))*cos(cardan(0))),
-            (cos(cardan(1))*sin(cardan(0))),
-            (-sin(cardan(1)));
-    return cartesian;
+    // Use cross product to generate set of real world axis in body frame
+    Vector3f E, N, U;
+    E = g.cross(m);
+    N = g.cross(E);
+    U = N.cross(E);
+
+    ENU << E, N, U;
+    return ENU;
 }
 
-Vector2f cartesianToCardan(const Vector3f &XYZ)
+Vector3f inertialToVector(const Vector3f &m, const Vector3f &g, Vector3f &V)
 {
-    Vector2f cardan;
-    float heading, inclination;;
+    Matrix3f ENU;
+    inertialToENU(m, g, ENU);
 
-    heading = atan2(XYZ(1),XYZ(0) / cos(inclination));
-    inclination = -asin(XYZ(2)/XYZ.norm());
-    cardan << heading, inclination;
-    return cardan;
+    // Extract the x values of each axis to find the x-axis in the world frame
+    V << ENU(0,0), ENU(1,0), ENU(2,0);
+    return V;
 }
-  
-Vector3f inertialToCartesian(const Vector3f &g, const Vector3f &m)
+
+Vector3f inertialToCardan(const Vector3f &m, const Vector3f &g, Vector3f &HIR)
 {
-    Vector3f hir;
-    hir = cardanToCartesian(inertialToCardan(g,m));
-    return hir;
-}
+    Matrix3f ENU;
+    inertialToENU(m, g, ENU);
 
-Matrix<float,3,2> toInertial(const Vector3f &XYZ, const float &roll) {
-    Matrix<float,3,2> gm;
-    Vector3f x,y,z;
+    // atan2(Ex,Nx) -> atan2 of north and east components of  sensor x-axis in world frame
+    HIR(0) = atan2(ENU(0,0),ENU(1,0));
 
-    x = XYZ.normalized();
+    // atan2(Ux,sqrt(Ex^2 + Nx^2)) -> Inclination of ENU above XZ plane
+    // Alternatively atan2(Ux*cos(heading), Nx) works as sqrt(Ex^2 + Nx^2) = Nx/cos(heading)
+    HIR(1) = atan2(ENU(2,0), sqrt(pow(ENU(0,0),2) + pow(ENU(1,0),2)));
 
-    // Cross product follow Right-Hand-Rule so MUST have correct order
-    y = x.cross(Vector3f(0, 0, -1));
-    z = x.cross(y);
+    // Angle between device z axis and actual g measurement when projected into theYZ plane
+    HIR(2) = atan2(-ENU(2,1),ENU(2,2));
 
-    y = quatRot(x, roll) * y;
-    z = quatRot(x, roll) * z;
-    y.normalize();
-    z.normalize();
-
-    // Find proportion of m and g acting upon new axis
-    gm.col(0) << Vector3f(0, 0, -1).dot(x), Vector3f(0, 0, -1).dot(y), Vector3f(0, 0, -1).dot(z);
-    gm.col(1) << Vector3f(1, 0, 0).dot(x), Vector3f(1, 0, 0).dot(y), Vector3f(1, 0, 0).dot(z);
-
-    return gm;
+    // Bind data to 0 to 2*pi
+    if (fabs(HIR(0)) > 2*M_PI){         HIR(0) = HIR(0) - 2*M_PI;           }
+    if (fabs(HIR(1)) > 2*M_PI){         HIR(1) = HIR(1) - 2*M_PI;           }
+    if (fabs(HIR(2)) > 2*M_PI){         HIR(2) = HIR(2) - 2*M_PI;           }
+    
+    return HIR;
 }
 
 int sign(const float &f)

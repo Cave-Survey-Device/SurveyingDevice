@@ -64,39 +64,35 @@ float angle(Vector3f u, Vector3f v);
  * @param m2 
  * @return MatrixXf 
  */
- MatrixXf kron(const MatrixXf &m1, const MatrixXf &m2);
+MatrixXf kron(const MatrixXf &m1, const MatrixXf &m2);
 /**
- * @brief Convert inertial data to cardan angles
+ * @brief Given a set of inetial data, return a matrix of the East, North, and Up axis with respect to the body frame
  * 
- * @param g Gravitation reading of device
- * @param m Magnetic reading of device
- * @return Vector3f 
+ * @param m Magnetometer data
+ * @param g Gravitational data
+ * @param ENU East-Noth-UP matrix
+ * @return Matrix3f East-Noth-UP matrix
  */
- Vector3f inertialToCardan(const Vector3f &g, const Vector3f &m);
+Matrix3f inertialToENU(const Vector3f &m, const Vector3f &g, Matrix3f &ENU);
 /**
- * @brief Converts cardan angles into cartesian data
+ * @brief Given a set of inetial data, return a vector representing the x-axis in the world frame
  * 
- * @param cardan 
- * @return Vector3f 
+ * @param m Magnetometer data
+ * @param g Gravitational data
+ * @param V Output vector
+ * @return Vector3f Output vector
  */
- Vector3f cardanToCartesian(Vector3f cardan);
- Vector2f cartesianToCardan(const Vector3f &XYZ);
+Vector3f inertialToVector(const Vector3f &m, const Vector3f &g, Vector3f &V);
 /**
- * @brief Convert inertial readings into a cartesian direction of the device
+ * @brief Given a set of inetial data, return a vector containing the device angles in teh form of Heading-Inclination-Roll
  * 
- * @param g 
- * @param m 
- * @return Vector3f 
+ * @param m Magnetometer data
+ * @param g Gravitational data
+ * @param HIR Output Vector Heading-Inclination-Roll
+ * @return Vector3f Output Vector Heading-Inclination-Roll
  */
- Vector3f inertialToCartesian(const Vector3f &g, const Vector3f &m);
-/**
- * @brief Convert cartesian data with an associated roll into corresponding g and m vectors to reproduce such data
- * 
- * @param XYZ Cartesian value of direction
- * @param roll Roll of the frame about the given direction vector
- * @return Matrix<float,3,2> 
- */
- Matrix<float,3,2> toInertial(const Vector3f &XYZ, const float &roll);
+Vector3f inertialToCardan(const Vector3f &m, const Vector3f &g, Vector3f &HIR);
+
 /**
  * @brief Returns the sign of the given float
  * 

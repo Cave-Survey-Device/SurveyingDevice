@@ -66,6 +66,12 @@ class LDK_2M {
         // Length of message received from uart buffer
         int msg_len;
 
+        // First character of message
+        char msg_start;
+
+        // Error message
+        char* err_msg;
+
         // Enable lidar via GPIO pin
         void enable();
 

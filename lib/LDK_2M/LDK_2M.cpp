@@ -1,5 +1,5 @@
 #include "LDK_2M.h"
-#define DEBUG_LDK2M
+// #define DEBUG_LDK2M
 // Global laser status flag
 bool laser_on = true;
 bool uart_timeout = false;
@@ -32,9 +32,18 @@ void LDK_2M::eraseBuffer()
 
 float LDK_2M::toDistance(char* data)
 {
-    float d;
+    static float d;
+    if (!strcmp(data,"ERR204") | !strcmp(data,"ERR255") | !strcmp(data,"ERR256"))
+    {
+        Serial.print("Measurement error: ");
+        Serial.print(data);
+        Serial.print("\n");
+        err_msg = data;
+        return -1;
+    }
     d = std::stof(data);
     d = d/1000.0;
+
     return d;
 }
 
@@ -65,11 +74,12 @@ void LDK_2M::init()
     Serial.println("LDK2M:    (Init 1/3) Get software version");
     #endif
 
+    flushSerial1();
+    eraseBuffer();
+    
     generateCommand(LIDAR_READ_SOFTWARE_VERSION,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
 
-    flushSerial1();
-    eraseBuffer();
     readMsgFromUart(buffer);
     parseResponse(buffer, &received_msg);
     Serial.printf("Version: %s\n", received_msg.data);
@@ -77,6 +87,9 @@ void LDK_2M::init()
     #ifdef DEBUG_LDK2M
     Serial.println("LDK2M:    (Init 2/3) Disable beeper");
     #endif
+
+    flushSerial1();
+    eraseBuffer();
 
     generateCommand(LIDAR_DISABLE_BEEPER,generated_command);
     Serial1.write(generated_command,LIDAR_SEND_COMMAND_SIZE);
@@ -86,6 +99,9 @@ void LDK_2M::init()
     #ifdef DEBUG_LDK2M
     Serial.println("LDK2M:    (Init 3/3) Finished INIT");
     #endif
+
+    flushSerial1();
+    eraseBuffer();
 
     toggleLaser(false);
 };
@@ -99,9 +115,16 @@ bool LDK_2M::readMsgFromUart(char* buffer)
     // {
     //     Serial.printf("%X\n",single_char_buffer);
     // }
-    single_char_buffer = 0x00;
-    if ( Serial1.readBytesUntil(LIDAR_START_BYTE,&single_char_buffer,1)){}
-    // Erase buffer
+
+    // Read buffer until start-byte found
+    single_char_buffer = LIDAR_START_BYTE;
+    Serial1.readBytesUntil(LIDAR_START_BYTE,&single_char_buffer,1);
+    while (single_char_buffer == LIDAR_START_BYTE)
+    {
+        Serial1.readBytes(&single_char_buffer,1);
+    }
+    msg_start = single_char_buffer;
+    // Erase buffer to remove the start byte and any bad ata
     eraseBuffer();
 
     // Reads bytes until terminator into buffer (not including terminator)
@@ -110,6 +133,7 @@ bool LDK_2M::readMsgFromUart(char* buffer)
     #endif
     
     // TODO: check 99 length, it this necessary?
+    // Read bytes until end byte is found
     msg_len = Serial1.readBytesUntil(LIDAR_END_BYTE,buffer,99);
     if (msg_len == 0)
     {
@@ -128,10 +152,15 @@ bool LDK_2M::readMsgFromUart(char* buffer)
 
 void LDK_2M::generateCommand(int type, char command_packet[LIDAR_SEND_COMMAND_SIZE])
 {
-    char address = 0x01;
-    char command = 0;
-    char data = 0xFF;
-    char checksum;
+    static char address;
+    static char command;
+    static char data;
+    static char checksum;
+
+    address = 0x01;
+    command = 0;
+    data = 0xFF;
+
     
     switch (type){
         case LIDAR_READ_SOFTWARE_VERSION:
@@ -214,36 +243,44 @@ void LDK_2M::generateCommand(int type, char command_packet[LIDAR_SEND_COMMAND_SI
 
 int LDK_2M::parseResponse(char raw_message[], lidar_received_msg* msg)
 {
-    int i;
+    static int i;
 
-    int data_size; // Size of data in message (i.e. not address, command, or checksum)
-    int start; // Loop start position
-    char checksum; // Received checksum
-    unsigned int calculated_checksum; // Calculated checksum
+    static int data_size; // Size of data in message (i.e. not address, command, or checksum)
+    static int start; // Loop start position
+    static char checksum; // Received checksum
+    static unsigned int calculated_checksum; // Calculated checksum
 
     // Assign address and command form raw message
-    msg->address = raw_message[0];
-    msg->command = raw_message[1];
+    msg->address = msg_start;
+    msg->command = raw_message[0];
     
-    // Size of received message => address, command, data[MAX 12], checksum
-    data_size = msg_len - 3;
+    // Size of received message => command, data[MAX 12], checksum
+    data_size = msg_len - 2;
 
-    // Start is 2 instead of 0 due to address, command
-    start = 2;
+    // Start is 2 instead of 0 due to command
+    start = 1;
 
     // Loop to populate the data array
+    // Serial.printf("Msg address: %X\n",msg->address);
+    // Serial.printf("Msg command: %X\n",msg->command);
+    // Serial.print("Message: ");
     for (i=start;i<start+LIDAR_RECEIVE_DATA_MAX_SIZE;++i)
     {
         if (i<start+data_size)
         {
+            // Serial.printf("%X ", raw_message[i]);
             msg->data[i-start] = raw_message[i];
         } else {
             msg->data[i-start] = 0;
         }
     }
+    // Serial.print("\n");
+
+    
     
     // Populate checksum from raw_message
     checksum = raw_message[start+data_size];
+    // Serial.printf("Checksum: %X\n", checksum);
 
     // Calculate checksum
     calculated_checksum = 0x00;
@@ -256,11 +293,13 @@ int LDK_2M::parseResponse(char raw_message[], lidar_received_msg* msg)
     }
     calculated_checksum = calculated_checksum & (unsigned int)0x7F;
 
+    // Serial.printf("Calculated checksum: %X\n", calculated_checksum);
+
     // validate checksum
-    if ((unsigned int)calculated_checksum != (unsigned int)checksum)
+    if ((char)calculated_checksum != checksum)
     {
         #ifdef DEBUG_LDK2M
-        Serial.printf("LDK2M:    Checksum Invaid! %X != %X\n",calculated_checksum,(unsigned int)checksum);
+        Serial.printf("LDK2M:    Checksum Invaid! %X != %X\n",(char) calculated_checksum, checksum);
         #endif
 
         Serial.println("LDK2M:    Checksum invalid!");
@@ -272,9 +311,11 @@ int LDK_2M::parseResponse(char raw_message[], lidar_received_msg* msg)
 float LDK_2M::getMeasurement()
 {
     
-    float distance = -1.0; // Distance returned by LIDAR
-    char generated_command[LIDAR_SEND_COMMAND_SIZE]; // Command to send to LIDAR
+    static float distance; // Distance returned by LIDAR
+    static char generated_command[LIDAR_SEND_COMMAND_SIZE]; // Command to send to LIDAR
     lidar_received_msg received_msg;
+
+    distance = -1.0;
 
     // Generate lidar single measurement command and send
     #ifdef DEBUG_LDK2M
@@ -296,6 +337,7 @@ float LDK_2M::getMeasurement()
     Serial.println("LDK2M:    (Get measurement 2/4) Read response");
     #endif
 
+    delay(10);
     if (!readMsgFromUart(buffer))
     {
         return 0;
@@ -312,6 +354,8 @@ float LDK_2M::getMeasurement()
         distance = toDistance(received_msg.data);
     } else {
         Serial.println("Parsing failed!");
+        flushSerial1();
+        eraseBuffer();
         return -1;
     }
     
@@ -321,6 +365,10 @@ float LDK_2M::getMeasurement()
     Serial.println("LDK2M:    (Get measurement 4/4) Return response");
     #endif
 
+
+    flushSerial1();
+    eraseBuffer();
+    
     return distance;
 }
 
@@ -343,6 +391,9 @@ void LDK_2M::toggleLaser()
         laser_on = true;
     }
     Serial1.write(generated_command);
+
+    flushSerial1();
+    eraseBuffer();
 }
 
 void LDK_2M::toggleLaser(bool mode)
@@ -366,4 +417,6 @@ void LDK_2M::toggleLaser(bool mode)
     Serial1.write(generated_command);
     Serial.println("LDK2M:    (Toggle laser 2/2) Send command");
 
+    flushSerial1();
+    eraseBuffer();
 }

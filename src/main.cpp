@@ -73,7 +73,6 @@ while(true){
 
         Serial << "calibrate\n";
         sh.calibrate();
-        sh.staticAlign();
         strcmd = "";
 
     } else if (!strcmp(cmd, "shot")) { // Collect inertial alignment data
@@ -81,10 +80,16 @@ while(true){
         Serial << "shot\n";
         sh.takeShot();
 
-        Serial.printf("Shot measurement: %f %f\n", sh.getCardan()(0), sh.getCardan()(1));
-        Vector3f meas = sh.getFinalMeasurement();
-        Serial.printf("Final measurement: %f %f %f\n", meas(0), meas(1), meas(2));
-        strcmd = "";
+        ShotData sd = sh.getShotData();
+        Vector3f HIR = sh.getCardan();
+
+        Serial.printf("Final measurement: %f %f %f\n", sd.HIR(0), sd.HIR(1), sd.d);
+        Serial.printf("Final vec: %f %f %f\n", sd.v(0), sd.v(1), sd.v(2));
+        // Serial.printf("Magnetic measurement: %f %f %f\n",sd.m(0),sd.m(1),sd.m(2));
+        // Serial.printf("Gravitational measurement: %f %f %f\n",sd.g(0),sd.g(1),sd.g(2));
+        // Serial.printf("Laser measurement: %f\n", sd.d);
+
+        strcmd = ""; 
 
 
     } else if (!strcmp(cmd, "erase")) { // Collect inertial alignment data
@@ -204,34 +209,14 @@ while(true){
         Serial << "Reset\n";
         sh.resetCalibration();
         strcmd = "";
-
-
-    } else if (!strcmp(cmd, "mag")) { // Reset calibration parameters
-        Serial << "Magnetometer: " << sh.getMagData()(0) << " " << sh.getMagData()(1) << " " << sh.getMagData()(2) << "\n";
-        Serial.printf("Mag norm: %f\n",sh.getMagData().norm());
-        sh.correctData();
-        Serial.printf("Mag corrceted norm: %f\n", sh.getMagData().norm());
-
-        strcmd = "";
-
-
-    } else if (!strcmp(cmd, "acc")) { // Reset calibration parameters
-        Serial << "Accelerometer: " << sh.getAccData()(0) << " " << sh.getAccData()(1) << " " << sh.getAccData()(2) << "\n";
-        strcmd = "";
-
-    } else if (!strcmp(cmd, "card")) { // Reset calibration parameters
-        Serial << "Cardan: " << sh.getCardan()(0) << " " << sh.getCardan()(1) << " " << sh.getCardan()(2) << "\n";
-        strcmd = "";
-
-
     } else {
         // Serial << "Update OLED\n";
         delay(50);
         // sh.takeShot(false,false);
         sh.update();
         orientation = sh.getCardan();
-        oled.Clino(-RAD_TO_DEG * orientation(1));
-        oled.Compass(-RAD_TO_DEG * orientation(0));
+        // oled.Clino(-RAD_TO_DEG * orientation(1));
+        // oled.Compass(-RAD_TO_DEG * orientation(0));
     }  
 
     cmd = "";
@@ -241,13 +226,17 @@ while(true){
 
 void setup() {
     Serial.begin(115200);
-    Serial << "Begin beaning\n";
+    Serial << "Begin beaning...\n\n";
     sh.init();
-    Serial << "SensorHandler initialised!\n";
-    oled.Initialise();
 
+    Serial << "SensorHandler initialised, initialising OLED...\n\n";
+    //oled.Initialise();
+
+    Serial << "OLED initialised, testing magnetometer and accelerometer...\n";
     Serial.printf("Mag data: %f %f %f\n",sc_magnetometer.getMeasurement()(0),sc_magnetometer.getMeasurement()(1),sc_magnetometer.getMeasurement()(2));
     Serial.printf("Aacc data: %f %f %f\n",sc_accelerometer.getMeasurement()(0),sc_accelerometer.getMeasurement()(1),sc_accelerometer.getMeasurement()(2));
+
+    Serial << "Initialisation succesful, starting tasks...\n\n";
 
     TaskHandle_t hardware_handle;
     xTaskCreatePinnedToCore(

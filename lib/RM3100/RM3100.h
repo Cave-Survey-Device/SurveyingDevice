@@ -40,7 +40,7 @@ private:
     const int initialCC = 200;
     const bool singleMode = false;
     bool useDRDYPin = true;
-    uint8_t pin_drdy = 4;
+    uint8_t pin_drdy = 14;
     RM3100data mag_data;
 
     uint8_t revid;

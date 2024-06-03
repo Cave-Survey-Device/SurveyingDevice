@@ -29,7 +29,7 @@ Vector3f RM3100SensorConnection::getMeasurement()
     Vector3f data;
     // Div by 45 to come closer to normalised
     // Convert from NED to ENU
-    data << rm3100_connection.getX()/45, -rm3100_connection.getY()/45, -rm3100_connection.getZ()/45;
+    data << rm3100_connection.getX()/50, -rm3100_connection.getY()/50, -rm3100_connection.getZ()/50;
     // Serial << "RM3100 data: ";
     // displayRowVec(data);
     return data;

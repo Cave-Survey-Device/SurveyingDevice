@@ -102,6 +102,7 @@ RowVector<float,10> fitEllipsoid(const Ref<const MatrixXf> &samples)
         if(eval[i] >= max_eval) {
             max_eval = eval[i];
             u1 = evec.col(i);
+        }
     }
     if (max_eval < 0.0)
     {

@@ -29,6 +29,8 @@ void SensorHandler::resetCalibration()
     calib_parms.ba_cal.setZero();
     calib_parms.bm_cal.setZero();
     calib_parms.inclination_angle = 0;
+    static_calib_progress = 0;
+    las_calib_progress = 0;
 }
 
 void SensorHandler::update()
@@ -43,34 +45,36 @@ void SensorHandler::update()
     mag_data /= N_UPDATE_SAMPLES;
     acc_data /= N_UPDATE_SAMPLES;
 
-    correctData();
+    // Store corrected data in corrected_acc_data and corrected_mag_data
+    correctData(corrected_acc_data,corrected_mag_data);
 }
 
-Vector3f SensorHandler::getCardan()
+Vector3f SensorHandler::getCardan(bool corrected)
 {
-    return NumericalMethods::inertialToCardan(acc_data, mag_data);
+    if (corrected) 
+    {
+        return NumericalMethods::inertialToCardan(corrected_acc_data, corrected_mag_data);
+    }   else    {
+        return NumericalMethods::inertialToCardan(acc_data, mag_data);
+    }
 }
-Vector3f SensorHandler::getCartesian()
+Vector3f SensorHandler::getCartesian(bool corrected)
 {
-    return NumericalMethods::inertialToCartesian(acc_data, mag_data);
-
+    if (corrected) 
+    {
+        return NumericalMethods::inertialToVector(corrected_acc_data, corrected_mag_data);
+    }   else    {
+        return NumericalMethods::inertialToVector(acc_data, mag_data);
+    }
 }
-Vector3f SensorHandler::getFinalMeasurement()
+ShotData SensorHandler::getShotData(bool corrected)
 {
-    static Vector3f cartesian, cardan, out;
-    correctData();
-    // cartesian = NumericalMethods ::inertialToCartesian(acc_data,mag_data);
-
-    // Heading, Inclination, Distance
-    // Use of -ve to convert from RH cardan to LH heading and inclination
-    out << -NumericalMethods::inertialToCardan(acc_data,mag_data);
-    out(2) = las_data+DEVICE_LENGTH;
-    return out;
-}
-
-ShotData SensorHandler::getShotData()
-{
-    return shot_data;
+    if (corrected) 
+    {
+        return corrected_shot_data;
+    }   else    {
+        return shot_data;
+    }
 }
 
 int SensorHandler::takeShot(const bool laser_reading, const bool use_stabilisation)
@@ -105,6 +109,7 @@ int SensorHandler::takeShot(const bool laser_reading, const bool use_stabilisati
     mag_data /= N_SHOT_SMAPLES;
     acc_data /= N_SHOT_SMAPLES;
 
+    
     if (laser_reading) { las_data = las.getMeasurement(); }
     if (las_data < 0) {return 1;}
 
@@ -112,16 +117,29 @@ int SensorHandler::takeShot(const bool laser_reading, const bool use_stabilisati
     shot_data.m = mag_data;
     shot_data.g = acc_data;
     shot_data.d = las_data;
+    shot_data.HIR = NumericalMethods::inertialToCardan(shot_data.m,shot_data.g);
+    shot_data.v = NumericalMethods::inertialToVector(shot_data.m,shot_data.g);
+
+    // Save corrected shot data in corrected_shot_data
+    correctData(corrected_shot_data.m, corrected_shot_data.g);
+    corrected_shot_data.HIR = NumericalMethods::inertialToCardan(corrected_shot_data.m,corrected_shot_data.g);
+    corrected_shot_data.v = NumericalMethods::inertialToVector(corrected_shot_data.m,corrected_shot_data.g);
+    corrected_shot_data.d = shot_data.d + DEVICE_LENGTH;
+
+
+
     
     Serial.printf("\nLaser measurement: %f \n", las_data);
+
+    las.toggleLaser(true);
 
     return 0;
 }
 
-void SensorHandler::correctData()
+void SensorHandler::correctData(Vector3f &m, Vector3f &g)
 {
-    mag_data = calib_parms.Rm_las * calib_parms.Rm_align * calib_parms.Rm_cal * (mag_data - calib_parms.bm_cal);
-    acc_data = calib_parms.Ra_las * calib_parms.Ra_cal * (acc_data - calib_parms.ba_cal);
+    m = calib_parms.Rm_las * calib_parms.Rm_cal * (mag_data - calib_parms.bm_cal);
+    g = calib_parms.Ra_las * calib_parms.Ra_cal * (acc_data - calib_parms.ba_cal);
 }
 
 void SensorHandler::eraseFlash()
@@ -138,7 +156,7 @@ int SensorHandler::collectStaticCalibData()
     if (static_calib_progress >= N_ORIENTATIONS) { return N_ORIENTATIONS; }
 
     int index = 0;
-    int n_avg = 25;
+    int n_avg = 15;
     Vector3f g, m;
     for (int i=0; i<N_SAMPLES_PER_ORIENTATION;i++)
     {
@@ -192,44 +210,15 @@ int SensorHandler::calibrate()
 }
 int SensorHandler::align()
 {
-    //{
     Matrix<float,3,N_LASER_CAL> temp_acc_data = calib_parms.Ra_cal * (laser_calib_data.acc_data.colwise() - calib_parms.ba_cal);
-    // MatrixXf temp_mag_data = calib_parms.Rm_cal * (laser_calib_data.mag_data.colwise() - calib_parms.bm_cal);
-    // Using the laser data, align the sensors with the principal device axis
-    // NumericalMethods::alignLaser(
-    //     laser_calib_data.acc_data,laser_calib_data.mag_data,
-    //     calib_parms.Ra_las,calib_parms.Rm_las);  
-    // }
+    Matrix<float,3,N_LASER_CAL> temp_mag_data = calib_parms.Rm_cal * (laser_calib_data.mag_data.colwise() - calib_parms.bm_cal);
 
     NumericalMethods::alignToNorm(temp_acc_data, calib_parms.Ra_las);
-    calib_parms.Rm_las = calib_parms.Ra_las;
-
-    // {
-    // MatrixXf temp_acc_data = calib_parms.Ra_las * calib_parms.Ra_cal * (static_calib_data.acc_data.colwise() - calib_parms.ba_cal);
-    // MatrixXf temp_mag_data = calib_parms.Rm_las * calib_parms.Rm_cal * (static_calib_data.mag_data.colwise() - calib_parms.bm_cal);
-
-    // // Run fine-tuning alignment algorithm on the newly aligned data
-    // NumericalMethods::alignMagAcc(
-    //     temp_acc_data,
-    //     temp_mag_data,
-    //     calib_parms.Rm_align,calib_parms.inclination_angle);
-    // }
-
+    NumericalMethods::alignToNorm(temp_acc_data, calib_parms.Ra_las);
 
     return 0;
 }
-int SensorHandler::staticAlign()
-{
-    MatrixXf temp_acc_data = calib_parms.Ra_cal * (static_calib_data.acc_data.colwise() - calib_parms.ba_cal);
-    MatrixXf temp_mag_data = calib_parms.Rm_cal * (static_calib_data.mag_data.colwise() - calib_parms.bm_cal);
 
-    // Run fine-tuning alignment algorithm on the newly aligned data
-    NumericalMethods::alignMagAcc(
-        temp_acc_data,
-        temp_mag_data,
-        calib_parms.Rm_align,calib_parms.inclination_angle);
-    return 0;
-}
 void SensorHandler::saveCalibration()
 {
     EigenFileFuncs::writeToFile("static_calib","acc_data", static_calib_data.acc_data);
@@ -244,7 +233,6 @@ void SensorHandler::saveCalibration()
 
     EigenFileFuncs::writeToFile("calib_parms","Ra_las", calib_parms.Ra_las);
     EigenFileFuncs::writeToFile("calib_parms","Rm_las", calib_parms.Rm_las);
-    EigenFileFuncs::writeToFile("calib_parms","Rm_align", calib_parms.Rm_align);
 }
 void SensorHandler::loadCalibration()
 {
@@ -260,7 +248,6 @@ void SensorHandler::loadCalibration()
 
     EigenFileFuncs::readFromFile("calib_parms","Ra_las", calib_parms.Ra_las);
     EigenFileFuncs::readFromFile("calib_parms","Rm_las", calib_parms.Rm_las);
-    EigenFileFuncs::readFromFile("calib_parms","Rm_align", calib_parms.Rm_align);
 }
 
 Vector3f SensorHandler::getMagData()

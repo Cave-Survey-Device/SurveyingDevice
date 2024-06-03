@@ -37,7 +37,7 @@ struct StaticCalibrationData{
 };
 
 struct ShotData{
-    Vector3f m,g;
+    Vector3f m, g, HIR, v;
     float d;
 };
 
@@ -61,8 +61,8 @@ private:
     DeviceCalibrationParameters calib_parms;
 
     // Data collected from sensors
-    ShotData shot_data;
-    Vector3f acc_data, mag_data;
+    ShotData shot_data, corrected_shot_data;
+    Vector3f acc_data, mag_data, corrected_acc_data, corrected_mag_data;
     float las_data;
 
 public:
@@ -79,14 +79,14 @@ public:
     const DeviceCalibrationParameters &getCalibParms();
 
     void update();
-    Vector3f getCardan();
-    Vector3f getCartesian();
-    Vector3f getFinalMeasurement();
+    Vector3f getCardan(bool corrected = true);
+    Vector3f getCartesian(bool corrected = true);
+    Vector3f getFinalMeasurement(bool corrected = true);
 
     void eraseFlash();
     void getFlashStats();
 
-    void correctData();
+    void correctData(Vector3f &m, Vector3f &g);
     
     void resetCalibration();
     void saveCalibration();
@@ -122,7 +122,7 @@ public:
     int staticAlign();
 
     Vector2f getDirection();
-    ShotData getShotData();
+    ShotData getShotData(bool corrected = true);
 
 
     void setCalibParms(const DeviceCalibrationParameters &parms);

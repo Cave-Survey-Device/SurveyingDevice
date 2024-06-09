@@ -60,6 +60,20 @@ void readFromFile(const char* fname, const char* name, float* data, int size)
     preferences.end();
 }
 
+void writeToFile(const char* fname, const char* name, const void* data, size_t size)
+{
+    preferences.begin(fname, false);
+    preferences.putBytes(name,data,size);
+    preferences.end();
+}
+void readFromFile(const char* fname, const char* name, void* data, size_t size)
+{
+    preferences.begin(fname, true);
+    preferences.getBytes(name,data,size);
+    preferences.end();
+}
+
+
 void erase_flash()
 {
   Serial.println("ERASING FLASH...");

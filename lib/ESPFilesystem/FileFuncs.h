@@ -24,6 +24,9 @@ void readFromFile(const char* fname, const char* vname, String& data);
 void writeToFile(const char* fname, const char* vname, const float* data, int size);
 void readFromFile(const char* fname, const char* vname, float* data, int size);
 
+void writeToFile(const char* fname, const char* vname, const void* data, size_t size);
+void readFromFile(const char* fname, const char* vname, void* data, size_t size);
+
 void erase_flash();
 void getStatus();
 }

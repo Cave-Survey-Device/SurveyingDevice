@@ -1,6 +1,25 @@
 #include "SensorHandler.h"
 #include <queue>
 
+void saveShotData(const ShotData sd, const unsigned int fileID)
+{
+    static char fname[5];
+    static char varname[3];
+    sprintf(fname,"SD%3hhu", fileID);
+    sprintf(varname,"%3i", sd.ID);
+    FileFuncs::writeToFile(fname,varname,&sd,sizeof(ShotData));
+}
+void readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID)
+{
+    static char fname[5];
+    static char varname[3];
+    static float value[4];
+    sprintf(fname,"SD%3hhu", fileID);
+    sprintf(varname,"%3i", shotID);
+    FileFuncs::readFromFile(fname,varname,&sd,sizeof(ShotData));
+}
+
+
 // IMPORTANT: References are immutable and must be definied upon initialisation!
 SensorHandler::SensorHandler(Accelerometer &a, Magnetometer &m, Laser &l):acc(a), mag(m), las(l){}
 

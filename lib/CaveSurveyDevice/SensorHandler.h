@@ -39,7 +39,11 @@ struct StaticCalibrationData{
 struct ShotData{
     Vector3f m, g, HIR, v;
     float d;
+    int ID;
 };
+
+void saveShotData(const ShotData sd);
+void readShotData(ShotData &sd);
 
 class SensorHandler
 {
@@ -117,12 +121,16 @@ public:
      */
     int collectLaserCalibData();
 
+    void removePrevCalib(bool static_calib);
+    int getCalibProgress(bool static_calib);
+
     int calibrate();
     int align();
     int staticAlign();
 
     Vector2f getDirection();
     ShotData getShotData(bool corrected = true);
+
 
 
     void setCalibParms(const DeviceCalibrationParameters &parms);

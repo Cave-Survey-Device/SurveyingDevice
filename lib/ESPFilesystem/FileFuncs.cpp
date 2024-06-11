@@ -35,6 +35,17 @@ void readFromFile(const char* fname, const char* name, int& data){
   preferences.end();
 }
 
+void writeToFile(const char* fname, const char* name, const unsigned int data){
+  preferences.begin(fname, false);
+  preferences.putUInt(name,data);
+  preferences.end();
+}
+void readFromFile(const char* fname, const char* name, unsigned int& data){
+  preferences.begin(fname, false);
+  preferences.getUInt(name,data);
+  preferences.end();
+}
+
 void writeToFile(const char* fname, const char* name, const String data){
   preferences.begin(fname, false);
   preferences.putString(name,data);
@@ -45,7 +56,6 @@ void readFromFile(const char* fname, const char* name, String& data){
   preferences.getString(name,data);
   preferences.end();
 }
-
 
 void writeToFile(const char* fname, const char* name, const float* data, int size)
 {

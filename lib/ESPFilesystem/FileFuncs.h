@@ -18,6 +18,9 @@ void readFromFile(const char* fname, const char* vname, double& data);
 void writeToFile(const char* fname, const char* vname, const int data);
 void readFromFile(const char* fname, const char* vname, int& data);
 
+void writeToFile(const char* fname, const char* vname, const unsigned int data);
+void readFromFile(const char* fname, const char* vname, unsigned int& data);
+
 void writeToFile(const char* fname, const char* vname, const String data);
 void readFromFile(const char* fname, const char* vname, String& data);
 

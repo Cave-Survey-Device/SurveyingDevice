@@ -1,41 +1,70 @@
 #include "SensorHandler.h"
 #include <queue>
 
-void saveShotData(const ShotData sd, const unsigned int fileID)
+void getFileName(const unsigned int fileID, char (&fname)[FNAME_LENGTH])
 {
+    sprintf(fname,"SD%3hhu", fileID);
+}
+void getVarName(const unsigned int counter, char (&varname)[VARNAME_LENGTH])
+{
+    sprintf(varname,"%3i", counter+1);
+}
+void getCounter(const unsigned int fileID, unsigned int &counter)
+{
+    char fname[FNAME_LENGTH];
+    getFileName(fileID, fname);
+    FileFuncs::readFromFile(fname,"counter",counter);
+}
+void setCounter(const unsigned int fileID, const unsigned int &counter)
+{
+    char fname[FNAME_LENGTH];
+    getFileName(fileID, fname);
+    FileFuncs::writeToFile(fname,"counter",counter);
+}
+void saveShotData(const ShotData &sd, const unsigned int fileID)
+{
+    static unsigned int counter;
     static char fname[5];
     static char varname[3];
-    sprintf(fname,"SD%3hhu", fileID);
-    sprintf(varname,"%3i", sd.ID);
-    FileFuncs::writeToFile(fname,varname,&sd,sizeof(ShotData));
+    getFileName(fileID,fname);
+    getCounter(fileID, counter); // Get latest shot ID
+    getVarName(counter+1,varname); // Save shot as latest shot ID + 1
+    setCounter(fileID,counter+1); // Set counter to reflect latest shot ID
+    FileFuncs::writeToFile(fname,varname,&sd,sizeof(ShotData)); // Save the shot
 }
 void readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID)
 {
     static char fname[5];
     static char varname[3];
     static float value[4];
-    sprintf(fname,"SD%3hhu", fileID);
-    sprintf(varname,"%3i", shotID);
+    getFileName(fileID,fname);
+    getVarName(shotID,varname);
     FileFuncs::readFromFile(fname,varname,&sd,sizeof(ShotData));
 }
-
+void readShotData(ShotData &sd, unsigned int fileID)
+{
+    static unsigned int counter;
+    getCounter(fileID, counter); // Get latest shot ID
+    readShotData(sd,fileID,counter);
+}
 
 // IMPORTANT: References are immutable and must be definied upon initialisation!
 SensorHandler::SensorHandler(Accelerometer &a, Magnetometer &m, Laser &l):acc(a), mag(m), las(l){}
 
 void SensorHandler::init()
 {
-    Serial.print("Acc init...\n");
+    Debug::debug(Debug::DEBUG_SENSOR, "Acc init...");
     acc.init();
-    Serial.print("Mag init...\n");
+    Debug::debug(Debug::DEBUG_SENSOR, "Mag init...");
     mag.init();
-    Serial.print("Las init...\n");
+    Debug::debug(Debug::DEBUG_SENSOR, "Las init...");
     las.init();
 
+    Debug::debug(Debug::DEBUG_SENSOR, "Turning laser off...");
     las.toggleLaser(false);
 
-    // Should be loadCalibration
-    resetCalibration();
+    Debug::debug(Debug::DEBUG_SENSOR, "Loading calibration...");
+    loadCalibration();
 }
 
 void SensorHandler::resetCalibration()
@@ -148,7 +177,7 @@ int SensorHandler::takeShot(const bool laser_reading, const bool use_stabilisati
 
 
     
-    Serial.printf("\nLaser measurement: %f \n", las_data);
+    Debug::debugf(Debug::DEBUG_SENSOR,"Laser measurement: %f ", las_data);
 
     las.toggleLaser(true);
 
@@ -206,7 +235,7 @@ int SensorHandler::collectLaserCalibData()
     if (las_calib_progress >= N_LASER_CAL) { return N_LASER_CAL; }
 
     if (takeShot()) {
-        Serial.print("Shot failed! Try again.\n");
+        Debug::debug(Debug::DEBUG_SENSOR,"Shot failed! Try again.");
         return las_calib_progress;
     }
 
@@ -267,6 +296,16 @@ void SensorHandler::loadCalibration()
 
     EigenFileFuncs::readFromFile("calib_parms","Ra_las", calib_parms.Ra_las);
     EigenFileFuncs::readFromFile("calib_parms","Rm_las", calib_parms.Rm_las);
+}
+
+void SensorHandler::removePrevCalib(bool static_calib)
+{
+    // To implement
+}
+
+int SensorHandler::getCalibProgress(bool static_calib)
+{
+    return static_calib_progress + las_calib_progress;
 }
 
 Vector3f SensorHandler::getMagData()

@@ -5,7 +5,10 @@
 #include <NumericalMethods.h>
 #include "Sensors.h"
 #include <EigenFileFuncs.h>
+#include <debug.h>
 
+#define FNAME_LENGTH 5
+#define VARNAME_LENGTH 3
 
 using namespace Eigen;
 
@@ -42,8 +45,13 @@ struct ShotData{
     int ID;
 };
 
-void saveShotData(const ShotData sd);
-void readShotData(ShotData &sd);
+void getFileName(const unsigned int fileID, char (&fname)[FNAME_LENGTH]);
+void getVarName(const unsigned int counter, char (&varname)[VARNAME_LENGTH]);
+void getCounter(const unsigned int fileID, unsigned int &counter);
+void setCounter(const unsigned int fileID, const unsigned int &counter);
+void saveShotData(const ShotData &sd, const unsigned int fileID);
+void readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID);
+void readShotData(ShotData &sd, unsigned int fileID);
 
 class SensorHandler
 {

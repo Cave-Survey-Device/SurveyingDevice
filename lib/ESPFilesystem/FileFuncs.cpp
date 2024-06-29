@@ -2,87 +2,124 @@
 
 namespace FileFuncs
 {
-void writeToFile(const char* fname, const char* name, const float data){
-  preferences.begin(fname, false);
-  preferences.putFloat(name,data);
+bool locationExists(const char* fname, const char* vname)
+{
+  if (preferences.begin(fname, true))
+  {
+    if (preferences.isKey(vname))
+    {
+        preferences.end();
+        return true;
+    }
+    Serial.print("ERROR: Key does not exist in file\n");
+  }
+  Serial.print("ERROR: file does not exist\n");
   preferences.end();
-}
-void readFromFile(const char* fname, const char* name, float& data){
-  preferences.begin(fname, false);
-  preferences.getFloat(name,data);
-  preferences.end();
-}
-
-void writeToFile(const char* fname, const char* name, const double data){
-  preferences.begin(fname, false);
-  preferences.putDouble(name,data);
-  preferences.end();
-}
-void readFromFile(const char* fname, const char* name, double& data){
-  preferences.begin(fname, false);
-  preferences.getDouble(name,data);
-  preferences.end();
+  return false;
 }
 
-void writeToFile(const char* fname, const char* name, const int data){
+void writeToFile(const char* fname, const char* vname, const float data){
   preferences.begin(fname, false);
-  preferences.putInt(name,data);
+  preferences.putFloat(vname,data);
   preferences.end();
 }
-void readFromFile(const char* fname, const char* name, int& data){
-  preferences.begin(fname, false);
-  preferences.getInt(name,data);
+bool readFromFile(const char* fname, const char* vname, float& data){
+  if (!locationExists(fname,vname)) { return false; }
+  preferences.begin(fname, true);
+  data = preferences.getFloat(vname);
   preferences.end();
-}
-
-void writeToFile(const char* fname, const char* name, const unsigned int data){
-  preferences.begin(fname, false);
-  preferences.putUInt(name,data);
-  preferences.end();
-}
-void readFromFile(const char* fname, const char* name, unsigned int& data){
-  preferences.begin(fname, false);
-  preferences.getUInt(name,data);
-  preferences.end();
+  return true;
 }
 
-void writeToFile(const char* fname, const char* name, const String data){
+void writeToFile(const char* fname, const char* vname, const double data){
   preferences.begin(fname, false);
-  preferences.putString(name,data);
+  preferences.putDouble(vname,data);
   preferences.end();
 }
-void readFromFile(const char* fname, const char* name, String& data){
-  preferences.begin(fname, false);
-  preferences.getString(name,data);
+bool readFromFile(const char* fname, const char* vname, double& data){
+  if (!locationExists(fname,vname)) { return false; }
+  preferences.begin(fname, true);
+  data = preferences.getDouble(vname);
   preferences.end();
+  return true;
 }
 
-void writeToFile(const char* fname, const char* name, const float* data, int size)
+void writeToFile(const char* fname, const char* vname, const int data){
+  preferences.begin(fname, false);
+  preferences.putInt(vname,data);
+  preferences.end();
+}
+bool readFromFile(const char* fname, const char* vname, int& data){
+  if (!locationExists(fname,vname)) { return false; }
+  preferences.begin(fname, true);
+  data = preferences.getInt(vname);
+  preferences.end();
+  return true;
+}
+
+void writeToFile(const char* fname, const char* vname, const unsigned int data){
+  preferences.begin(fname, false);
+  preferences.putUInt(vname,data);
+  preferences.end();
+}
+bool readFromFile(const char* fname, const char* vname, unsigned int& data){
+  if (!locationExists(fname,vname)) {
+    return false;
+  }
+  preferences.begin(fname, true);
+  data = preferences.getUInt(vname);
+  preferences.end();
+  return true;
+}
+
+void writeToFile(const char* fname, const char* vname, const String data){
+  preferences.begin(fname, false);
+  preferences.putString(vname,data);
+  preferences.end();
+}
+bool readFromFile(const char* fname, const char* vname, String& data){
+  if (!locationExists(fname,vname)) { return false; }
+  preferences.begin(fname, true);
+  data = preferences.getString(vname);
+  preferences.end();
+  return true;
+}
+
+void writeToFile(const char* fname, const char* vname, const float* data, int size)
 {
     preferences.begin(fname, false);
-    preferences.putBytes(name,data,size*sizeof(float));
+    preferences.putBytes(vname,data,size*sizeof(float));
     preferences.end();
 }
-void readFromFile(const char* fname, const char* name, float* data, int size)
+bool readFromFile(const char* fname, const char* vname, float* data, int size)
 {
-    preferences.begin(fname, true);
-    preferences.getBytes(name,data,size*sizeof(float));
-    preferences.end();
+  if (!locationExists(fname,vname)) { return false; }
+  preferences.begin(fname, true);
+  preferences.getBytes(vname,data,size*sizeof(float));
+  preferences.end();
+  return true;
 }
 
-void writeToFile(const char* fname, const char* name, const void* data, size_t size)
+void writeToFile(const char* fname, const char* vname, const void* data, size_t size)
 {
     preferences.begin(fname, false);
-    preferences.putBytes(name,data,size);
+    preferences.putBytes(vname,data,size);
     preferences.end();
 }
-void readFromFile(const char* fname, const char* name, void* data, size_t size)
+bool readFromFile(const char* fname, const char* vname, void* data, size_t size)
 {
-    preferences.begin(fname, true);
-    preferences.getBytes(name,data,size);
-    preferences.end();
+  if (!locationExists(fname,vname)) { return false; }
+  preferences.begin(fname, true);
+  preferences.getBytes(vname,data,size);
+  preferences.end();
+  return true;
 }
 
+bool isKey(const char* fname, const char* key)
+{
+    preferences.begin(fname, true);
+    return preferences.isKey(key);
+}
 
 void erase_flash()
 {

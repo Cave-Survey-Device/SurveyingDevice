@@ -28,97 +28,129 @@ void DisplayHandler::Initialise() {
 	display.display();
 }
 
-void DisplayHandler::drawCompass() {
-	display.fillRect(0, 0, SCREEN_WIDTH, 28, SH110X_WHITE);
+void DisplayHandler::drawCentered(String str, int cx, int cy, int size)
+{
+	display.setTextSize(size);
+	display.setCursor(cx - str.length()/2*size*6, cy-size*6/2);
+	display.print(str);
+}
+
+void DisplayHandler::drawCalib(CompassDirection pointing, CompassDirection facing)
+{
+	String str;
+	display.fillRect(0, 0, SCREEN_WIDTH, 28, SH110X_BLACK);
+	drawCentered("CALIB",SCREEN_WIDTH/2,7,2);
+
+	drawCentered("Pointing",SCREEN_WIDTH/4,25,1);
+	drawCentered("WEST",SCREEN_WIDTH/4,30,1);
+
+	drawCompassDirection(SCREEN_WIDTH/4,90,28,3,pointing);
+
+	drawCentered("Facing",3*SCREEN_WIDTH/4,25,1);
+	drawCentered("NORTH",3*SCREEN_WIDTH/4,30,1);
+
+	drawCompassDirection(3*SCREEN_WIDTH/4,90,28,3,facing);
+
+}
+
+void DisplayHandler::drawCompass(int cx, int cy, int line_length, int arrow_length) {
+	// display.fillRect(0, 0, SCREEN_WIDTH, 28, SH110X_WHITE);
 	display.drawLine(cx-line_length,cy, cx+line_length, cy,SH110X_WHITE);
 	display.drawLine(cx,cy-line_length, cx, cy+line_length,SH110X_WHITE);
 
 	// North Triangle
 	display.fillTriangle( 	cx,cy+line_length,
-							cx-5,cy+line_length-5,
-							cx+5,cy+line_length-5,
+							cx-arrow_length,cy+line_length-arrow_length,
+							cx+arrow_length,cy+line_length-arrow_length,
 							SH110X_WHITE);
 
 	// South Triangle
 	display.fillTriangle( 	cx,cy-line_length,
-							cx-5,cy-line_length+5,
-							cx+5,cy-line_length+5,
+							cx-arrow_length,cy-line_length+arrow_length,
+							cx+arrow_length,cy-line_length+arrow_length,
 							SH110X_WHITE);
 
 	// East Triangle
 	display.fillTriangle( 	cx+line_length,cy,
-							cx+line_length-5,cy-5,
-							cx+line_length-5,cy+5,
+							cx+line_length-arrow_length,cy-arrow_length,
+							cx+line_length-arrow_length,cy+arrow_length,
 							SH110X_WHITE);
 
   // West Triangle
 	display.fillTriangle( 	cx-line_length,cy,
-							cx-line_length+5,cy-5,
-							cx-line_length+5,cy+5,
+							cx-line_length+arrow_length,cy-arrow_length,
+							cx-line_length+arrow_length,cy+arrow_length,
 							SH110X_WHITE);
 }
 
-void DisplayHandler::drawCompassDirection(CompassDirection direction)
+void DisplayHandler::drawCompassDirection(int cx, int cy, int line_length, int arrow_length, CompassDirection direction)
 {
-	int end_x,end_y;
 	float angle;
-	end_x = cx;
-	end_y = line_length;
 	switch(direction)
 	{
 		case NORTH:
 		angle = 0;
-		// end_x = cx;
-		// end_y = cy+line_length;
 		break;
 
 		case NORTH_EAST:
 		angle = M_PI_4;
-		// end_x = cx+line_length/M_SQRT2;
-		// end_y = cy+line_length/M_SQRT2;
 		break;
 
 		case EAST:
 		angle = 2*M_PI_4;
-		// end_x = cx;
-		// end_y = cy+line_length;
 		break;
 
 		case SOUTH_EAST:
 		angle = 3*M_PI_4;
-		// end_x = cx+line_length/M_SQRT2;
-		// end_y = cy-line_length/M_SQRT2;
 		break;
 
 		case SOUTH:
 		angle = 4*M_PI_4;
-		// end_x = cx;
-		// end_y = cy-line_length;
 		break;
 
 		case SOUTH_WEST:
 		angle = 5*M_PI_4;
-		// end_x = cx-line_length/M_SQRT2;
-		// end_y = cy-line_length/M_SQRT2;
 		break;
 
 		case WEST:
 		angle = 6*M_PI_4;
-		// end_x = cx;
-		// end_y = cy-line_length;
 		break;
 
 		case NORTH_WEST:
 		angle = 7*M_PI_4;
-		// end_x = cx-line_length/M_SQRT2;
-		// end_y = cy+line_length/M_SQRT2;
 		break;
 	}
 
-	Point p_end(end_x,end_y);
-	Point p_rotated = rotatePoint(p_end,cx,cy,angle);
+	drawCompass(cx,cy,line_length,arrow_length);
 
-	display.drawLine(cx, cy, p_rotated.x, p_rotated.y,SH110X_WHITE);
+	Point p_default(cx,cy-line_length);
+	Point p_start(cx,cy);
+	Point p_end(cx,cy-line_length);
+	p_end = rotatePoint(p_end,cx,cy,angle);
+	display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
+
+
+	for (int i=0; i<3; i++)
+	{
+		// Draw first chevron
+		p_start.x = p_default.x;
+		p_start.y = p_default.y + i*arrow_length;
+		p_end.x = p_start.x - arrow_length;
+		p_end.y = p_start.y + arrow_length;
+		p_end = rotatePoint(p_end,cx,cy,angle);
+		p_start = rotatePoint(p_start,cx,cy,angle);
+		display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
+
+		p_start.x = p_default.x;
+		p_start.y = p_default.y + i*arrow_length;
+		p_end.x = p_start.x + arrow_length;
+		p_end.y = p_start.y + arrow_length;
+		p_end = rotatePoint(p_end,cx,cy,angle);
+		p_start = rotatePoint(p_start,cx,cy,angle);
+		display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
+	}
+
+
 }
 
 void DisplayHandler::Distance(double distance) {

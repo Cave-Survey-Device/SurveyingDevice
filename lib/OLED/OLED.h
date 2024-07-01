@@ -35,7 +35,9 @@ enum CompassDirection
   SOUTH,
   SOUTH_WEST,
   WEST,
-  NORTH_WEST
+  NORTH_WEST,
+  UP,
+  DOWN
 };
 
 
@@ -56,8 +58,10 @@ class DisplayHandler {
     
 
     void displayTopBar(bool bluetooth, int battery_level, int status);
-    void drawCompass();
-    void drawCompassDirection(CompassDirection direction);
+    void drawCentered(String str, int cx, int cy,int size);
+    void drawCalib(CompassDirection pointing, CompassDirection facing);
+    void drawCompass(int cx, int cy, int line_length, int arrow_length);
+    void drawCompassDirection(int cx, int cy, int line_length, int arrow_length, CompassDirection direction);
     void displayOrientation();
     void displayShot();
     void displayCalibSaveYN();
@@ -73,9 +77,8 @@ class DisplayHandler {
 
   private:
     
-    const int line_length = 40;
-    const int cx = SCREEN_WIDTH/2;
-    const int cy = TOP_BAR_HEIGHT + (SCREEN_HEIGHT - TOP_BAR_HEIGHT)/2;
+    const int canvas_center_x = SCREEN_WIDTH/2;
+    const int canvas_center_y = TOP_BAR_HEIGHT + (SCREEN_HEIGHT - TOP_BAR_HEIGHT)/2;
 
     Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000, 100000);
     //Adafruit_SSD1327 display = Adafruit_SSD1327(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000);

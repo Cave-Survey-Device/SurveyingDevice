@@ -40,6 +40,20 @@ enum CompassDirection
   DOWN
 };
 
+const char directionsArr[10][11] 
+{
+  "   NORTH  ",
+  "NORTH EAST",
+  "   EAST   ",
+  "SOUTH EAST",
+  "   SOUTH  ",
+  "SOUTH WEST",
+  "   WEST   ",
+  "NORTH WEST",
+  "    UP    ",
+  "   DOWN   "
+};
+
 
 class DisplayHandler {
   public:
@@ -64,7 +78,8 @@ class DisplayHandler {
     void drawCompassDirection(int cx, int cy, int line_length, int arrow_length, CompassDirection direction);
     void displayOrientation();
     void displayShot();
-    void displayCalibSaveYN();
+    void displayYN(const char prompt[11], bool YN);
+    void displayYN(const char prompt_top[11], const char prompt_btm[11], bool YN);
     void displayData();
 
     double batt_voltage;

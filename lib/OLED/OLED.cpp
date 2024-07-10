@@ -15,7 +15,7 @@ OLED::Point OLED::rotatePoint(const OLED::Point p, const int cx, const int cy , 
                   	std::round(sin(rads) * (p.x - cx) + cos(rads) * (p.y - cy) + cy));
 }
 
-DisplayHandler::DisplayHandler() {
+OLED::DisplayHandler::DisplayHandler() {
 }
 
 void DisplayHandler::Initialise() {
@@ -31,26 +31,26 @@ void DisplayHandler::Initialise() {
 void DisplayHandler::drawCentered(String str, int cx, int cy, int size)
 {
 	display.setTextSize(size);
-	display.setCursor(cx - str.length()/2*size*6, cy-size*6/2);
+	display.setCursor(cx - (int)((str.length()/2.0)*size*6), cy-size*6/2);
 	display.print(str);
 }
 
 void DisplayHandler::drawCalib(CompassDirection pointing, CompassDirection facing)
+
 {
 	String str;
 	display.fillRect(0, 0, SCREEN_WIDTH, 28, SH110X_BLACK);
 	drawCentered("CALIB",SCREEN_WIDTH/2,7,2);
 
 	drawCentered("Pointing",SCREEN_WIDTH/4,25,1);
-	drawCentered("WEST",SCREEN_WIDTH/4,30,1);
+	drawCentered(directionsArr[(int)pointing],SCREEN_WIDTH/4,40,1);
 
 	drawCompassDirection(SCREEN_WIDTH/4,90,28,3,pointing);
 
 	drawCentered("Facing",3*SCREEN_WIDTH/4,25,1);
-	drawCentered("NORTH",3*SCREEN_WIDTH/4,30,1);
+	drawCentered(directionsArr[(int)facing],3*SCREEN_WIDTH/4,40,1);
 
 	drawCompassDirection(3*SCREEN_WIDTH/4,90,28,3,facing);
-
 }
 
 void DisplayHandler::drawCompass(int cx, int cy, int line_length, int arrow_length) {
@@ -86,42 +86,69 @@ void DisplayHandler::drawCompass(int cx, int cy, int line_length, int arrow_leng
 void DisplayHandler::drawCompassDirection(int cx, int cy, int line_length, int arrow_length, CompassDirection direction)
 {
 	float angle;
+	float N_arrow = 1;
 	switch(direction)
 	{
+		case UP:
+		angle = 0;
+		N_arrow = 1;
+		break;
+
+		case DOWN:
+		angle = 180;
+		N_arrow = 1;
+		break;
+
 		case NORTH:
 		angle = 0;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case NORTH_EAST:
 		angle = M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case EAST:
 		angle = 2*M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case SOUTH_EAST:
 		angle = 3*M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case SOUTH:
 		angle = 4*M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case SOUTH_WEST:
 		angle = 5*M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case WEST:
 		angle = 6*M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
 
 		case NORTH_WEST:
 		angle = 7*M_PI_4;
+		N_arrow = 3;
+		drawCompass(cx,cy,line_length,arrow_length);
 		break;
+		
 	}
 
-	drawCompass(cx,cy,line_length,arrow_length);
 
 	Point p_default(cx,cy-line_length);
 	Point p_start(cx,cy);
@@ -130,9 +157,8 @@ void DisplayHandler::drawCompassDirection(int cx, int cy, int line_length, int a
 	display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
 
 
-	for (int i=0; i<3; i++)
+	for (int i=0; i<N_arrow; i++)
 	{
-		// Draw first chevron
 		p_start.x = p_default.x;
 		p_start.y = p_default.y + i*arrow_length;
 		p_end.x = p_start.x - arrow_length;
@@ -149,9 +175,85 @@ void DisplayHandler::drawCompassDirection(int cx, int cy, int line_length, int a
 		p_start = rotatePoint(p_start,cx,cy,angle);
 		display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
 	}
-
-
 }
+
+void DisplayHandler::displayYN(const char prompt[11], bool YN)
+{
+
+	const int prompt_height = canvas_center_y - 40;
+	const int selector_height = canvas_center_y - 10;
+
+	// String str(prompt);
+	drawCentered(prompt,canvas_center_x,prompt_height,2);
+
+	if (YN)
+	{
+		display.fillRect(	canvas_center_x - 60, selector_height - 15,
+							50, 30,
+							SH110X_WHITE);
+
+		display.fillRect(	canvas_center_x - 58,selector_height - 13,
+							46, 26,
+							SH110X_BLACK);
+
+		drawCentered("YES",canvas_center_x - 34, selector_height-1, 2);
+		drawCentered("NO",canvas_center_x + 34, selector_height-1, 2);
+
+	} else {
+
+		display.fillRect(	canvas_center_x + 8, selector_height - 15,
+							50, 30,
+							SH110X_WHITE);
+
+		display.fillRect(	canvas_center_x + 10, selector_height - 13,
+							46, 26,
+							SH110X_BLACK);
+
+		drawCentered("YES",canvas_center_x - 34, selector_height-1, 2);
+		drawCentered("NO",canvas_center_x + 34, selector_height-1, 2);
+	}
+}
+
+void DisplayHandler::displayYN(const char prompt_top[11], const char prompt_btm[11], bool YN)
+{
+
+	const int prompt_height = canvas_center_y - 40;
+	const int selector_height = canvas_center_y + 7;
+
+	// String str(prompt);
+	drawCentered(prompt_top,canvas_center_x,prompt_height,2);
+	drawCentered(prompt_btm,canvas_center_x,prompt_height+18,2);
+
+	if (YN)
+	{
+		display.fillRect(	canvas_center_x - 60, selector_height - 15,
+							50, 30,
+							SH110X_WHITE);
+
+		display.fillRect(	canvas_center_x - 58,selector_height - 13,
+							46, 26,
+							SH110X_BLACK);
+
+		drawCentered("YES",canvas_center_x - 34, selector_height-1, 2);
+		drawCentered("NO",canvas_center_x + 34, selector_height-1, 2);
+
+	} else {
+
+		display.fillRect(	canvas_center_x + 8, selector_height - 15,
+							50, 30,
+							SH110X_WHITE);
+
+		display.fillRect(	canvas_center_x + 10, selector_height - 13,
+							46, 26,
+							SH110X_BLACK);
+
+		drawCentered("YES",canvas_center_x - 34, selector_height-1, 2);
+		drawCentered("NO",canvas_center_x + 34, selector_height-1, 2);
+	}
+}
+
+
+
 
 void DisplayHandler::Distance(double distance) {
   display.fillRect(70, 30, 58, 98, SH110X_BLACK); //clears the old distance value

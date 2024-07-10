@@ -180,8 +180,8 @@ void DisplayHandler::drawCompassDirection(int cx, int cy, int line_length, int a
 void DisplayHandler::displayYN(const char prompt[11], bool YN)
 {
 
-	const int prompt_height = canvas_center_y - 40;
-	const int selector_height = canvas_center_y - 10;
+	const int prompt_height = canvas_center_y - 30;
+	const int selector_height = canvas_center_y;
 
 	// String str(prompt);
 	drawCentered(prompt,canvas_center_x,prompt_height,2);

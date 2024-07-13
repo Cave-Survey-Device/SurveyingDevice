@@ -9,24 +9,34 @@
 
 
 
+
 using namespace Debug;
 
 TaskHandle_t eventhandler_task;
 TaskHandle_t computefunc_task;
+TaskHandle_t passivehandler_task;
 
 #define long_hold_time_ms 2000
-#define NOTIFY_NONE       (uint32_t)0x0000
-#define NOTIFY_B1_PRESSED (uint32_t)0x0001
-#define NOTIFY_B2_PRESSED (uint32_t)0x0002
-#define NOTIFY_B3_PRESSED (uint32_t)0x0003
-#define NOTIFY_B4_PRESSED (uint32_t)0x0004
-#define NOTIFY_B5_PRESSED (uint32_t)0x0005
 
-#define NOTIFY_B1_RELEASED (uint32_t)0x0011
-#define NOTIFY_B2_RELEASED (uint32_t)0x0012
-#define NOTIFY_B3_RELEASED (uint32_t)0x0013
-#define NOTIFY_B4_RELEASED (uint32_t)0x0014
-#define NOTIFY_B5_RELEASED (uint32_t)0x0015
+#define NOTIFY_NONE (uint32_t)0
+#define NOTIFY_B1   (uint32_t)1
+#define NOTIFY_B2   (uint32_t)2
+#define NOTIFY_B3   (uint32_t)3
+#define NOTIFY_B4   (uint32_t)4
+#define NOTIFY_B5   (uint32_t)5
+
+// #define NOTIFY_NONE       (uint32_t)0
+// #define NOTIFY_B1_PRESSED (uint32_t)1
+// #define NOTIFY_B2_PRESSED (uint32_t)2
+// #define NOTIFY_B3_PRESSED (uint32_t)3
+// #define NOTIFY_B4_PRESSED (uint32_t)4
+// #define NOTIFY_B5_PRESSED (uint32_t)5
+
+// #define NOTIFY_B1_RELEASED (uint32_t)11
+// #define NOTIFY_B2_RELEASED (uint32_t)12
+// #define NOTIFY_B3_RELEASED (uint32_t)13
+// #define NOTIFY_B4_RELEASED (uint32_t)14
+// #define NOTIFY_B5_RELEASED (uint32_t)15
 
 // Centre
 #define PIN_BUTTON1 25
@@ -51,10 +61,12 @@ TaskHandle_t computefunc_task;
 #define ACTION_B4_LONG_PRESS    (uint32_t)0x0108
 
 static uint32_t eventhandlerNotifiedValue = 0x00;
+static uint32_t passivehandlerNotifiedValue = 0x00;
 static uint32_t computefuncNotifiedValue = 0x00;
 static uint32_t compute_notification = 0x00;
 static uint32_t event_notification = 0x00;
 static uint32_t action = 0x00;
+static uint32_t wait_id = 0x00;
 static bool timedout;
 
 static unsigned int current_timestamp;
@@ -72,7 +84,8 @@ enum ModeEnum
     HISTORY,
     BLUETOOTH,
     FILES,
-    CONFIG
+    CONFIG,
+    LOADING
 };
 static ModeEnum current_mode;
 static ModeEnum next_mode;
@@ -82,15 +95,11 @@ void initFreeRTOS(){
     next_mode = LASER_OFF;
 }
 
+
 void IRAM_ATTR ISR_b1_interrupt()
 {
-    // Set task tag
-    event_notification = NOTIFY_B1_RELEASED;
-    if (!digitalRead(PIN_BUTTON1))
-    {
-        event_notification = NOTIFY_B1_PRESSED;
-    }
 
+    event_notification = NOTIFY_B1;
     // Defines whether task has a higher priority task
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     
@@ -103,12 +112,7 @@ void IRAM_ATTR ISR_b1_interrupt()
 
 void IRAM_ATTR ISR_b2_interrupt()
 {
-    event_notification = NOTIFY_B2_RELEASED;
-    if (!digitalRead(PIN_BUTTON2))
-    {
-        event_notification = NOTIFY_B2_PRESSED;
-    }
-
+    event_notification = NOTIFY_B2;
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xTaskNotifyFromISR( eventhandler_task,
                         event_notification,
@@ -118,12 +122,7 @@ void IRAM_ATTR ISR_b2_interrupt()
 
 void IRAM_ATTR ISR_b3_interrupt()
 {
-    event_notification = NOTIFY_B3_RELEASED;
-    if (!digitalRead(PIN_BUTTON3))
-    {
-        event_notification = NOTIFY_B3_PRESSED;
-    }
-
+    event_notification = NOTIFY_B3;
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xTaskNotifyFromISR( eventhandler_task,
                         event_notification,
@@ -133,12 +132,7 @@ void IRAM_ATTR ISR_b3_interrupt()
 
 void IRAM_ATTR ISR_b4_interrupt()
 {
-    event_notification = NOTIFY_B4_RELEASED;
-    if (!digitalRead(PIN_BUTTON4))
-    {
-        event_notification = NOTIFY_B4_PRESSED;
-    }
-
+    event_notification = NOTIFY_B4;
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xTaskNotifyFromISR( eventhandler_task,
                         event_notification,
@@ -148,12 +142,7 @@ void IRAM_ATTR ISR_b4_interrupt()
 
 void IRAM_ATTR ISR_b5_interrupt()
 {
-    event_notification = NOTIFY_B5_RELEASED;
-    if (!digitalRead(PIN_BUTTON5))
-    {
-        event_notification = NOTIFY_B5_PRESSED;
-    }
-
+    event_notification = NOTIFY_B5;
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xTaskNotifyFromISR( eventhandler_task,
                         event_notification,
@@ -161,118 +150,105 @@ void IRAM_ATTR ISR_b5_interrupt()
                         &xHigherPriorityTaskWoken );
 }
 
-/**
- * @brief Handler function for b1 pressed
- * 
- * @return uint32_t 
- */
-uint32_t b1Waiting()
-{
-    // Look for another button interrupt
-    debug(DEBUG_ALWAYS,"b1Waiting");
-    timedout = !xTaskNotifyWait(0x00, ULONG_MAX, &eventhandlerNotifiedValue, pdMS_TO_TICKS(long_hold_time_ms));
-    if (timedout)
-    {
-        debug(DEBUG_ALWAYS,"NOTIFY_B1_LONG_PRESS");
-        return ACTION_B1_LONG_PRESS;
-    }
-    else if (eventhandlerNotifiedValue == NOTIFY_B1_RELEASED)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B1_SHORT_PRESS");
-        return ACTION_B1_SHORT_PRESS;
-    }
-    debug(DEBUG_ALWAYS,"---- NO NOTIFICATION FOUND ----");
-    return ACTION_NONE;
-}
-
-/**
- * @brief Handler function for b2 pressed
- * 
- * @return uint32_t 
- */
-uint32_t b2Waiting()
-{
-    debug(DEBUG_ALWAYS,"b2Waiting");
-    // Look for another button interrupt
-    timedout = !xTaskNotifyWait(0x00, ULONG_MAX, &eventhandlerNotifiedValue, pdMS_TO_TICKS(long_hold_time_ms));
-    if (timedout)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B2_LONG_PRESS");
-        return ACTION_B2_LONG_PRESS;
-    }
-    else if (eventhandlerNotifiedValue == NOTIFY_B2_RELEASED)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B2_SHORT_PRESS");
-        return ACTION_B2_SHORT_PRESS;
-    }
-    debug(DEBUG_ALWAYS,"---- NO NOTIFICATION FOUND ----");
-    return ACTION_NONE;
-}
-
-/**
- * @brief Handler function for b3 pressed
- * 
- * @return uint32_t 
- */
-uint32_t b3Waiting()
-{
-    debug(DEBUG_ALWAYS,"b3Waiting");
-    // Look for another button interrupt
-    timedout = !xTaskNotifyWait(0x00, ULONG_MAX, &eventhandlerNotifiedValue, pdMS_TO_TICKS(long_hold_time_ms));
-    if (timedout)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B3_LONG_PRESS");
-        return ACTION_B3_LONG_PRESS;
-    }
-    else if (eventhandlerNotifiedValue == NOTIFY_B3_RELEASED)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B3_SHORT_PRESS");
-        return ACTION_B3_SHORT_PRESS;
-    }
-    debug(DEBUG_ALWAYS,"---- NO NOTIFICATION FOUND ----");
-    return ACTION_NONE;
-}
-
-/**
- * @brief Handler function for b4 pressed
- * 
- * @return uint32_t 
- */
-uint32_t b4Waiting()
-{
-    debug(DEBUG_ALWAYS,"b4Waiting");
-    // Look for another button interrupt
-    timedout = !xTaskNotifyWait(0x00, ULONG_MAX, &eventhandlerNotifiedValue, pdMS_TO_TICKS(long_hold_time_ms));
-    if (timedout)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B4_LONG_PRESS");
-        return ACTION_B4_LONG_PRESS;
-    }
-    else if (eventhandlerNotifiedValue == NOTIFY_B1_RELEASED)
-    {
-        debug(DEBUG_ALWAYS,"ACTION_B4_SHORT_PRESS");
-        return ACTION_B4_SHORT_PRESS;
-    }
-    debug(DEBUG_ALWAYS,"---- NO NOTIFICATION FOUND ----");
-    return ACTION_NONE;
-}
-
-void enableInterrupts()
-{
-    attachInterrupt(PIN_BUTTON1,ISR_b1_interrupt,CHANGE);
-    attachInterrupt(PIN_BUTTON2,ISR_b2_interrupt,CHANGE);
-    attachInterrupt(PIN_BUTTON3,ISR_b3_interrupt,CHANGE);
-    attachInterrupt(PIN_BUTTON4,ISR_b4_interrupt,CHANGE);
-    attachInterrupt(PIN_BUTTON5,ISR_b5_interrupt,CHANGE);
-}
 void disableInterrupts()
 {
+    detachInterrupt(PIN_BUTTON1);
+    detachInterrupt(PIN_BUTTON2);
+    detachInterrupt(PIN_BUTTON3);
+    detachInterrupt(PIN_BUTTON4);
+    detachInterrupt(PIN_BUTTON5);
+}
+void enableInterrupts()
+{
+    disableInterrupts();
     attachInterrupt(PIN_BUTTON1,ISR_b1_interrupt,CHANGE);
     attachInterrupt(PIN_BUTTON2,ISR_b2_interrupt,CHANGE);
     attachInterrupt(PIN_BUTTON3,ISR_b3_interrupt,CHANGE);
     attachInterrupt(PIN_BUTTON4,ISR_b4_interrupt,CHANGE);
     attachInterrupt(PIN_BUTTON5,ISR_b5_interrupt,CHANGE);
 }
+void enableRisingInterrupts()
+{
+    disableInterrupts();
+    attachInterrupt(PIN_BUTTON1,ISR_b1_interrupt,RISING);
+    attachInterrupt(PIN_BUTTON2,ISR_b2_interrupt,RISING);
+    attachInterrupt(PIN_BUTTON3,ISR_b3_interrupt,RISING);
+    attachInterrupt(PIN_BUTTON4,ISR_b4_interrupt,RISING);
+    attachInterrupt(PIN_BUTTON5,ISR_b5_interrupt,RISING);
+}
+void enableFallingInterrupts()
+{
+    disableInterrupts();
+    attachInterrupt(PIN_BUTTON1,ISR_b1_interrupt,FALLING);
+    attachInterrupt(PIN_BUTTON2,ISR_b2_interrupt,FALLING);
+    attachInterrupt(PIN_BUTTON3,ISR_b3_interrupt,FALLING);
+    attachInterrupt(PIN_BUTTON4,ISR_b4_interrupt,FALLING);
+    attachInterrupt(PIN_BUTTON5,ISR_b5_interrupt,FALLING);
+}
+
+uint32_t buttonWaiting()
+{
+    debug(DEBUG_ALWAYS,"buttonWaiting");
+    // Look for another button interrupt
+    timedout = !xTaskNotifyWait(ULONG_MAX, ULONG_MAX, &eventhandlerNotifiedValue, pdMS_TO_TICKS(long_hold_time_ms));
+    Serial.printf("Notification received: %" PRIu32 "\n",eventhandlerNotifiedValue);
+
+    if (timedout)
+    {
+        debug(DEBUG_ALWAYS,"Long Press");
+        switch (wait_id)
+        {
+            case NOTIFY_B1:
+            debug(DEBUG_ALWAYS,"ACTION_B1_LONG_PRESS");
+            return ACTION_B1_LONG_PRESS;
+            break;
+
+            case NOTIFY_B2:
+            debug(DEBUG_ALWAYS,"ACTION_B2_LONG_PRESS");
+            return ACTION_B2_LONG_PRESS;
+            break;
+
+            case NOTIFY_B3:
+            debug(DEBUG_ALWAYS,"ACTION_B3_LONG_PRESS");
+            return ACTION_B3_LONG_PRESS;
+            break;
+
+            case NOTIFY_B4:
+            debug(DEBUG_ALWAYS,"ACTION_B4_LONG_PRESS");
+            return ACTION_B4_LONG_PRESS;
+            break;
+        }
+    }
+    else
+    {
+        debug(DEBUG_ALWAYS,"Short press");
+        switch (wait_id)
+        {
+            case NOTIFY_B1:
+            debug(DEBUG_ALWAYS,"ACTION_B1_SHORT_PRESS");
+            return ACTION_B1_SHORT_PRESS;
+            break;
+
+            case NOTIFY_B2:
+            debug(DEBUG_ALWAYS,"ACTION_B2_SHORT_PRESS");
+            return ACTION_B2_SHORT_PRESS;
+            break;
+
+            case NOTIFY_B3:
+            debug(DEBUG_ALWAYS,"ACTION_B3_SHORT_PRESS");
+            return ACTION_B3_SHORT_PRESS;
+            break;
+
+            case NOTIFY_B4:
+            debug(DEBUG_ALWAYS,"ACTION_B4_SHORT_PRESS");
+            return ACTION_B4_SHORT_PRESS;
+            break;
+        }
+    }
+    debug(DEBUG_ALWAYS,"---- NO NOTIFICATION FOUND ----");
+    return ACTION_NONE;
+}
+
 
 /**
  * @brief Initialise interrupts
@@ -293,17 +269,20 @@ void init_interrupts()
 extern int begin();
 extern int takeShot(); // Collect data for a shot
 extern int removeRecentCalib(); // Remove the most recent calibration data point
+extern int saveCalib(); // Saves the most recent calibration
 extern int nextCalib(); // Collect a calibration data point / progress to the next step
 extern int historyScrollUp(); // Collect a calibration data point / progress to the next step
 extern int historyScrollDown(); // Collect a calibration data point / progress to the next step
 extern int laserOn(); // Collect a calibration data point / progress to the next step
 extern int laserOff(); // Collect a calibration data point / progress to the next step
 
-extern int displayCalib();
-extern int displayRemCalibYN();
-extern int displaySaveCalibYN();
+extern int displayStaticCalib();
+extern int displayRemCalibYN(bool YN);
+extern int displaySaveCalibYN(bool YN);
 extern int displayOrientation();
 extern int displayRecentShot();
+extern int displayLoading();
+bool yes_or_no = true;
 
 void passiveAction(ModeEnum mode)
 {
@@ -317,33 +296,8 @@ void passiveAction(ModeEnum mode)
         displayOrientation();
         break;
 
-        case SHOT:
-        displayRecentShot();
-        break;
-
-        case CALIB:
-        displayCalib();
-        break;
-
-        case CALIB_REM_YN:
-        displayRemCalibYN();
-        break;
-
-        case CALIB_SAVE_YN:
-        displaySaveCalibYN();
-        break;
-
-        case HISTORY:
-        displaySaveCalibYN();
-        break;
-
-        case BLUETOOTH:
-        break;
-
-        case FILES:
-        break;
-
-        case CONFIG:
+        case LOADING:
+        displayLoading();
         break;
     }
 }
@@ -359,9 +313,10 @@ void evaluateAction(const uint32_t action)
             laserOn();
             next_mode = LASER_ON;
         } else if (action == ACTION_B4_SHORT_PRESS) {
-            debug(DEBUG_ALWAYS,"Enter calib mode...");
             laserOff();
+            displayStaticCalib();
             next_mode = CALIB;
+            debug(DEBUG_ALWAYS,"Go to calib...");
         }
         break;
 
@@ -370,62 +325,95 @@ void evaluateAction(const uint32_t action)
         {
             debug(DEBUG_ALWAYS,"Take Shot...");
             takeShot();
+            next_mode = LASER_ON;
         } else if (action == ACTION_B1_LONG_PRESS) {
             debug(DEBUG_ALWAYS,"Turn laser off...");
             laserOff();
             next_mode = LASER_OFF;
         } else if (action == ACTION_B4_SHORT_PRESS) {
-            debug(DEBUG_ALWAYS,"Enter calib mode...");
             laserOff();
+            displayStaticCalib();
             next_mode = CALIB;
+            debug(DEBUG_ALWAYS,"Go to calib...");
         }
-        break;
-
-        case SHOT:
-
         break;
 
         case CALIB:
         if (action == ACTION_B1_SHORT_PRESS) {
-            if (nextCalib() == 1)
+            xTaskNotify(passivehandler,0x00,eSetValueWithOverwrite); // Give passivehandler a notification to update the screen
+            if (nextCalib() == N_ORIENTATIONS + N_LASER_CAL)
             {
+                debug(DEBUG_ALWAYS,"Collected all calibration data...");
+                yes_or_no = true;
+                displaySaveCalibYN(yes_or_no);
                 next_mode = CALIB_SAVE_YN;
-            };
+            } else {
+                displayStaticCalib();
+            }
         } else if (action == ACTION_B3_SHORT_PRESS) {
+            debug(DEBUG_ALWAYS,"Remove calib?...");
+            yes_or_no = true;
+            displayRemCalibYN(yes_or_no);
             next_mode = CALIB_REM_YN;
         } else if (action == ACTION_B4_SHORT_PRESS) {
-            next_mode = HISTORY;
+            next_mode = LASER_OFF;
+            displayOrientation();
+            debug(DEBUG_ALWAYS,"Go to laser off...");
+        }
+        break;
+
+        case CALIB_SAVE_YN:
+        debug(DEBUG_ALWAYS,"Remove calib mode...");
+        if (action == ACTION_B1_SHORT_PRESS) {
+            if (yes_or_no) {    saveCalib();    }
+            next_mode = CALIB;
+            debug(DEBUG_ALWAYS,"selected YN");
+        } else if (action == ACTION_B2_SHORT_PRESS) {
+            debug(DEBUG_ALWAYS,"yes");
+            yes_or_no = true;
+            displaySaveCalibYN(yes_or_no);
+            next_mode = CALIB_SAVE_YN;
+        } else if (action == ACTION_B3_SHORT_PRESS) {
+            debug(DEBUG_ALWAYS,"no");
+            yes_or_no = false;
+            displaySaveCalibYN(yes_or_no);
+            next_mode = CALIB_SAVE_YN;
         }
         break;
 
         case CALIB_REM_YN:
-        if (action == ACTION_B2_SHORT_PRESS) {
-            removeRecentCalib();
+        if (action == ACTION_B1_SHORT_PRESS) {
+            if (yes_or_no) {    removeRecentCalib();    }
             next_mode = CALIB;
+        } else if (action == ACTION_B2_SHORT_PRESS) {
+            yes_or_no = true;
+            displaySaveCalibYN(yes_or_no);
+            next_mode = CALIB_SAVE_YN;
         } else if (action == ACTION_B3_SHORT_PRESS) {
-            next_mode = CALIB;
+            yes_or_no = false;
+            displaySaveCalibYN(yes_or_no);
+            next_mode = CALIB_SAVE_YN;
         }
         break;
 
-        case HISTORY:
-        if (action == ACTION_B2_SHORT_PRESS) {
-            historyScrollUp();
-        } else if (action == ACTION_B3_SHORT_PRESS) {
-            historyScrollDown();
-        } else if (action == ACTION_B4_SHORT_PRESS) {
-                next_mode = BLUETOOTH;
-        }
-        break;
+        // case HISTORY:
+        // if (action == ACTION_B2_SHORT_PRESS) {
+        //     historyScrollUp();
+        // } else if (action == ACTION_B3_SHORT_PRESS) {
+        //     historyScrollDown();
+        // } else if (action == ACTION_B4_SHORT_PRESS) {
+        // }
+        // break;
 
-        case BLUETOOTH:
-        // Requires button 5
-        break;
+        // case BLUETOOTH:
+        // // Requires button 5
+        // break;
 
-        case FILES:
-        break;
+        // case FILES:
+        // break;
 
-        case CONFIG:
-        break;
+        // case CONFIG:
+        // break;
     }
 }
 
@@ -445,6 +433,9 @@ void eventhandler(void* parameter)
     static bool received_command;
     while(true)
     {
+        // Re-enable button press interrupts
+        enableFallingInterrupts();
+        vTaskDelay(pdMS_TO_TICKS(10));
         debug(DEBUG_ALWAYS,"Eventhandler: Waiting for notify...\n");
         xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
                             ULONG_MAX, /* Reset the notification value to 0 on exit. */
@@ -454,29 +445,35 @@ void eventhandler(void* parameter)
         debug(DEBUG_ALWAYS,"Received interrupt...");
         received_command = false;
         action = ACTION_NONE;
+        wait_id = eventhandlerNotifiedValue;
+        disableInterrupts();
         switch (eventhandlerNotifiedValue)
         {
-            case NOTIFY_B1_PRESSED:
+            case NOTIFY_B1:
                 debug(DEBUG_ALWAYS,"button1 pressed");
-                action = b1Waiting();
+                attachInterrupt(PIN_BUTTON1,ISR_b1_interrupt,RISING);
+                action = buttonWaiting();                
                 received_command = true;
             break;
 
-            case NOTIFY_B2_PRESSED:
+            case NOTIFY_B2:
                 debug(DEBUG_ALWAYS,"button2 pressed");
-                action = b2Waiting();
+                attachInterrupt(PIN_BUTTON2,ISR_b2_interrupt,RISING);
+                action = buttonWaiting();
                 received_command = true;
             break;
 
-            case NOTIFY_B3_PRESSED:
+            case NOTIFY_B3:
                 debug(DEBUG_ALWAYS,"button3 pressed");
-                action = b3Waiting();
+                attachInterrupt(PIN_BUTTON3,ISR_b3_interrupt,RISING);
+                action = buttonWaiting();
                 received_command = true;
             break;
 
-            case NOTIFY_B4_PRESSED:
+            case NOTIFY_B4:
                 debug(DEBUG_ALWAYS,"button4 pressed");
-                action = b4Waiting();
+                attachInterrupt(PIN_BUTTON4,ISR_b4_interrupt,RISING);
+                action = buttonWaiting();
                 received_command = true;
             break;
 
@@ -496,14 +493,38 @@ void eventhandler(void* parameter)
             debug(DEBUG_ALWAYS,"Command received!");
             // Notifies computefunc_task with the value "notification", overwriting the current notificaiton value
             xTaskNotify( computefunc_task, action, eSetValueWithOverwrite );
+            
+            // Await notification from compute function
+            disableInterrupts();
+            xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
+                                ULONG_MAX, /* Reset the notification value to 0 on exit. */
+                                &eventhandlerNotifiedValue, /* Notified value pass out in computefuncNotifiedValue. */
+                                portMAX_DELAY );  /* Block indefinitely. */
         }
+
         // Clear any notifications received during running, this prevents chained inputs
         xTaskNotifyStateClear(eventhandler_task);
         ulTaskNotifyValueClear(eventhandler_task,0);
         eventhandlerNotifiedValue = 0x00;
+
+
     }
 }
 
+void passivehandler(void* parameter)
+{
+    Debug::debug(Debug::DEBUG_ALWAYS,"Start passivehandler");
+    static const TickType_t xFrequency = pdMS_TO_TICKS(250);
+    while(true)
+    {
+        xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
+                            ULONG_MAX, /* Reset the notification value to 0 on exit. */
+                            &passivehandlerNotifiedValue, /* Notified value pass out in computefuncNotifiedValue. */
+                            xFrequency );  /* Block indefinitely. */
+        
+        passiveAction(current_mode);
+    }
+}
 
 /**
  * @brief Handler for executing complex tasts. This handler responds to reuqested actions from eventandler.
@@ -527,6 +548,9 @@ void computefunc(void* parameter)
         debug(DEBUG_ALWAYS,"Compute task woken up...");
         evaluateAction(val);
         current_mode = next_mode;
+
+        // Notify eventhandler that task has finished executing and to re-enable inputs
+        xTaskNotify(eventhandler,0x00,eSetValueWithOverwrite);
     }
 }
 

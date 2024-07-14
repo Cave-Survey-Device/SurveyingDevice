@@ -16,7 +16,7 @@ static SCA3300SensorConnection sc_accelerometer(sca3300);
 static RM3100SensorConnection sc_magnetometer(rm3100);
 static LDK2MSensorConnection sc_laser(ldk2m);
 
-static OLED oled;
+static OLED::DisplayHandler oled;
 
 static SensorHandler sh(sc_accelerometer, sc_magnetometer, sc_laser);
 // static BLEHandler bh;
@@ -34,8 +34,10 @@ int begin()
 {
     Serial.begin(115200);
     sh.init();
+    oled.Initialise();
     return 0;
 }
+
 int takeShot()
 {
     Serial.print("Taking shot...\n");
@@ -48,8 +50,9 @@ int takeShot()
         readShotData(current_shot_data,current_file_ID);
         // Write data to BLE
         // bh.shared_ble_data.write_data(&current_shot_data);
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 int removeRecentCalib()
@@ -66,10 +69,13 @@ int removeRecentCalib()
 int nextCalib(){
     // Check static calib progress, if > N_ORIENTATIONS, return N_ORIENTATIONS + laser calib progress
     // Otherwise return static calib progress
+    debug(DEBUG_ALWAYS, "nextCalb()...");
     if (sh.getCalibProgress(true) < N_ORIENTATIONS)
     {
+        debug(DEBUG_ALWAYS, "static calib mode");
         return sh.collectStaticCalibData();
     } else {
+        debug(DEBUG_ALWAYS, "laser calib mode");
         return N_ORIENTATIONS + sh.collectLaserCalibData();
     }
     return 0;
@@ -114,6 +120,12 @@ int historyScrollDown(){
     return 0;
 }
 
+int saveCalib()
+{
+    sh.saveCalibration();
+    return 0;
+}
+
 void init()
 {
     Serial.begin(115200);
@@ -131,6 +143,108 @@ void init()
 }
 
 
+int displayLoading()
+{
+    oled.clearDisplay();
+    static int count = 0;
+    count += 1;
+    oled.displayLoading("Collecting","data...",count);
+    oled.update();
+    return 0;
+}
+
+int displayOrientation()
+{
+    static ShotData sd;
+    sh.update();
+    sd = sh.getShotData();
+
+    oled.clearDisplay();
+    oled.Distance(sd.d);
+    oled.Clino(sd.HIR(1));
+    oled.Compass(sd.HIR(0));
+    oled.update();
+    return 0;
+}
+
+int displayCalib()
+{
+    oled.clearDisplay();
+    switch(sh.getCalibProgress(true))
+    {
+        case 0:
+        oled.drawCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::UP);
+        break;
+
+        case 1:
+        oled.drawCalib(OLED::CompassDirection::WEST,OLED::CompassDirection::UP);
+        break;
+
+        case 2:
+        oled.drawCalib(OLED::CompassDirection::WEST,OLED::CompassDirection::DOWN);
+        break;
+
+        case 3:
+        oled.drawCalib(OLED::CompassDirection::NORTH_WEST,OLED::CompassDirection::DOWN);
+        break;
+
+        case 4:
+        oled.drawCalib(OLED::CompassDirection::EAST,OLED::CompassDirection::SOUTH);
+        break;
+
+        case 5:
+        oled.drawCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::WEST);
+        break;
+
+        case 6:
+        oled.drawCalib(OLED::CompassDirection::NORTH,OLED::CompassDirection::WEST);
+        break;
+
+        case 7:
+        oled.drawCalib(OLED::CompassDirection::NORTH_EAST,OLED::CompassDirection::NORTH_WEST);
+        break;
+
+        case 8:
+        oled.drawCalib(OLED::CompassDirection::UP,OLED::CompassDirection::EAST);
+        break;
+
+        case 9:
+        oled.drawCalib(OLED::CompassDirection::UP,OLED::CompassDirection::SOUTH);
+        break;
+
+        case 10:
+        oled.drawCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH);
+        break;
+
+        case 11:
+        oled.drawCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH_EAST);
+        break;
+    }
+    oled.update();    
+    return 0;
+}
+
+int displayRecentShot()
+{
+    return 0;
+}
+
+int displayRemCalibYN(bool YN)
+{
+    oled.clearDisplay();
+    oled.displayYN("Remove last","data?", YN);
+    oled.update();
+    return 0;
+}
+
+int displaySaveCalibYN(bool YN)
+{
+    oled.clearDisplay();
+    oled.displayYN("Save calib","-ration?", YN);
+    oled.update();
+    return 0;
+}
+
 /**
  * @brief Setup task for Arduino framework
  * 
@@ -138,7 +252,7 @@ void init()
 void setup()
 {
     init();
-    delay(500);
+    delay(1000);
     xTaskCreatePinnedToCore(
         eventhandler, /* Function to implement the task */
         "eventhandler", /* Name of the task */
@@ -152,11 +266,22 @@ void setup()
     xTaskCreatePinnedToCore(
         computefunc, /* Function to implement the task */
         "computefunc", /* Name of the task */
-        100000,  /* Stack size in words */
+        50000,  /* Stack size in words */
         NULL,  /* Task input parameter */
         2 ,  /* Priority of the task */
         &computefunc_task,  /* Task handle. */
         0); /* Core where the task should run */
+
+    delay(500);
+    xTaskCreatePinnedToCore(
+        displayhandler, /* Function to implement the task */
+        "passivehandler", /* Name of the task */
+        10000,  /* Stack size in words */
+        NULL,  /* Task input parameter */
+        4 ,  /* Priority of the task */
+        &displayhandler_task,  /* Task handle. */
+        0); /* Core where the task should run */
+
 
     // delay(500);
     // xTaskCreatePinnedToCore(
@@ -173,4 +298,51 @@ void setup()
         init_interrupts();
 }
 
-void loop(){}
+OLED::CompassDirection cd = OLED::NORTH;
+int count = 0;
+void loop(){
+    // cd = (OLED::CompassDirection) ((int)cd + 1);
+    // if ((int)cd > 7)
+    // {
+    //     cd = (OLED::CompassDirection)0;
+    // }
+    // oled.clearDisplay();
+    // // oled.drawCompass();
+    // // oled.drawCompassDirection(cd);
+    // oled.drawCalib(cd,cd);
+    // oled.update();
+    // delay(500);
+
+    // oled.clearDisplay();
+    // oled.displayYN("Save data?",false);
+    // oled.update();
+
+    // delay(1500);
+
+    // oled.clearDisplay();
+    // oled.displayYN("Save data?",true);
+    // oled.update();
+
+    // delay(1500);
+
+    // oled.clearDisplay();
+    // oled.displayYN("Save calib","-ration?",false);
+    // oled.update();
+
+    // delay(1500);
+
+    // oled.clearDisplay();
+    // oled.displayYN("Save calib","-ration?",true);
+    // oled.update();
+
+    // delay(500);
+
+    // oled.clearDisplay();
+    // oled.displayLoading("Collecting", "data...", count);
+    // Serial.println(count);
+    // count += 1;
+    // oled.update();
+    // delay(250);
+
+
+}

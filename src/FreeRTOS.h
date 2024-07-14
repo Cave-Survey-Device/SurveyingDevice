@@ -14,7 +14,7 @@ using namespace Debug;
 
 TaskHandle_t eventhandler_task;
 TaskHandle_t computefunc_task;
-TaskHandle_t passivehandler_task;
+TaskHandle_t displayhandler_task;
 
 #define long_hold_time_ms 2000
 
@@ -61,10 +61,12 @@ TaskHandle_t passivehandler_task;
 #define ACTION_B4_LONG_PRESS    (uint32_t)0x0108
 
 static uint32_t eventhandlerNotifiedValue = 0x00;
-static uint32_t passivehandlerNotifiedValue = 0x00;
 static uint32_t computefuncNotifiedValue = 0x00;
-static uint32_t compute_notification = 0x00;
+static uint32_t displayhandlerNotifiedValue = 0x00;
+
 static uint32_t event_notification = 0x00;
+static uint32_t compute_notification = 0x00;
+
 static uint32_t action = 0x00;
 static uint32_t wait_id = 0x00;
 static bool timedout;
@@ -73,26 +75,35 @@ static unsigned int current_timestamp;
 static unsigned int previous_debounce_timestamp;
 static unsigned int debounce_lockout_ms = 10;
 
+enum DisplayModeEnum
+{
+    DISP_CALIB,
+    DISP_LOADING,
+    DISP_ORIENTATION,
+    DISP_CALIB_SAVE_YN,
+    DISP_CALIB_REM_YN
+};
+
 enum ModeEnum
 {
-    LASER_OFF,
-    LASER_ON,
-    SHOT,
-    CALIB,
-    CALIB_REM_YN,
-    CALIB_SAVE_YN,
-    HISTORY,
-    BLUETOOTH,
-    FILES,
-    CONFIG,
-    LOADING
+    MODE_LASER_OFF,
+    MODE_LASER_ON,
+    MODE_SHOT,
+    MODE_CALIB,
+    MODE_CALIB_REM_YN,
+    MODE_CALIB_SAVE_YN,
+    MODE_HISTORY,
+    MODE_BLUETOOTH,
+    MODE_FILES,
+    MODE_CONFIG,
 };
 static ModeEnum current_mode;
 static ModeEnum next_mode;
+static DisplayModeEnum display_mode;
 
 void initFreeRTOS(){
-    current_mode = LASER_OFF;
-    next_mode = LASER_OFF;
+    current_mode = MODE_LASER_OFF;
+    next_mode = MODE_LASER_OFF;
 }
 
 
@@ -276,7 +287,7 @@ extern int historyScrollDown(); // Collect a calibration data point / progress t
 extern int laserOn(); // Collect a calibration data point / progress to the next step
 extern int laserOff(); // Collect a calibration data point / progress to the next step
 
-extern int displayStaticCalib();
+extern int displayCalib();
 extern int displayRemCalibYN(bool YN);
 extern int displaySaveCalibYN(bool YN);
 extern int displayOrientation();
@@ -284,19 +295,19 @@ extern int displayRecentShot();
 extern int displayLoading();
 bool yes_or_no = true;
 
-void passiveAction(ModeEnum mode)
+void displayAction()
 {
-    switch(mode)
+    switch(display_mode)
     {
-        case LASER_OFF:
+        case DISP_ORIENTATION:
         displayOrientation();
         break;
 
-        case LASER_ON:
-        displayOrientation();
+        case DISP_CALIB:
+        displayCalib();
         break;
 
-        case LOADING:
+        case DISP_LOADING:
         displayLoading();
         break;
     }
@@ -306,93 +317,96 @@ void evaluateAction(const uint32_t action)
 {
     switch (current_mode)
     {
-        case LASER_OFF:
+        case MODE_LASER_OFF:
         if (action == ACTION_B1_LONG_PRESS)
         {
-            debug(DEBUG_ALWAYS,"Turn laser on...");
+            next_mode = MODE_LASER_ON;
+            display_mode = DISP_ORIENTATION;
             laserOn();
-            next_mode = LASER_ON;
         } else if (action == ACTION_B4_SHORT_PRESS) {
+            next_mode = MODE_CALIB;
+            display_mode = DISP_CALIB;
             laserOff();
-            displayStaticCalib();
-            next_mode = CALIB;
-            debug(DEBUG_ALWAYS,"Go to calib...");
         }
         break;
 
-        case LASER_ON:
+        case MODE_LASER_ON:
         if (action == ACTION_B1_SHORT_PRESS)
         {
-            debug(DEBUG_ALWAYS,"Take Shot...");
+            next_mode = MODE_LASER_ON;
+            display_mode = DISP_ORIENTATION;
             takeShot();
-            next_mode = LASER_ON;
         } else if (action == ACTION_B1_LONG_PRESS) {
-            debug(DEBUG_ALWAYS,"Turn laser off...");
+            next_mode = MODE_LASER_OFF;
+            display_mode = DISP_ORIENTATION;
             laserOff();
-            next_mode = LASER_OFF;
         } else if (action == ACTION_B4_SHORT_PRESS) {
+            next_mode = MODE_CALIB;
+            display_mode = DISP_CALIB;
             laserOff();
-            displayStaticCalib();
-            next_mode = CALIB;
-            debug(DEBUG_ALWAYS,"Go to calib...");
         }
         break;
 
-        case CALIB:
+        case MODE_CALIB:
         if (action == ACTION_B1_SHORT_PRESS) {
-            xTaskNotify(passivehandler,0x00,eSetValueWithOverwrite); // Give passivehandler a notification to update the screen
+            display_mode = DISP_LOADING;
+            xTaskNotify(displayhandler_task,0x00,eSetValueWithOverwrite); // Update display
+            taskYIELD();
+            
             if (nextCalib() == N_ORIENTATIONS + N_LASER_CAL)
             {
-                debug(DEBUG_ALWAYS,"Collected all calibration data...");
+                next_mode = MODE_CALIB_SAVE_YN;
+                display_mode = DISP_CALIB_SAVE_YN;
                 yes_or_no = true;
-                displaySaveCalibYN(yes_or_no);
-                next_mode = CALIB_SAVE_YN;
+                
             } else {
-                displayStaticCalib();
+                next_mode = MODE_CALIB;
+                display_mode = DISP_CALIB;
             }
+
         } else if (action == ACTION_B3_SHORT_PRESS) {
-            debug(DEBUG_ALWAYS,"Remove calib?...");
+            next_mode = MODE_CALIB_REM_YN;
+            display_mode = DISP_CALIB_REM_YN;
             yes_or_no = true;
-            displayRemCalibYN(yes_or_no);
-            next_mode = CALIB_REM_YN;
+
         } else if (action == ACTION_B4_SHORT_PRESS) {
-            next_mode = LASER_OFF;
-            displayOrientation();
-            debug(DEBUG_ALWAYS,"Go to laser off...");
+            next_mode = MODE_LASER_OFF;
+            display_mode = DISP_ORIENTATION;
         }
         break;
 
-        case CALIB_SAVE_YN:
-        debug(DEBUG_ALWAYS,"Remove calib mode...");
+        case MODE_CALIB_SAVE_YN:
         if (action == ACTION_B1_SHORT_PRESS) {
             if (yes_or_no) {    saveCalib();    }
-            next_mode = CALIB;
-            debug(DEBUG_ALWAYS,"selected YN");
+            next_mode = MODE_CALIB;
+            display_mode = DISP_CALIB;
+
         } else if (action == ACTION_B2_SHORT_PRESS) {
-            debug(DEBUG_ALWAYS,"yes");
+            next_mode = MODE_CALIB_SAVE_YN;
+            display_mode = DISP_CALIB_SAVE_YN;
             yes_or_no = true;
-            displaySaveCalibYN(yes_or_no);
-            next_mode = CALIB_SAVE_YN;
+
         } else if (action == ACTION_B3_SHORT_PRESS) {
-            debug(DEBUG_ALWAYS,"no");
+            next_mode = MODE_CALIB_SAVE_YN;
+            display_mode = DISP_CALIB_SAVE_YN;
             yes_or_no = false;
-            displaySaveCalibYN(yes_or_no);
-            next_mode = CALIB_SAVE_YN;
         }
         break;
 
-        case CALIB_REM_YN:
+        case MODE_CALIB_REM_YN:
         if (action == ACTION_B1_SHORT_PRESS) {
             if (yes_or_no) {    removeRecentCalib();    }
-            next_mode = CALIB;
+            next_mode = MODE_CALIB;
+            display_mode = DISP_CALIB;
         } else if (action == ACTION_B2_SHORT_PRESS) {
+            next_mode = MODE_CALIB_REM_YN;
+            display_mode = DISP_CALIB_REM_YN;
             yes_or_no = true;
-            displaySaveCalibYN(yes_or_no);
-            next_mode = CALIB_SAVE_YN;
+
         } else if (action == ACTION_B3_SHORT_PRESS) {
+            next_mode = MODE_CALIB_REM_YN;
+            display_mode = DISP_CALIB_REM_YN;
             yes_or_no = false;
-            displaySaveCalibYN(yes_or_no);
-            next_mode = CALIB_SAVE_YN;
         }
         break;
 
@@ -415,6 +429,7 @@ void evaluateAction(const uint32_t action)
         // case CONFIG:
         // break;
     }
+    xTaskNotify(displayhandler_task,0x00,eSetValueWithOverwrite); // Update display
 }
 
 
@@ -433,9 +448,8 @@ void eventhandler(void* parameter)
     static bool received_command;
     while(true)
     {
-        // Re-enable button press interrupts
-        enableFallingInterrupts();
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(50)); // Delay 10ms to allow for bounce
+        enableFallingInterrupts(); // Enable button press interrupts
         debug(DEBUG_ALWAYS,"Eventhandler: Waiting for notify...\n");
         xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
                             ULONG_MAX, /* Reset the notification value to 0 on exit. */
@@ -443,9 +457,13 @@ void eventhandler(void* parameter)
                             portMAX_DELAY );  /* Block indefinitely. */
         
         debug(DEBUG_ALWAYS,"Received interrupt...");
+
+        // Clear data...
         received_command = false;
         action = ACTION_NONE;
         wait_id = eventhandlerNotifiedValue;
+
+        // Disable interrupts such that no new actions are processed until current task complete
         disableInterrupts();
         switch (eventhandlerNotifiedValue)
         {
@@ -488,13 +506,16 @@ void eventhandler(void* parameter)
             break;
         }
 
+        // If a valid command is received
         if ((received_command) & (action != 0) & (action != ACTION_NONE))
         {
             debug(DEBUG_ALWAYS,"Command received!");
+
             // Notifies computefunc_task with the value "notification", overwriting the current notificaiton value
+            disableInterrupts();
             xTaskNotify( computefunc_task, action, eSetValueWithOverwrite );
             
-            // Await notification from compute function
+            // Await notification from compute function before proceeding
             disableInterrupts();
             xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
                                 ULONG_MAX, /* Reset the notification value to 0 on exit. */
@@ -511,7 +532,7 @@ void eventhandler(void* parameter)
     }
 }
 
-void passivehandler(void* parameter)
+void displayhandler(void* parameter)
 {
     Debug::debug(Debug::DEBUG_ALWAYS,"Start passivehandler");
     static const TickType_t xFrequency = pdMS_TO_TICKS(250);
@@ -519,10 +540,10 @@ void passivehandler(void* parameter)
     {
         xTaskNotifyWait(    0x00,      /* Don't clear any notification bits on entry. */
                             ULONG_MAX, /* Reset the notification value to 0 on exit. */
-                            &passivehandlerNotifiedValue, /* Notified value pass out in computefuncNotifiedValue. */
+                            &displayhandlerNotifiedValue, /* Notified value pass out in computefuncNotifiedValue. */
                             xFrequency );  /* Block indefinitely. */
         
-        passiveAction(current_mode);
+        displayAction();
     }
 }
 
@@ -550,7 +571,7 @@ void computefunc(void* parameter)
         current_mode = next_mode;
 
         // Notify eventhandler that task has finished executing and to re-enable inputs
-        xTaskNotify(eventhandler,0x00,eSetValueWithOverwrite);
+        xTaskNotify(eventhandler_task,0x00,eSetValueWithOverwrite);
     }
 }
 

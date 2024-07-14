@@ -81,6 +81,7 @@ class DisplayHandler {
     void displayYN(const char prompt[11], bool YN);
     void displayYN(const char prompt_top[11], const char prompt_btm[11], bool YN);
     void displayData();
+    void displayLoading(const char prompt_top[11], const char prompt_btm[11], int count);
 
     double batt_voltage;
     int batt_level;

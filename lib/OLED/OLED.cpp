@@ -331,3 +331,27 @@ void DisplayHandler::clearDisplay() {
 void DisplayHandler::update() {
    display.display();
 }
+
+void DisplayHandler::displayLoading(const char prompt_top[11], const char prompt_btm[11], int count)
+{
+	const int n_points = 10;
+	Point initial_point(canvas_center_x, canvas_center_y+3);
+	Point loading_dot(0,0);
+
+	const int prompt_height = canvas_center_y - 40;
+	const int selector_height = canvas_center_y + 7;
+
+	drawCentered(prompt_top,canvas_center_x,prompt_height,2);
+	drawCentered(prompt_btm,canvas_center_x,prompt_height+18,2);
+
+	for (int i = 0; i<n_points; i++)
+	{
+		loading_dot = rotatePoint(initial_point, canvas_center_x, canvas_center_y+22, i%10 * M_PI/5);
+		if (i == count % n_points)
+		{
+			display.fillCircle(loading_dot.x, loading_dot.y, 3, SH110X_WHITE);
+		} else {
+			display.drawCircle(loading_dot.x, loading_dot.y, 2, SH110X_WHITE);
+		}
+	}
+}

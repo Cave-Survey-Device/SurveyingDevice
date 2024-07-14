@@ -173,7 +173,7 @@ int displayCalib()
     switch(sh.getCalibProgress(true))
     {
         case 0:
-        oled.drawCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::UP,"1/12");
+        oled.drawStaticCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::UP,"1/12");
         break;
 
         case 1:

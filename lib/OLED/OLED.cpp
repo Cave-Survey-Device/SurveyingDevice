@@ -35,12 +35,14 @@ void DisplayHandler::drawCentered(String str, int cx, int cy, int size)
 	display.print(str);
 }
 
-void DisplayHandler::drawCalib(CompassDirection pointing, CompassDirection facing)
-
+void DisplayHandler::drawCalib(CompassDirection pointing, CompassDirection facing, const char progress[5])
 {
-	String str;
+	String str1("CALIB ");
+	String str2(progress);
+	String str3 = str1 + str2;
+
 	display.fillRect(0, 0, SCREEN_WIDTH, 28, SH110X_BLACK);
-	drawCentered("CALIB",SCREEN_WIDTH/2,7,2);
+	drawCentered(str3.c_str(),SCREEN_WIDTH/2,7,2);
 
 	drawCentered("Pointing",SCREEN_WIDTH/4,25,1);
 	drawCentered(directionsArr[(int)pointing],SCREEN_WIDTH/4,40,1);

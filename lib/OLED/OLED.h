@@ -73,7 +73,8 @@ class DisplayHandler {
 
     void displayTopBar(bool bluetooth, int battery_level, int status);
     void drawCentered(String str, int cx, int cy,int size);
-    void drawCalib(CompassDirection pointing, CompassDirection facing);
+    void drawStaticCalib(CompassDirection pointing, CompassDirection facing, const char progress[5] = "");
+    void drawLaserCalib(CompassDirection pointing, CompassDirection facing, const char progress[5] = "");
     void drawCompass(int cx, int cy, int line_length, int arrow_length);
     void drawCompassDirection(int cx, int cy, int line_length, int arrow_length, CompassDirection direction);
     void displayOrientation();

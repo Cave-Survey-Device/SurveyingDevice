@@ -173,51 +173,51 @@ int displayCalib()
     switch(sh.getCalibProgress(true))
     {
         case 0:
-        oled.drawCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::UP);
+        oled.drawCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::UP,"1/12");
         break;
 
         case 1:
-        oled.drawCalib(OLED::CompassDirection::WEST,OLED::CompassDirection::UP);
+        oled.drawStaticCalib(OLED::CompassDirection::WEST,OLED::CompassDirection::UP,"2/12");
         break;
 
         case 2:
-        oled.drawCalib(OLED::CompassDirection::WEST,OLED::CompassDirection::DOWN);
+        oled.drawStaticCalib(OLED::CompassDirection::WEST,OLED::CompassDirection::DOWN,"3/12");
         break;
 
         case 3:
-        oled.drawCalib(OLED::CompassDirection::NORTH_WEST,OLED::CompassDirection::DOWN);
+        oled.drawStaticCalib(OLED::CompassDirection::NORTH_WEST,OLED::CompassDirection::DOWN,"4/12");
         break;
 
         case 4:
-        oled.drawCalib(OLED::CompassDirection::EAST,OLED::CompassDirection::SOUTH);
+        oled.drawStaticCalib(OLED::CompassDirection::EAST,OLED::CompassDirection::SOUTH,"5/12");
         break;
 
         case 5:
-        oled.drawCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::WEST);
+        oled.drawStaticCalib(OLED::CompassDirection::SOUTH,OLED::CompassDirection::WEST,"6/12");
         break;
 
         case 6:
-        oled.drawCalib(OLED::CompassDirection::NORTH,OLED::CompassDirection::WEST);
+        oled.drawStaticCalib(OLED::CompassDirection::NORTH,OLED::CompassDirection::WEST,"7/12");
         break;
 
         case 7:
-        oled.drawCalib(OLED::CompassDirection::NORTH_EAST,OLED::CompassDirection::NORTH_WEST);
+        oled.drawStaticCalib(OLED::CompassDirection::NORTH_EAST,OLED::CompassDirection::NORTH_WEST,"8/12");
         break;
 
         case 8:
-        oled.drawCalib(OLED::CompassDirection::UP,OLED::CompassDirection::EAST);
+        oled.drawStaticCalib(OLED::CompassDirection::UP,OLED::CompassDirection::EAST,"9/12");
         break;
 
         case 9:
-        oled.drawCalib(OLED::CompassDirection::UP,OLED::CompassDirection::SOUTH);
+        oled.drawStaticCalib(OLED::CompassDirection::UP,OLED::CompassDirection::SOUTH,"10/12");
         break;
 
         case 10:
-        oled.drawCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH);
+        oled.drawStaticCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH,"11/12");
         break;
 
         case 11:
-        oled.drawCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH_EAST);
+        oled.drawStaticCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH_EAST,"12/12");
         break;
     }
     oled.update();    

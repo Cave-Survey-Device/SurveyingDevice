@@ -219,6 +219,39 @@ int displayCalib()
         case 11:
         oled.drawStaticCalib(OLED::CompassDirection::DOWN,OLED::CompassDirection::NORTH_EAST,"12/12");
         break;
+
+        // laser calib
+        case 12:
+        oled.drawLaserCalib(0, "0deg", "1/8");
+        break;
+        
+        case 13:
+        oled.drawLaserCalib(0, "45deg", "2/8");
+        break;
+                
+        case 14:
+        oled.drawLaserCalib(0, "90deg", "3/8");
+        break;
+                
+        case 15:
+        oled.drawLaserCalib(0, "135deg", "4/8");
+        break;
+                
+        case 16:
+        oled.drawLaserCalib(0, "180deg", "4/8");
+        break;
+                
+        case 17:
+        oled.drawLaserCalib(0, "225deg", "6/8");
+        break;
+                
+        case 18:
+        oled.drawLaserCalib(0, "270deg", "7/8");
+        break;
+                        
+        case 19:
+        oled.drawLaserCalib(0, "315deg", "8/8");
+        break;
     }
     oled.update();    
     return 0;
@@ -301,6 +334,30 @@ void setup()
 OLED::CompassDirection cd = OLED::NORTH;
 int count = 0;
 void loop(){
+    // oled.clearDisplay();
+    // oled.drawLaserCalib(DEG_TO_RAD * 45,"45");
+    // oled.update();
+
+    // delay(1000);
+
+    // oled.clearDisplay();
+    // oled.drawLaserCalib(DEG_TO_RAD * 90,"90");
+    // oled.update();
+
+    // delay(1000);
+
+    // oled.clearDisplay();
+    // oled.drawLaserCalib(DEG_TO_RAD * 135,"135");
+    // oled.update();
+
+    // delay(1000);
+
+    // oled.clearDisplay();
+    // oled.drawLaserCalib(DEG_TO_RAD * 180,"180");
+    // oled.update();
+
+    // delay(4000);
+
     // cd = (OLED::CompassDirection) ((int)cd + 1);
     // if ((int)cd > 7)
     // {

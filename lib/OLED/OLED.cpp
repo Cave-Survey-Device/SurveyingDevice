@@ -35,7 +35,7 @@ void DisplayHandler::drawCentered(String str, int cx, int cy, int size)
 	display.print(str);
 }
 
-void DisplayHandler::drawCalib(CompassDirection pointing, CompassDirection facing, const char progress[5])
+void DisplayHandler::drawStaticCalib(CompassDirection pointing, CompassDirection facing, const char progress[5])
 {
 	String str1("CALIB ");
 	String str2(progress);
@@ -53,6 +53,72 @@ void DisplayHandler::drawCalib(CompassDirection pointing, CompassDirection facin
 	drawCentered(directionsArr[(int)facing],3*SCREEN_WIDTH/4,40,1);
 
 	drawCompassDirection(3*SCREEN_WIDTH/4,90,28,3,facing);
+}
+
+void DisplayHandler::drawLaserCalib(const float angle, const char centre_text[7], const char progress[5])
+{
+	String str1("CALIB ");
+	String str2(progress);
+	String str3 = str1 + str2;
+
+	drawCentered(str3.c_str(),SCREEN_WIDTH/2,7,2);
+
+	const int radius = 45;
+	Point center(canvas_center_x,canvas_center_y);
+	Point p_default(center.x,center.y-radius);
+	Point p_start(center.x,center.y-(radius+10));
+	Point p_end(center.x,center.y-(radius+10));
+
+	int mod = floor(angle*0.95/M_PI_2);
+	Serial.println(mod);
+
+	p_start = rotatePoint(p_start,center.x,center.y,angle);
+	p_end = rotatePoint(p_end,center.x,center.y,(mod+1)*M_PI_2);
+	
+
+	// display.drawCircle(center.x,center.y,radius,SH110X_WHITE);
+	switch (mod){
+
+		case 3:
+			// Draw quadrant 4
+			display.drawCircleHelper(center.x,center.y,radius,0x1,SH110X_WHITE);
+
+		case 2:
+			// Draw quadrant 3
+			display.drawCircleHelper(center.x,center.y,radius,0x8,SH110X_WHITE);
+
+		case 1:
+			// Draw quadrant 2
+			display.drawCircleHelper(center.x,center.y,radius,0x4,SH110X_WHITE);
+
+		case 0:
+			// Draw quadrant 2
+			display.drawCircleHelper(center.x,center.y,radius,0x2,SH110X_WHITE);
+
+		default:
+		break;
+	}
+
+	display.fillTriangle(center.x,center.y, p_start.x,p_start.y, p_end.x, p_end.y, SH110X_BLACK);
+
+	int arrow_length = 10;
+	p_start.x = p_default.x;
+	p_start.y = p_default.y;
+	p_end.x = p_start.x - arrow_length / M_SQRT2;
+	p_end.y = p_start.y + arrow_length / M_SQRT2;
+	p_end = rotatePoint(p_end,center.x,center.y,angle);
+	p_start = rotatePoint(p_start,center.x,center.y,angle);
+	display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
+
+	p_start.x = p_default.x;
+	p_start.y = p_default.y;
+	p_end.x = p_start.x - arrow_length / M_SQRT2 * 1.4;
+	p_end.y = p_start.y - arrow_length / M_SQRT2 * 0.6;
+	p_end = rotatePoint(p_end,center.x,center.y,angle);
+	p_start = rotatePoint(p_start,center.x,center.y,angle);
+	display.drawLine(p_start.x, p_start.y, p_end.x, p_end.y,SH110X_WHITE);
+
+	drawCentered(String(centre_text)+String("deg"),center.x,center.y,2);
 }
 
 void DisplayHandler::drawCompass(int cx, int cy, int line_length, int arrow_length) {

@@ -74,7 +74,7 @@ class DisplayHandler {
     void displayTopBar(bool bluetooth, int battery_level, int status);
     void drawCentered(String str, int cx, int cy,int size);
     void drawStaticCalib(CompassDirection pointing, CompassDirection facing, const char progress[5] = "");
-    void drawLaserCalib(CompassDirection pointing, CompassDirection facing, const char progress[5] = "");
+    void drawLaserCalib(const float angle, const char centre_text[7], const char progress[5]);
     void drawCompass(int cx, int cy, int line_length, int arrow_length);
     void drawCompassDirection(int cx, int cy, int line_length, int arrow_length, CompassDirection direction);
     void displayOrientation();
@@ -97,7 +97,7 @@ class DisplayHandler {
     const int canvas_center_x = SCREEN_WIDTH/2;
     const int canvas_center_y = TOP_BAR_HEIGHT + (SCREEN_HEIGHT - TOP_BAR_HEIGHT)/2;
 
-    Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000, 100000);
+    Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
     //Adafruit_SSD1327 display = Adafruit_SSD1327(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000);
 
 };

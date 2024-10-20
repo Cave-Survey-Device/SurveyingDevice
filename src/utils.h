@@ -1,3 +1,6 @@
+#ifndef HEADER_UTILS
+#define HEADER_UTILS
+
 #include <ArduinoEigen.h>
 using namespace Eigen;
 
@@ -36,3 +39,5 @@ void displayVec(const VectorXf &v)
     }
     Serial << "\n";
 }
+
+#endif

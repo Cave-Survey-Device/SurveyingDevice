@@ -7,8 +7,8 @@
 #include <EigenFileFuncs.h>
 #include <debug.h>
 
-#define FNAME_LENGTH 5
-#define VARNAME_LENGTH 3
+#define FNAME_LENGTH 6
+#define VARNAME_LENGTH 4
 
 using namespace Eigen;
 
@@ -47,11 +47,11 @@ struct ShotData{
 
 void getFileName(const unsigned int fileID, char (&fname)[FNAME_LENGTH]);
 void getVarName(const unsigned int counter, char (&varname)[VARNAME_LENGTH]);
-void getCounter(const unsigned int fileID, unsigned int &counter);
+bool getCounter(const unsigned int fileID, unsigned int &counter);
 void setCounter(const unsigned int fileID, const unsigned int &counter);
 void saveShotData(const ShotData &sd, const unsigned int fileID);
-void readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID);
-void readShotData(ShotData &sd, unsigned int fileID);
+bool readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID);
+bool readShotData(ShotData &sd, unsigned int fileID);
 
 class SensorHandler
 {
@@ -60,7 +60,7 @@ private:
 
     int static_calib_progress, las_calib_progress;
 
-    // Sensor objects
+    // Sensor objects - define as reference to object otherwise full mem is allocated (bad)
     Accelerometer &acc;
     Magnetometer &mag;
     Laser &las;
@@ -103,7 +103,9 @@ public:
     void resetCalibration();
     void saveCalibration();
     void loadCalibration();
-
+    void removePrevCalib(bool static_calib);
+    int getCalibProgress(bool static_calib);
+    
     /**
      * @brief Take shot using laser by default.
      * Returns 0 if success, anything else is an error.
@@ -129,8 +131,6 @@ public:
      */
     int collectLaserCalibData();
 
-    void removePrevCalib(bool static_calib);
-    int getCalibProgress(bool static_calib);
 
     int calibrate();
     int align();

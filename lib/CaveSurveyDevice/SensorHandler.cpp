@@ -1,19 +1,27 @@
 #include "SensorHandler.h"
 #include <queue>
 
+static unsigned int counter;
+
 void getFileName(const unsigned int fileID, char (&fname)[FNAME_LENGTH])
 {
-    sprintf(fname,"SD%3hhu", fileID);
+    sprintf(fname,"SD%03u\0", fileID);
 }
 void getVarName(const unsigned int counter, char (&varname)[VARNAME_LENGTH])
 {
-    sprintf(varname,"%3i", counter+1);
+    sprintf(varname,"%03u\0", counter+1);
 }
-void getCounter(const unsigned int fileID, unsigned int &counter)
+
+bool getCounter(const unsigned int fileID, unsigned int &counter)
 {
     char fname[FNAME_LENGTH];
     getFileName(fileID, fname);
-    FileFuncs::readFromFile(fname,"counter",counter);
+    // If file and varname exist ...
+    if (FileFuncs::readFromFile(fname,"counter",counter)){
+        return true;
+    }
+    Debug::debug(Debug::DEBUG_SENSOR,"Counter not found...");
+    return false;
 }
 void setCounter(const unsigned int fileID, const unsigned int &counter)
 {
@@ -21,31 +29,47 @@ void setCounter(const unsigned int fileID, const unsigned int &counter)
     getFileName(fileID, fname);
     FileFuncs::writeToFile(fname,"counter",counter);
 }
+
 void saveShotData(const ShotData &sd, const unsigned int fileID)
 {
-    static unsigned int counter;
-    static char fname[5];
-    static char varname[3];
+    char fname[FNAME_LENGTH];
+    char varname[VARNAME_LENGTH];
+    Debug::debug(Debug::DEBUG_SENSOR,"Saving shot data to file...");
     getFileName(fileID,fname);
-    getCounter(fileID, counter); // Get latest shot ID
-    getVarName(counter+1,varname); // Save shot as latest shot ID + 1
-    setCounter(fileID,counter+1); // Set counter to reflect latest shot ID
+    Serial.printf("Namespace to write to: %s\n", fname);
+
+
+    // If file exists doesn't exist, create it with counter = 0
+    if (!getCounter(fileID, counter))
+    {
+        Debug::debug(Debug::DEBUG_SENSOR,"File doesn't exist, creating new one...");
+        counter = 0;
+        setCounter(fileID, counter);
+    } // Get latest shot ID
+
+    // Save shot to file with ID = counter
+    Serial.printf("Counter to write to: %u\n", counter);
+    getVarName(counter+1,varname);
+    setCounter(fileID,counter+1);
+    Serial.printf("Key to write to: %s\n", varname);
+
     FileFuncs::writeToFile(fname,varname,&sd,sizeof(ShotData)); // Save the shot
 }
-void readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID)
+bool readShotData(ShotData &sd, unsigned int fileID, unsigned int shotID)
 {
-    static char fname[5];
-    static char varname[3];
-    static float value[4];
+    char fname[FNAME_LENGTH];
+    char varname[VARNAME_LENGTH];
+    Debug::debug(Debug::DEBUG_SENSOR,"Reading shot data from file...");
     getFileName(fileID,fname);
     getVarName(shotID,varname);
-    FileFuncs::readFromFile(fname,varname,&sd,sizeof(ShotData));
+    return FileFuncs::readFromFile(fname,varname,&sd,sizeof(ShotData));
 }
-void readShotData(ShotData &sd, unsigned int fileID)
+
+bool readShotData(ShotData &sd, unsigned int fileID)
 {
-    static unsigned int counter;
+    Debug::debug(Debug::DEBUG_SENSOR,"Reading latest shot data from file...");
     getCounter(fileID, counter); // Get latest shot ID
-    readShotData(sd,fileID,counter);
+    return readShotData(sd,fileID,counter);
 }
 
 // IMPORTANT: References are immutable and must be definied upon initialisation!
@@ -94,7 +118,9 @@ void SensorHandler::update()
     acc_data /= N_UPDATE_SAMPLES;
 
     // Store corrected data in corrected_acc_data and corrected_mag_data
-    correctData(corrected_acc_data,corrected_mag_data);
+    correctData(corrected_shot_data.m, corrected_shot_data.g);
+    corrected_shot_data.HIR = NumericalMethods::inertialToCardan(corrected_shot_data.m,corrected_shot_data.g);
+    corrected_shot_data.v = NumericalMethods::inertialToVector(corrected_shot_data.m,corrected_shot_data.g);
 }
 
 Vector3f SensorHandler::getCardan(bool corrected)
@@ -159,7 +185,7 @@ int SensorHandler::takeShot(const bool laser_reading, const bool use_stabilisati
 
     
     if (laser_reading) { las_data = las.getMeasurement(); }
-    if (las_data < 0) {return 1;}
+    if (las_data <= 0) {return 1;}
 
     // Update stored shot data
     shot_data.m = mag_data;
